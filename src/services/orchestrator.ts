@@ -27,6 +27,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { logInfo, logWarn, logError } from '../logger';
 import { listTickets, createTicket, Ticket } from './ticketDb';
+import { completeLLM } from './llmService';
+
+/**
+ * System prompt for the Answer agent
+ * Tells the LLM how to behave when answering questions
+ */
+const ANSWER_SYSTEM_PROMPT = "You are an Answer agent in a coding orchestration system. Provide concise, actionable responses to developer questions. Focus on clarity and practical solutions.";
 
 /**
  * Task interface - represents a work item in the queue
@@ -156,19 +163,30 @@ class OrchestratorService {
     /**
      * Route a question to the Answer team
      * 
-     * For now, this is a stub that just logs the question.
-     * Later, this will call the Answer team via MCP or LLM endpoint.
+     * Uses the LLM service to generate a response to the question.
+     * If the LLM fails (network error, timeout, etc.), a blocked ticket is created for manual review.
      * 
      * @param question The question to route
-     * @returns Response from Answer team (stub returns placeholder)
+     * @returns Response from Answer team via LLM
      */
     async routeQuestionToAnswer(question: string): Promise<string> {
-        // Stub: Log the question for now
-        logInfo(`ROUTE_QUESTION: ${question}`);
+        logInfo(`Routing question to Answer agent: ${question}`);
 
-        // TODO: In Phase 3, this will call the Answer team via MCP or LLM endpoint
-        // For now, return placeholder response
-        return 'Routing not implemented yet. Will route to Answer team in Phase 3.';
+        try {
+            // Call LLM with the Answer agent system prompt
+            const response = await completeLLM(question, {
+                systemPrompt: ANSWER_SYSTEM_PROMPT
+            });
+
+            logInfo('Answer agent response received');
+            return response.content;
+
+        } catch (error: any) {
+            logError(`Answer agent failed: ${error.message}`);
+
+            // Ticket is already created in completeLLM, just return fallback
+            return 'LLM service is currently unavailable. A ticket has been created for manual review.';
+        }
     }
 
     /**

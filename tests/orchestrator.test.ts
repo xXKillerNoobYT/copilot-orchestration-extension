@@ -17,11 +17,15 @@ import {
     Task
 } from '../src/services/orchestrator';
 import * as ticketDb from '../src/services/ticketDb';
+import { completeLLM } from '../src/services/llmService';
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
 
 // Mock TicketDb module
 jest.mock('../src/services/ticketDb');
+
+// Mock LLM Service module
+jest.mock('../src/services/llmService');
 
 // Mock fs module
 jest.mock('fs', () => ({
@@ -304,23 +308,6 @@ describe('Orchestrator Service', () => {
         });
     });
 
-    describe('routing stub', () => {
-        it('Test 9: should log question in routeQuestionToAnswer', async () => {
-            // Setup: initialize first
-            mockFs.existsSync.mockReturnValue(false);
-            mockTicketDb.listTickets.mockResolvedValue([]);
-
-            await initializeOrchestrator(mockContext);
-
-            // Execute: route a question
-            const response = await routeQuestionToAnswer('How do I fix this?');
-
-            // Verify: response is a string (stub implementation)
-            expect(typeof response).toBe('string');
-            expect(response).toContain('Routing not implemented yet');
-        });
-    });
-
     describe('edge cases', () => {
         it('Test 10: should handle TicketDb errors gracefully', async () => {
             // Setup: TicketDb throws error
@@ -359,6 +346,92 @@ describe('Orchestrator Service', () => {
             // Verify: listTickets not called second time (due to singleton check)
             // Note: might be called once from first init, not called again
             // (The singleton prevents re-initialization)
+        });
+    });
+
+    describe('routeQuestionToAnswer', () => {
+        const mockCompleteLLM = completeLLM as jest.MockedFunction<typeof completeLLM>;
+
+        beforeEach(async () => {
+            // Initialize orchestrator for these tests
+            mockFs.existsSync.mockReturnValue(false);
+            mockTicketDb.listTickets.mockResolvedValue([]);
+            await initializeOrchestrator(mockContext);
+            jest.clearAllMocks();
+        });
+
+        it('should call LLM with question and return response', async () => {
+            // Setup: mock successful LLM response
+            mockCompleteLLM.mockResolvedValue({
+                content: 'TypeScript is a typed superset of JavaScript',
+                usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+            });
+
+            // Execute: route a question
+            const result = await routeQuestionToAnswer('What is TypeScript?');
+
+            // Verify: LLM was called with correct parameters
+            expect(mockCompleteLLM).toHaveBeenCalledWith(
+                'What is TypeScript?',
+                expect.objectContaining({
+                    systemPrompt: expect.any(String)
+                })
+            );
+            expect(mockCompleteLLM).toHaveBeenCalledTimes(1);
+
+            // Verify: returned the LLM response
+            expect(result).toBe('TypeScript is a typed superset of JavaScript');
+        });
+
+        it('should include Answer agent system prompt', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Test response',
+                usage: undefined
+            });
+
+            await routeQuestionToAnswer('Test question');
+
+            // Verify: system prompt was passed
+            const call = mockCompleteLLM.mock.calls[0];
+            expect(call[1]?.systemPrompt).toContain('Answer agent');
+            expect(call[1]?.systemPrompt).toContain('concise');
+        });
+
+        it('should handle LLM failure and return fallback message', async () => {
+            // Setup: mock LLM error
+            mockCompleteLLM.mockRejectedValue(new Error('Network error'));
+
+            // Execute: route a question
+            const result = await routeQuestionToAnswer('Test question');
+
+            // Verify: returned fallback message (not throwing)
+            expect(result).toContain('unavailable');
+            expect(result).toContain('ticket has been created');
+        });
+
+        it('should not create duplicate ticket on LLM failure', async () => {
+            // Setup: LLM already creates ticket internally
+            mockCompleteLLM.mockRejectedValue(new Error('Timeout'));
+
+            // Execute
+            await routeQuestionToAnswer('Test');
+
+            // Verify: createTicket not called here (LLM service already called it)
+            // This test verifies we don't create duplicate tickets
+            expect(mockTicketDb.createTicket).not.toHaveBeenCalled();
+        });
+
+        it('should log question routing and response', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Answer',
+                usage: undefined
+            });
+
+            await routeQuestionToAnswer('How do I test this?');
+
+            // Note: Actual logging verification would require mocking logger
+            // For now, just verify function completes without error
+            expect(mockCompleteLLM).toHaveBeenCalled();
         });
     });
 });

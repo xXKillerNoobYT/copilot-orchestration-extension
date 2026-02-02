@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { initializeLogger, logInfo } from './logger';
 import { initializeTicketDb, createTicket, updateTicket } from './services/ticketDb';
-import { initializeOrchestrator } from './services/orchestrator';
+import { initializeOrchestrator, routeQuestionToAnswer } from './services/orchestrator';
+import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
@@ -21,6 +22,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialize Orchestrator after TicketDb (depends on it)
     await initializeOrchestrator(context);
+
+    // Initialize LLM service (requires Node 18+)
+    await initializeLLMService(context);
 
     // Start MCP server after Orchestrator is ready
     startMCPServer();
@@ -61,6 +65,11 @@ export async function activate(context: vscode.ExtensionContext) {
             logInfo(`Updated test ticket - sidebar should refresh again`);
         }, 3000);
     }, 5000); */
+
+    setTimeout(async () => {
+    const answer = await routeQuestionToAnswer("Explain what a VS Code extension is in simple terms.");
+    console.log("LLM ANSWER:", answer);
+}, 3000);
 
     // OPTIONAL ERROR TEST - Uncomment to test error handling in sidebar
     // To test: Add this line at the start of listTickets() in ticketDb.ts:
