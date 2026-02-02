@@ -1,0 +1,16 @@
+{
+    "version": "0.1.0",
+    "llm": {
+        "endpoint": "http://192.168.1.205:1234/v1",
+        "model": "ministral-3-14b-reasoning",
+        "timeoutSeconds": 60,
+        "maxTokens": 2048
+    },
+    "tickets": {
+        "enabled": true,
+        "dbPath": "./.coe/tickets.db"
+    },
+    "debug": {
+        "logLevel": "info"
+    }
+}

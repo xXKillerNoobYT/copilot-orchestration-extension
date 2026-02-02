@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * This function is called when the extension is activated.
@@ -8,6 +10,22 @@ export function activate(context: vscode.ExtensionContext) {
     // Create output channel (keep this line)
     const outputChannel = vscode.window.createOutputChannel('COE');
     outputChannel.appendLine('Copilot Orchestration Extension activated');
+
+    // Try to read config (just for testing)
+    const configPath = path.join(context.extensionPath, '.coe', 'config.json');
+    let config: any = {};
+    try {
+        if (fs.existsSync(configPath)) {
+            const configContent = fs.readFileSync(configPath, 'utf-8');
+            config = JSON.parse(configContent);
+            outputChannel.appendLine('Loaded .coe/config.json successfully');
+            outputChannel.appendLine(`LLM endpoint: ${config.llm?.endpoint || 'not found'}`);
+        } else {
+            outputChannel.appendLine('.coe/config.json not found yet');
+        }
+    } catch (err) {
+        outputChannel.appendLine(`Error reading config: ${err}`);
+    }
 
     // ── NEW: Register the command ──
     const helloCommand = vscode.commands.registerCommand('coe.sayHello', () => {
