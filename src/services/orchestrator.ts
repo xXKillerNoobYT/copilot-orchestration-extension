@@ -27,13 +27,19 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { logInfo, logWarn, logError } from '../logger';
 import { listTickets, createTicket, Ticket } from './ticketDb';
-import { completeLLM } from './llmService';
+import { completeLLM, streamLLM } from './llmService';
 
 /**
  * System prompt for the Answer agent
  * Tells the LLM how to behave when answering questions
  */
 const ANSWER_SYSTEM_PROMPT = "You are an Answer agent in a coding orchestration system. Provide concise, actionable responses to developer questions. Focus on clarity and practical solutions.";
+
+/**
+ * Planning system prompt for the Answer agent
+ * Tells the LLM how to break down coding tasks into atomic steps
+ */
+const PLANNING_SYSTEM_PROMPT = "You are a Planning agent. Break coding tasks into small atomic steps (15-25 min each), number them, include file names to modify/create, and add 1-sentence success criteria per step.";
 
 /**
  * Task interface - represents a work item in the queue
@@ -62,7 +68,7 @@ export interface Task {
  * 
  * Manages the task queue and orchestrates work for Copilot.
  */
-class OrchestratorService {
+export class OrchestratorService {
     // In-memory task queue (simple array for FIFO ordering)
     private taskQueue: Task[] = [];
 
@@ -190,6 +196,46 @@ class OrchestratorService {
     }
 
     /**
+     * Route a question to the Planning agent
+     * 
+     * Uses the LLM service to generate a response to the question.
+     * If the LLM fails (network error, timeout, etc.), a blocked ticket is created for manual review.
+     * 
+     * @param question The question to route
+     * @returns Response from Answer team via LLM
+     */
+    async routeToPlanningAgent(question: string): Promise<string> {
+        logInfo(`Routing request to Planning agent: ${question}`);
+
+        try {
+            const response = await streamLLM(
+                question,
+                (chunk) => {
+                    logInfo(`LLM: ${chunk}`); // Real-time logging of each chunk
+                },
+                {
+                    systemPrompt: PLANNING_SYSTEM_PROMPT
+                }
+            );
+
+            const fullPlan = response.content;
+            if (!fullPlan) {
+                logWarn('Planning agent returned an empty response.');
+            } else if (fullPlan.length > 1000) {
+                logInfo(`Full plan (truncated): ${fullPlan.substring(0, 1000)}...`);
+            } else {
+                logInfo(`Full plan: ${fullPlan}`);
+            }
+
+            return fullPlan;
+
+        } catch (error: any) {
+            logError(`Planning agent failed: ${error.message}`);
+            return 'Planning service is currently unavailable. A ticket has been created for manual review.';
+        }
+    }
+
+    /**
      * Load tasks from TicketDb
      * 
      * Steps:
@@ -313,14 +359,14 @@ let orchestratorInstance: OrchestratorService | null = null;
  * 
  * @param context VS Code ExtensionContext
  */
-export async function initializeOrchestrator(context: vscode.ExtensionContext): Promise<void> {
+export async function initializeOrchestrator(context: vscode.ExtensionContext): Promise<OrchestratorService> {
     if (orchestratorInstance) {
         logWarn('Orchestrator already initialized');
-        return;
+        return orchestratorInstance;
     }
-
     orchestratorInstance = new OrchestratorService();
     await orchestratorInstance.initialize(context);
+    return orchestratorInstance;
 }
 
 /**
@@ -349,6 +395,19 @@ export async function routeQuestionToAnswer(question: string): Promise<string> {
 }
 
 /**
+ * Route a question to the Planning agent
+ * 
+ * @param question The question to route
+ * @returns Response from Answer team
+ */
+export async function routeToPlanningAgent(question: string): Promise<string> {
+    if (!orchestratorInstance) {
+        throw new Error('Orchestrator not initialized');
+    }
+    return orchestratorInstance.routeToPlanningAgent(question);
+}
+
+/**
  * Reset orchestrator for tests (clears singleton and queue)
  */
 export function resetOrchestratorForTests(): void {
@@ -356,4 +415,11 @@ export function resetOrchestratorForTests(): void {
         orchestratorInstance.resetForTests();
     }
     orchestratorInstance = null;
+}
+
+export function getOrchestratorInstance(): OrchestratorService {
+    if (!orchestratorInstance) {
+        throw new Error('Orchestrator not initialized');
+    }
+    return orchestratorInstance;
 }

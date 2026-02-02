@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { initializeLogger, logInfo } from './logger';
 import { initializeTicketDb, createTicket, updateTicket } from './services/ticketDb';
-import { initializeOrchestrator, routeQuestionToAnswer } from './services/orchestrator';
+import { initializeOrchestrator, routeQuestionToAnswer, getOrchestratorInstance } from './services/orchestrator';
 import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
@@ -51,6 +51,13 @@ export async function activate(context: vscode.ExtensionContext) {
         ticketsProvider.refresh();
     });
 
+    const planTaskCommand = vscode.commands.registerCommand('coe.planTask', async () => {
+        logInfo('User triggered: Plan Task');
+        const orchestratorInstance = getOrchestratorInstance();
+        const plan = await orchestratorInstance.routeToPlanningAgent('Plan how to add dark mode toggle');
+        vscode.window.showInformationMessage(`Plan generated: ${plan.substring(0, 50)}...`);
+    });
+
     // TEMP TEST CODE - Remove after verification of auto-refresh
     /* setTimeout(async () => {
         const newTicket = await createTicket({
@@ -64,12 +71,12 @@ export async function activate(context: vscode.ExtensionContext) {
             await updateTicket(newTicket.id, { status: 'in-progress' });
             logInfo(`Updated test ticket - sidebar should refresh again`);
         }, 3000);
-    }, 5000); */
+    }, 5000); 
 
-    setTimeout(async () => {
+     setTimeout(async () => {
     const answer = await routeQuestionToAnswer("Explain what a VS Code extension is in simple terms.");
     console.log("LLM ANSWER:", answer);
-}, 3000);
+}, 3000); */
 
     // OPTIONAL ERROR TEST - Uncomment to test error handling in sidebar
     // To test: Add this line at the start of listTickets() in ticketDb.ts:
@@ -93,7 +100,6 @@ export async function activate(context: vscode.ExtensionContext) {
     statusBarItem.show();
 
 
-
     // Push all disposables to context.subscriptions for automatic cleanup when extension deactivates
     context.subscriptions.push(helloCommand);
     context.subscriptions.push(statusBarItem);
@@ -101,6 +107,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(ticketsTreeView);
     context.subscriptions.push(refreshAgentsCommand);
     context.subscriptions.push(refreshTicketsCommand);
+    context.subscriptions.push(planTaskCommand);
 
     logInfo('Extension fully activated');
 }

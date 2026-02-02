@@ -18,6 +18,9 @@ import {
 } from '../src/services/orchestrator';
 import * as ticketDb from '../src/services/ticketDb';
 import { completeLLM } from '../src/services/llmService';
+import { streamLLM } from '../src/services/llmService';
+import { OrchestratorService } from '../src/services/orchestrator';
+import { logInfo, logWarn } from '../src/logger';
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
 
@@ -36,6 +39,13 @@ jest.mock('fs', () => ({
 // Cast mocks to typed versions
 const mockTicketDb = ticketDb as jest.Mocked<typeof ticketDb>;
 const mockFs = fs as jest.Mocked<typeof fs>;
+
+// Mock logger functions
+jest.mock('../src/logger', () => ({
+    logInfo: jest.fn(),
+    logWarn: jest.fn(),
+    logError: jest.fn(),
+}));
 
 describe('Orchestrator Service', () => {
     let mockContext: ExtensionContext;
@@ -432,6 +442,53 @@ describe('Orchestrator Service', () => {
             // Note: Actual logging verification would require mocking logger
             // For now, just verify function completes without error
             expect(mockCompleteLLM).toHaveBeenCalled();
+        });
+    });
+
+    describe('routeToPlanningAgent', () => {
+        const mockStreamLLM = streamLLM as jest.MockedFunction<typeof streamLLM>;
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
+
+        it('should log chunks and accumulate full plan', async () => {
+            // Mock streamLLM to return chunks
+            const mockChunks = ['Step 1: ', 'Add config flag', 'Step 2: ', 'Update UI'];
+            mockStreamLLM.mockImplementation(async (prompt, onChunk) => {
+                mockChunks.forEach(onChunk);
+                return { content: mockChunks.join('') };
+            });
+
+            const orchestrator = new OrchestratorService();
+            const plan = await orchestrator.routeToPlanningAgent('Plan how to add dark mode toggle');
+
+            expect(plan).toBe('Step 1: Add config flagStep 2: Update UI');
+            expect(logInfo).toHaveBeenCalledWith('LLM: Step 1: ');
+            expect(logInfo).toHaveBeenCalledWith('LLM: Add config flag');
+            expect(logInfo).toHaveBeenCalledWith('LLM: Step 2: ');
+            expect(logInfo).toHaveBeenCalledWith('LLM: Update UI');
+        });
+
+        it('should handle empty response gracefully', async () => {
+            mockStreamLLM.mockResolvedValue({ content: '' });
+
+            const orchestrator = new OrchestratorService();
+            const plan = await orchestrator.routeToPlanningAgent('Plan an empty task');
+
+            expect(plan).toBe('');
+            expect(logWarn).toHaveBeenCalledWith('Planning agent returned an empty response.');
+        });
+
+        it('should truncate long plans in logs', async () => {
+            const longPlan = 'A'.repeat(2000);
+            mockStreamLLM.mockResolvedValue({ content: longPlan });
+
+            const orchestrator = new OrchestratorService();
+            const plan = await orchestrator.routeToPlanningAgent('Plan a very long task');
+
+            expect(plan).toBe(longPlan);
+            expect(logInfo).toHaveBeenCalledWith(`Full plan (truncated): ${longPlan.substring(0, 1000)}...`);
         });
     });
 });
