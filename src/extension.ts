@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import { initializeLogger, logInfo, logError, logWarn } from './logger';
 import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange, getTicket } from './services/ticketDb';
-import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
+import { initializeOrchestrator, getOrchestratorInstance, answerQuestion } from './services/orchestrator';
 import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
 import { agentStatusTracker } from './ui/agentStatusTracker';
+import { createChatId } from './agents/answerAgent';
 
 // Module-level status bar item - can be updated from orchestrator
 let statusBarItem: vscode.StatusBarItem | null = null;
@@ -214,19 +215,87 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     const askAnswerAgentCommand = vscode.commands.registerCommand('coe.askAnswerAgent', async () => {
-        logInfo('User triggered: Ask Answer Agent');
+        logInfo('User triggered: Ask Answer Agent (new conversation)');
         try {
-            const orchestratorInstance = getOrchestratorInstance();
-            const response = await orchestratorInstance.routeToAnswerAgent(
-                'Explain what is VS Code extension?'
+            // Prompt user for question
+            const question = await vscode.window.showInputBox({
+                prompt: 'Ask a question to the Answer Agent',
+                placeHolder: 'E.g., How do I create a VS Code extension?'
+            });
+
+            if (!question) {
+                logInfo('Ask Answer Agent cancelled - no question provided');
+                return;
+            }
+
+            // Generate new chat ID for this conversation
+            const chatId = createChatId();
+            logInfo(`Starting new conversation: ${chatId}`);
+
+            // Store chatId in globalState for use in Continue command
+            await context.globalState.update('currentChatId', chatId);
+
+            // Call Answer Agent with new conversation
+            const response = await answerQuestion(question, chatId, false);
+
+            // Display answer
+            vscode.window.showInformationMessage(
+                `Answer: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
             );
-            vscode.window.showInformationMessage(`Answer: ${response.substring(0, 100)}...`);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             logError(`Answer Agent command error: ${message}`);
             vscode.window.showErrorMessage('Answer Agent failed - see logs for details.');
         }
     });
+
+    /**
+     * Command: coe.askAnswerAgentContinue
+     * Asks a follow-up question to the Answer Agent using the same conversation history
+     */
+    const askAnswerAgentContinueCommand = vscode.commands.registerCommand(
+        'coe.askAnswerAgentContinue',
+        async () => {
+            logInfo('User triggered: Ask Answer Agent (continue conversation)');
+            try {
+                // Get chatId from globalState
+                const chatId = context.globalState.get<string>('currentChatId');
+
+                if (!chatId) {
+                    vscode.window.showWarningMessage(
+                        'No active conversation. Start a new one with "Ask Answer Agent" first.'
+                    );
+                    logWarn('Continue command executed without active conversation');
+                    return;
+                }
+
+                // Prompt user for follow-up question
+                const followUpQuestion = await vscode.window.showInputBox({
+                    prompt: 'Ask a follow-up question',
+                    placeHolder: 'E.g., Can you explain that in more detail?'
+                });
+
+                if (!followUpQuestion) {
+                    logInfo('Ask Answer Agent (Continue) cancelled - no question provided');
+                    return;
+                }
+
+                logInfo(`Continuing conversation: ${chatId}`);
+
+                // Call Answer Agent with same chatId (reuses history)
+                const response = await answerQuestion(followUpQuestion, chatId, true);
+
+                // Display answer
+                vscode.window.showInformationMessage(
+                    `Answer: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
+                );
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`Answer Agent continue command error: ${message}`);
+                vscode.window.showErrorMessage('Answer Agent failed - see logs for details.');
+            }
+        }
+    );
 
     /**
      * Command: coe.openTicket
@@ -325,6 +394,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(verifyTaskCommand);
     context.subscriptions.push(verifyLastTicketCommand);
     context.subscriptions.push(askAnswerAgentCommand);
+    context.subscriptions.push(askAnswerAgentContinueCommand);
     context.subscriptions.push(openTicketCommand);
 
     logInfo('Extension fully activated');

@@ -30,6 +30,7 @@ import { listTickets, createTicket } from './ticketDb';
 import { completeLLM, streamLLM } from './llmService';
 import { agentStatusTracker } from '../ui/agentStatusTracker';
 import { updateStatusBar } from '../extension';
+import AnswerAgent from '../agents/answerAgent';
 
 /**
  * System prompt for the Answer agent
@@ -88,6 +89,9 @@ export class OrchestratorService {
 
     // Extension context (needed to read config file)
     private context: vscode.ExtensionContext | null = null;
+
+    // Answer Agent for multi-turn conversations
+    private answerAgent: AnswerAgent | null = null;
 
     /**
      * Initialize the orchestrator service
@@ -515,6 +519,48 @@ export class OrchestratorService {
     }
 
     /**
+     * Answer a question using the Answer Agent with multi-turn support
+     *
+     * Uses the AnswerAgent to maintain conversation history per chatId.
+     * Allows follow-up questions in the same conversation.
+     *
+     * @param question The question to answer
+     * @param chatId Optional chat ID for conversation grouping. If not provided, a new one is generated.
+     * @param isContinue Whether this is a follow-up question (for logging purposes)
+     * @returns Response from Answer Agent
+     */
+    async answerQuestion(
+        question: string,
+        chatId?: string,
+        isContinue?: boolean
+    ): Promise<string> {
+        logInfo(
+            `[Answer] ${isContinue ? 'Continuing' : 'Starting'} conversation${
+                chatId ? ` (${chatId})` : ''
+            }: ${question.substring(0, 50)}...`
+        );
+
+        try {
+            // Lazy initialize AnswerAgent
+            if (!this.answerAgent) {
+                this.answerAgent = new AnswerAgent();
+            }
+
+            // Use AnswerAgent to handle multi-turn conversation
+            const answer = await this.answerAgent.ask(question, chatId);
+
+            logInfo(`[Answer] Response generated`);
+            return answer;
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[Answer] Failed to answer question: ${message}`);
+
+            // Ticket is already created in completeLLM if it was an LLM error
+            return 'LLM service is currently unavailable. A ticket has been created for manual review.';
+        }
+    }
+
+    /**
      * Reset orchestrator state for tests
      * 
      * Clears the task queue and picked tasks to prevent test pollution.
@@ -523,6 +569,7 @@ export class OrchestratorService {
         this.taskQueue = [];
         this.pickedTasks = [];
         this.context = null;
+        this.answerAgent = null;
     }
 }
 
@@ -619,6 +666,25 @@ export function resetOrchestratorForTests(): void {
         orchestratorInstance.resetForTests();
     }
     orchestratorInstance = null;
+}
+
+/**
+ * Answer a question using the Answer Agent with multi-turn support
+ *
+ * @param question The question to answer
+ * @param chatId Optional chat ID for conversation grouping
+ * @param isContinue Whether this is a follow-up question
+ * @returns Response from Answer Agent
+ */
+export async function answerQuestion(
+    question: string,
+    chatId?: string,
+    isContinue?: boolean
+): Promise<string> {
+    if (!orchestratorInstance) {
+        throw new Error('Orchestrator not initialized');
+    }
+    return orchestratorInstance.answerQuestion(question, chatId, isContinue);
 }
 
 export function getOrchestratorInstance(): OrchestratorService {
