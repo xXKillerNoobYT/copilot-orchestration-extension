@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { initializeLogger, logInfo } from './logger';
 import { initializeTicketDb } from './services/ticketDb';
 import { initializeOrchestrator } from './services/orchestrator';
+import { startMCPServer } from './mcpServer/mcpServer';
 
 /**
  * This function is called when the extension is activated.
@@ -18,6 +19,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialize Orchestrator after TicketDb (depends on it)
     await initializeOrchestrator(context);
+
+    // Start MCP server after Orchestrator is ready
+    startMCPServer();
 
     // Keep your existing command and status bar code here
     const helloCommand = vscode.commands.registerCommand('coe.sayHello', () => {
