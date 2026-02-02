@@ -599,6 +599,19 @@ export async function routeToVerificationAgent(
 }
 
 /**
+ * Route a question to the Answer agent
+ * 
+ * @param question The question to answer
+ * @returns Response from Answer agent
+ */
+export async function routeToAnswerAgent(question: string): Promise<string> {
+    if (!orchestratorInstance) {
+        throw new Error('Orchestrator not initialized');
+    }
+    return orchestratorInstance.routeToAnswerAgent(question);
+}
+
+/**
  * Reset orchestrator for tests (clears singleton and queue)
  */
 export function resetOrchestratorForTests(): void {

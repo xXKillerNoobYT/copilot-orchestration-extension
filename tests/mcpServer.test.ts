@@ -295,4 +295,267 @@ describe('MCP Server', () => {
             });
         });
     });
-});
+
+    describe('COE Agent Tool', () => {
+        beforeEach(() => {
+            // Mock orchestrator functions
+            mockOrchestrator.routeToPlanningAgent = jest.fn().mockResolvedValue('Step 1: Design\nStep 2: Implement');
+            mockOrchestrator.routeToVerificationAgent = jest.fn().mockResolvedValue({
+                passed: true,
+                explanation: 'All criteria met successfully'
+            });
+            mockOrchestrator.routeToAnswerAgent = jest.fn().mockResolvedValue('VS Code extensions are powerful tools...');
+        });
+
+        it('should route "plan" command to planning agent', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'plan',
+                    args: { task: 'Add dark mode toggle' }
+                },
+                id: 1
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockOrchestrator.routeToPlanningAgent).toHaveBeenCalledWith('Add dark mode toggle');
+            expect(outputData.length).toBe(1);
+            const response = JSON.parse(outputData[0]);
+            expect(response.result).toContain('Step 1: Design');
+        });
+
+        it('should route "verify" command and format result as PASS/FAIL', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'verify',
+                    args: { task: 'Add feature', code: '+ newFeature: true' }
+                },
+                id: 2
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockOrchestrator.routeToVerificationAgent).toHaveBeenCalledWith('Add feature', '+ newFeature: true');
+            expect(outputData.length).toBe(1);
+            const response = JSON.parse(outputData[0]);
+            expect(response.result).toBe('PASS - All criteria met successfully');
+        });
+
+        it('should format FAIL verification result correctly', async () => {
+            mockOrchestrator.routeToVerificationAgent = jest.fn().mockResolvedValue({
+                passed: false,
+                explanation: 'Missing required tests'
+            });
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'verify',
+                    args: { code: '+ feature: true' }
+                },
+                id: 3
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.result).toBe('FAIL - Missing required tests');
+        });
+
+        it('should route "ask" command to answer agent', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'ask',
+                    args: { question: 'What is a VS Code extension?' }
+                },
+                id: 4
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockOrchestrator.routeToAnswerAgent).toHaveBeenCalledWith('What is a VS Code extension?');
+            expect(outputData.length).toBe(1);
+            const response = JSON.parse(outputData[0]);
+            expect(response.result).toContain('VS Code extensions are');
+        });
+
+        it('should return error for invalid command', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'invalid',
+                    args: {}
+                },
+                id: 5
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.code).toBe(-32602);
+            expect(response.error.message).toContain('Unknown COE command');
+            expect(response.error.message).toContain('plan, verify, ask');
+        });
+
+        it('should return error for missing task arg in plan command', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'plan',
+                    args: {}
+                },
+                id: 6
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.message).toContain('Missing required argument: task');
+        });
+
+        it('should return error for missing code arg in verify command', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'verify',
+                    args: { task: 'Test' }
+                },
+                id: 7
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.message).toContain('Missing required argument: code');
+        });
+
+        it('should return error for missing question arg in ask command', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'ask',
+                    args: {}
+                },
+                id: 8
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.message).toContain('Missing required argument: question');
+        });
+
+        it('should return error for missing args object', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'plan'
+                },
+                id: 9
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.message).toContain('Missing or invalid args object');
+        });
+
+        it('should handle orchestrator errors gracefully', async () => {
+            mockOrchestrator.routeToPlanningAgent = jest.fn().mockRejectedValue(new Error('LLM timeout'));
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'plan',
+                    args: { task: 'Test task' }
+                },
+                id: 10
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.code).toBe(-32603);
+            expect(response.error.message).toContain('COE agent failed');
+            expect(response.error.message).toContain('LLM timeout');
+        });
+
+        it('should use default task description for verify when not provided', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'callCOEAgent',
+                params: {
+                    command: 'verify',
+                    args: { code: '+ test: true' }
+                },
+                id: 11
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockOrchestrator.routeToVerificationAgent).toHaveBeenCalledWith('Verification', '+ test: true');
+        });
+    });});

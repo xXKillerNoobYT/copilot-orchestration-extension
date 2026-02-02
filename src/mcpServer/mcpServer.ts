@@ -3,7 +3,7 @@
 
 import { EventEmitter } from 'events';
 import { logInfo, logError, logWarn } from '../logger';
-import { getNextTask } from '../services/orchestrator';
+import { getNextTask, routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } from '../services/orchestrator';
 
 /**
  * JSON-RPC 2.0 request structure
@@ -116,6 +116,8 @@ export class MCPServer extends EventEmitter {
             // Route to the appropriate tool handler
             if (request.method === 'getNextTask') {
                 this.handleGetNextTask(request);
+            } else if (request.method === 'callCOEAgent') {
+                this.handleCallCOEAgent(request);
             } else {
                 // Method not found error (JSON-RPC error code -32601)
                 this.sendError(request.id || null, -32601, `Method not found: ${request.method}`);
@@ -138,6 +140,96 @@ export class MCPServer extends EventEmitter {
         } catch (error) {
             logError(`MCP server error calling getNextTask: ${error}`);
             this.sendError(request.id || null, -32603, 'Internal error: failed to get next task');
+        }
+    }
+
+    /**
+     * Handle callCOEAgent tool call
+     * Routes command to appropriate COE agent (plan, verify, ask)
+     * 
+     * Beginner explanation: When GitHub Copilot says "Ask COE to plan this",
+     * it sends us a message with command="plan" and we call the planning agent
+     * 
+     * @param request JSON-RPC request with params: { command, args }
+     */
+    private async handleCallCOEAgent(request: JsonRpcRequest): Promise<void> {
+        try {
+            const { command, args } = request.params || {};
+
+            logInfo(`[MCP] COE agent called: command=${command}, args=${JSON.stringify(args || {}).substring(0, 100)}`);
+
+            // Validate command
+            const validCommands = ['plan', 'verify', 'ask'];
+            if (!command || !validCommands.includes(command)) {
+                this.sendError(
+                    request.id || null,
+                    -32602,
+                    `Unknown COE command: ${command}. Valid commands: ${validCommands.join(', ')}`
+                );
+                return;
+            }
+
+            // Validate args object exists
+            if (!args || typeof args !== 'object') {
+                this.sendError(
+                    request.id || null,
+                    -32602,
+                    'Missing or invalid args object'
+                );
+                return;
+            }
+
+            let response: string;
+
+            // Route based on command
+            switch (command) {
+                case 'plan':
+                    // Validate required arg
+                    if (!args.task) {
+                        this.sendError(request.id || null, -32602, 'Missing required argument: task');
+                        return;
+                    }
+                    // Call planning agent
+                    response = await routeToPlanningAgent(args.task);
+                    break;
+
+                case 'verify': {
+                    // Validate required arg
+                    if (!args.code) {
+                        this.sendError(request.id || null, -32602, 'Missing required argument: code');
+                        return;
+                    }
+                    // Call verification agent (task description optional, use args.task or default)
+                    const result = await routeToVerificationAgent(args.task || 'Verification', args.code);
+                    // Format response as string (Copilot expects string, not object)
+                    response = `${result.passed ? 'PASS' : 'FAIL'} - ${result.explanation}`;
+                    break;
+                }
+
+                case 'ask':
+                    // Validate required arg
+                    if (!args.question) {
+                        this.sendError(request.id || null, -32602, 'Missing required argument: question');
+                        return;
+                    }
+                    // Call answer agent
+                    response = await routeToAnswerAgent(args.question);
+                    break;
+
+                default:
+                    // Should never reach here due to validation above
+                    this.sendError(request.id || null, -32602, `Unhandled command: ${command}`);
+                    return;
+            }
+
+            // Send success response
+            this.sendResponse(request.id || null, response);
+            logInfo(`[MCP] COE agent completed: command=${command}, responseLength=${response.length}`);
+
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logError(`[MCP] COE agent error: ${msg}`);
+            this.sendError(request.id || null, -32603, `COE agent failed: ${msg}`);
         }
     }
 
