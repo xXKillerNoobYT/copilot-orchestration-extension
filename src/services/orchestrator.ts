@@ -28,6 +28,8 @@ import * as fs from 'fs';
 import { logInfo, logWarn, logError } from '../logger';
 import { listTickets, createTicket } from './ticketDb';
 import { completeLLM, streamLLM } from './llmService';
+import { agentStatusTracker } from '../ui/agentStatusTracker';
+import { updateStatusBar } from '../extension';
 
 /**
  * System prompt for the Answer agent
@@ -214,6 +216,10 @@ export class OrchestratorService {
     async routeToPlanningAgent(question: string): Promise<string> {
         logInfo(`Routing request to Planning agent: ${question}`);
 
+        // Update UI: mark agent as Active
+        agentStatusTracker.setAgentStatus('Planning', 'Active', '');
+        await updateStatusBar('$(rocket) Planning...');
+
         try {
             const response = await streamLLM(
                 question,
@@ -228,10 +234,17 @@ export class OrchestratorService {
             const fullPlan = response.content;
             if (!fullPlan) {
                 logWarn('Planning agent returned an empty response.');
-            } else if (fullPlan.length > 1000) {
-                logInfo(`Full plan (truncated): ${fullPlan.substring(0, 1000)}...`);
+                agentStatusTracker.setAgentStatus('Planning', 'Failed', 'Empty response');
+                await updateStatusBar('$(rocket) COE Ready');
             } else {
-                logInfo(`Full plan: ${fullPlan}`);
+                if (fullPlan.length > 1000) {
+                    logInfo(`Full plan (truncated): ${fullPlan.substring(0, 1000)}...`);
+                } else {
+                    logInfo(`Full plan: ${fullPlan}`);
+                }
+                // Update UI: mark agent as Waiting, store plan as result
+                agentStatusTracker.setAgentStatus('Planning', 'Waiting', fullPlan.substring(0, 100));
+                await updateStatusBar('$(rocket) COE Ready');
             }
 
             return fullPlan;
@@ -239,6 +252,8 @@ export class OrchestratorService {
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             logError(`Planning agent failed: ${message}`);
+            agentStatusTracker.setAgentStatus('Planning', 'Failed', message.substring(0, 100));
+            await updateStatusBar('$(rocket) COE Ready');
             return 'Planning service is currently unavailable. A ticket has been created for manual review.';
         }
     }
@@ -253,10 +268,16 @@ export class OrchestratorService {
         taskDescription: string,
         codeDiff: string
     ): Promise<{ passed: boolean; explanation: string }> {
+        // Update UI: mark agent as Active
+        agentStatusTracker.setAgentStatus('Verification', 'Active', '');
+        await updateStatusBar('$(rocket) Verifying...');
+
         const trimmedDiff = codeDiff.trim();
         if (!trimmedDiff) {
             const explanation = 'No code diff provided for verification.';
             logWarn(explanation);
+            agentStatusTracker.setAgentStatus('Verification', 'Waiting', 'FAIL - No diff');
+            await updateStatusBar('$(rocket) COE Ready');
             await createTicket({
                 title: `VERIFICATION FAILED: ${taskDescription || 'Unknown Task'}`,
                 status: 'blocked',
@@ -298,6 +319,11 @@ export class OrchestratorService {
                 : explanation;
             logInfo(`Verification: ${passed ? 'PASS' : 'FAIL'} - ${logExplanation}`);
 
+            // Update UI: mark agent as Waiting, store result
+            const resultText = `${passed ? 'PASS' : 'FAIL'} - ${explanation.substring(0, 80)}`;
+            agentStatusTracker.setAgentStatus('Verification', 'Waiting', resultText);
+            await updateStatusBar(passed ? '$(rocket) ✓ Verified' : '$(rocket) ⚠ Needs Review');
+
             if (!passed) {
                 await createTicket({
                     title: `VERIFICATION FAILED: ${taskDescription || 'Unknown Task'}`,
@@ -310,6 +336,8 @@ export class OrchestratorService {
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             logError(`Verification agent failed: ${message}`);
+            agentStatusTracker.setAgentStatus('Verification', 'Failed', message.substring(0, 100));
+            await updateStatusBar('$(rocket) COE Ready');
             return {
                 passed: false,
                 explanation: 'Verification failed due to an LLM error. See logs for details.'

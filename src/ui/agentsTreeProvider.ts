@@ -9,11 +9,25 @@
  */
 
 import * as vscode from 'vscode';
+import { agentStatusTracker } from './agentStatusTracker';
+import { onTicketChange } from '../services/ticketDb';
+import { logError } from '../logger';
 
 export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     // EventEmitter for notifying VS Code when tree data changes (triggers refresh)
     private _onDidChangeTreeData = new vscode.EventEmitter<void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+    constructor() {
+        // Subscribe to ticket changes to refresh agent status display
+        try {
+            onTicketChange(() => {
+                this.refresh();
+            });
+        } catch (err) {
+            logError(`[AgentsTreeProvider] Failed to subscribe to ticket changes: ${err}`);
+        }
+    }
 
     /**
      * getTreeItem returns the TreeItem as-is (required by TreeDataProvider interface)
@@ -26,6 +40,7 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
     /**
      * getChildren returns the list of agents to display
      * Called when VS Code needs to populate the tree view
+     * Queries live agent status from the tracker
      * @param element Optional parent element (not used for flat lists)
      */
     getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
@@ -34,33 +49,43 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
             return [];
         }
 
-        // Static hardcoded agents for MVP
-        return [
-            this.createAgentItem(
-                'Planning',
-                'Active',
-                'Planning agent is actively generating plans',
-                new vscode.ThemeIcon('pulse', new vscode.ThemeColor('testing.iconPassed'))
-            ),
-            this.createAgentItem(
-                'Orchestrator',
-                'Ready',
-                'Orchestrator is ready to route tasks',
-                new vscode.ThemeIcon('gear')
-            ),
-            this.createAgentItem(
-                'Answer',
-                'Idle',
-                'Answer agent is idle, waiting for questions',
-                new vscode.ThemeIcon('comment')
-            ),
-            this.createAgentItem(
-                'Verification',
-                'Waiting',
-                'Verification agent is waiting for work',
-                new vscode.ThemeIcon('check')
-            ),
-        ];
+        // Query live agent status from tracker instead of hardcoded values
+        const agentNames = ['Planning', 'Orchestrator', 'Answer', 'Verification'];
+        return agentNames.map(name => {
+            const status = agentStatusTracker.getAgentStatus(name);
+            const statusText = status?.status || 'Idle';
+            const lastResult = status?.lastResult || '';
+
+            // Build description: "{status}, Last: {result}" or just "{status}"
+            const description = lastResult
+                ? `${statusText}, Last: ${lastResult.substring(0, 50)}${lastResult.length > 50 ? '...' : ''}`
+                : statusText;
+
+            // Map status to appropriate icon
+            let icon: vscode.ThemeIcon;
+            switch (statusText) {
+                case 'Active':
+                    icon = new vscode.ThemeIcon('sync~spin', new vscode.ThemeColor('testing.iconPassed'));
+                    break;
+                case 'Waiting':
+                    icon = new vscode.ThemeIcon('check');
+                    break;
+                case 'Failed':
+                    icon = new vscode.ThemeIcon('error');
+                    break;
+                case 'Idle':
+                default:
+                    icon = new vscode.ThemeIcon('circle-outline');
+                    break;
+            }
+
+            // Additional tooltip info
+            const tooltip = lastResult
+                ? `${name}: ${statusText}\nLast: ${lastResult}\nUpdated: ${new Date(status?.timestamp || 0).toLocaleTimeString()}`
+                : `${name}: ${statusText}`;
+
+            return this.createAgentItem(name, description, tooltip, icon);
+        });
     }
 
     /**

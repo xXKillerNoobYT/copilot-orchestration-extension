@@ -86,18 +86,33 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
 
     /**
      * Helper to create a TreeItem for a ticket
+     * Now includes plan preview extracted from ticket.description
      * @param ticket The ticket data from database
      */
     private createTicketItem(ticket: Ticket): vscode.TreeItem {
         // TreeItem label = ticket title
         const item = new vscode.TreeItem(ticket.title, vscode.TreeItemCollapsibleState.None);
 
-        // Description = status + createdAt date (shows to the right of the label)
-        const createdDate = new Date(ticket.createdAt).toLocaleDateString();
-        item.description = `${ticket.status} • ${createdDate}`;
+        // Extract plan preview from description (200 char limit)
+        let planPreview = '—';
+        if (ticket.description) {
+            // Clean whitespace: replace newlines/tabs/carriage returns with spaces
+            const cleaned = ticket.description.replace(/[\r\n\t]/g, ' ').trim();
+            // Take first 200 chars
+            planPreview = cleaned.substring(0, 200);
+            // Append "..." if original was longer
+            if (cleaned.length > 200) {
+                planPreview += '...';
+            }
+        }
 
-        // Tooltip = full ticket JSON for debugging (hover text)
-        item.tooltip = JSON.stringify(ticket, null, 2);
+        // Description = status + createdAt date + plan preview (shows to the right of the label)
+        const createdDate = new Date(ticket.createdAt).toLocaleDateString();
+        item.description = `${ticket.status} • ${createdDate} • Plan: ${planPreview}`;
+
+        // Tooltip = full ticket data for debugging (user hovers to read full plan)
+        // Include full description so users can hover to see complete plan text
+        item.tooltip = ticket.description || 'No plan stored yet';
 
         // Icon = status-based ThemeIcon
         item.iconPath = this.getIconForStatus(ticket.status);

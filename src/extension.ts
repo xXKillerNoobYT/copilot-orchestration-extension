@@ -6,6 +6,26 @@ import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
+import { agentStatusTracker } from './ui/agentStatusTracker';
+
+// Module-level status bar item - can be updated from orchestrator
+let statusBarItem: vscode.StatusBarItem | null = null;
+
+/**
+ * Update the status bar with new text and optional tooltip.
+ * Called by orchestrator when planning/verification starts/completes.
+ * 
+ * **Simple explanation**: Status bar is like an elevator floor display.
+ * We update the text to show current agent status (Planning..., Verifying..., Ready).
+ */
+export async function updateStatusBar(text: string, tooltip?: string): Promise<void> {
+    if (statusBarItem) {
+        statusBarItem.text = text;
+        if (tooltip) {
+            statusBarItem.tooltip = tooltip;
+        }
+    }
+}
 
 /**
  * Setup auto-planning listener
@@ -19,20 +39,23 @@ async function setupAutoPlanning(): Promise<void> {
             if (tickets.length === 0) return;
 
             const lastTicket = tickets[0]; // listTickets returns DESC by createdAt
-            
+
             // Only auto-plan if type is 'ai_to_human' and status is 'open'
             if (lastTicket.type === 'ai_to_human' && lastTicket.status === 'open') {
                 logInfo(`[Auto-Plan] Detected new ai_to_human ticket: ${lastTicket.id}`);
-                
+
+                // Reset agent statuses when new planning cycle starts
+                agentStatusTracker.resetAll();
+
                 // Call planning agent
                 const orchestrator = getOrchestratorInstance();
                 const plan = await orchestrator.routeToPlanningAgent(lastTicket.title);
-                
+
                 // Store plan in ticket description
-                await updateTicket(lastTicket.id, { 
-                    description: plan 
+                await updateTicket(lastTicket.id, {
+                    description: plan
                 });
-                
+
                 logInfo(`[Auto-Plan] DONE - Plan stored in ${lastTicket.id}`);
             }
         } catch (error: unknown) {
@@ -51,12 +74,12 @@ async function handleVerifyLastTicket(): Promise<void> {
     try {
         // Get all tickets
         const tickets = await listTickets();
-        
+
         // Find last open or in-progress ticket
         const lastOpenTicket = tickets.find(
             t => t.status === 'open' || t.status === 'in-progress'
         );
-        
+
         if (!lastOpenTicket) {
             logWarn('[Verify] No open ticket found');
             vscode.window.showInformationMessage(
@@ -64,26 +87,26 @@ async function handleVerifyLastTicket(): Promise<void> {
             );
             return;
         }
-        
+
         logInfo(`[Verify] Checking ticket ${lastOpenTicket.id}`);
-        
+
         // Get plan from ticket description (or use title if no plan)
         const plan = lastOpenTicket.description || lastOpenTicket.title;
-        
+
         // Fake diff for demo
         const fakeDiff = `
 + Feature: ${lastOpenTicket.title}
 - Status: Blocked
 + Status: Verified
         `.trim();
-        
+
         // Call verification agent
         const orchestrator = getOrchestratorInstance();
         const result = await orchestrator.routeToVerificationAgent(
             plan,
             fakeDiff
         );
-        
+
         // Update ticket status based on result
         if (result.passed) {
             await updateTicket(lastOpenTicket.id, { status: 'done' });
@@ -217,7 +240,8 @@ export async function activate(context: vscode.ExtensionContext) {
         logInfo('User ran COE: Say Hello');
     });
 
-    const statusBarItem = vscode.window.createStatusBarItem(
+    // Initialize status bar item at module level
+    statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Right,
         100
     );

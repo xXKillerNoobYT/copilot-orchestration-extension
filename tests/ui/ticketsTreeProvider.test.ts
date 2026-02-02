@@ -178,12 +178,13 @@ describe('TicketsTreeDataProvider', () => {
             expect(items[0].description).toContain('•');
         });
 
-        it('should include full ticket JSON in tooltip', async () => {
+        it('should include full ticket description in tooltip for hover-to-read', async () => {
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
                     title: 'Test ticket',
                     status: 'open',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
                 },
@@ -193,9 +194,8 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].tooltip).toContain('TICKET-001');
-            expect(items[0].tooltip).toContain('Test ticket');
-            expect(items[0].tooltip).toContain('open');
+            // Tooltip should contain full description for hover-to-read functionality
+            expect(items[0].tooltip).toBe('Step 1: Design\nStep 2: Implement\nStep 3: Test');
         });
 
         it('should use correct icons for different statuses', async () => {
@@ -239,6 +239,222 @@ describe('TicketsTreeDataProvider', () => {
             const result = provider.getTreeItem(testItem);
 
             expect(result).toBe(testItem);
+        });
+    });
+
+    describe('plan preview extraction from description', () => {
+        it('should extract plan preview from ticket.description', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Add dark mode',
+                    status: 'open',
+                    description: 'Step 1: Design component\nStep 2: Add styles\nStep 3: Test',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            expect(items[0].description).toContain('Plan:');
+            expect(items[0].description).toContain('Step 1: Design component Step 2: Add styles Step 3: Test');
+        });
+
+        it('should truncate plan preview to 200 characters', async () => {
+            const longPlan = 'Step 1: ' + 'A'.repeat(250);
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Long plan',
+                    status: 'open',
+                    description: longPlan,
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+            const desc = items[0].description as string;
+
+            // Should include "..."
+            expect(desc).toContain('...');
+            // Preview part should not be longer than ~220 chars (200 + "Plan: " + "...")
+            expect(desc.length).toBeLessThan(250);
+        });
+
+        it('should handle exactly 200 character plan without ellipsis', async () => {
+            const plan200 = 'A'.repeat(200);
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Exact 200',
+                    status: 'open',
+                    description: plan200,
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+            const desc = items[0].description as string;
+
+            // Should include 200 chars but NOT "..."
+            expect(desc).toContain('A'.repeat(200));
+            // The preview itself shouldn't have "..." at the end if it's exactly 200
+            const previewPart = desc.split('Plan: ')[1];
+            if (previewPart && previewPart.length > 200) {
+                expect(previewPart).toContain('...');
+            }
+        });
+
+        it('should clean whitespace in plan preview', async () => {
+            const multilinePlan = 'Step 1: Design\nStep 2: Code\tStep 3: Test\r\nStep 4: Review';
+           const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Multiline',
+                    status: 'open',
+                    description: multilinePlan,
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+            const desc = items[0].description as string;
+
+            // Newlines, tabs, carriage returns should be replaced with spaces
+            expect(desc).not.toContain('\n');
+            expect(desc).not.toContain('\r');
+            expect(desc).not.toContain('\t');
+            // Should have clean single-line format
+            expect(desc).toContain('Step 1: Design Step 2: Code Step 3: Test');
+        });
+
+        it('should show "—" when no description', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'No plan yet',
+                    status: 'open',
+                    description: undefined,
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            expect(items[0].description).toContain('—');
+        });
+
+        it('should show "—" when description is empty string', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Empty plan',
+                    status: 'open',
+                    description: '',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            expect(items[0].description).toContain('—');
+        });
+
+        it('should set tooltip to full description for hover-to-read', async () => {
+            const fullDescription = 'Step 1: Design\nStep 2: Implement\nStep 3: Test\nStep 4: Deploy';
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Full plan',
+                    status: 'open',
+                    description: fullDescription,
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            // Tooltip should have full description so users can hover to see complete plan
+            expect(items[0].tooltip).toBe(fullDescription);
+        });
+
+        it('should set tooltip to "No plan stored yet" when no description', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'No plan',
+                    status: 'open',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            expect(items[0].tooltip).toBe('No plan stored yet');
+        });
+
+        it('should handle multiple tickets with different plan lengths', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Short plan',
+                    status: 'open',
+                    description: 'Quick task',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+                {
+                    id: 'TICKET-002',
+                    title: 'Long plan',
+                    status: 'open',
+                    description: 'A'.repeat(300),
+                    createdAt: '2026-02-01T11:00:00Z',
+                    updatedAt: '2026-02-01T11:00:00Z',
+                },
+                {
+                    id: 'TICKET-003',
+                    title: 'No plan',
+                    status: 'open',
+                    createdAt: '2026-02-01T12:00:00Z',
+                    updatedAt: '2026-02-01T12:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            expect(items).toHaveLength(3);
+            // Short should be included as-is
+            expect(items[0].description).toContain('Quick task');
+            // Long should be truncated with "..."
+            expect(items[1].description).toContain('...');
+            // No plan should show "—"
+            expect(items[2].description).toContain('—');
         });
     });
 
