@@ -98,7 +98,7 @@ describe('AgentStatusTracker', () => {
 
         it('should truncate result in logs to 50 chars', () => {
             jest.clearAllMocks(); // Clear beforeEach logs to isolate this test
-            
+
             const longResult = 'This is a very long result that exceeds fifty characters';
             agentStatusTracker.setAgentStatus('Answer', 'Waiting', longResult);
 
@@ -110,7 +110,7 @@ describe('AgentStatusTracker', () => {
 
         it('should not include result in log if undefined', () => {
             jest.clearAllMocks(); // Clear beforeEach logs to isolate this test
-            
+
             agentStatusTracker.setAgentStatus('Planning', 'Idle');
 
             // Check the last log call (not resetAll from beforeEach)
@@ -256,10 +256,10 @@ describe('AgentStatusTracker', () => {
 
         it('should return copy of internal map (not reference)', () => {
             const snapshot1 = agentStatusTracker.getAllStatuses();
-            
+
             // Update an agent
             agentStatusTracker.setAgentStatus('Planning', 'Active', 'Work');
-            
+
             const snapshot2 = agentStatusTracker.getAllStatuses();
 
             // Snapshots should be identical at time of call but independent
