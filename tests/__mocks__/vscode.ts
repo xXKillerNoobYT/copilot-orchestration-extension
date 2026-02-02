@@ -106,11 +106,11 @@ export class ExtensionContext {
     onDidChange: jest.fn(),
     canSendRequest: jest.fn(),
   };
-  
+
   asAbsolutePath(relativePath: string): string {
     return `/mock/extension/path/${relativePath}`;
   }
-  
+
   constructor(extensionPath?: string) {
     if (extensionPath) {
       this.extensionPath = extensionPath;
