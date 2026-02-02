@@ -896,7 +896,8 @@ describe('TicketDb', () => {
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: initDouble, resetTicketDbForTests: resetDouble } = require('../src/services/ticketDb');
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { initializeTicketDb: initDouble } = require('../src/services/ticketDb');
             
             // Act: Initialize twice
             await initDouble(mockContext);
