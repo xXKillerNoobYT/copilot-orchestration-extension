@@ -13,14 +13,15 @@ import {
     initializeOrchestrator,
     getNextTask,
     routeQuestionToAnswer,
-    resetOrchestratorForTests,
-    Task
+    routeToVerificationAgent,
+    getOrchestratorInstance,
+    resetOrchestratorForTests
 } from '../src/services/orchestrator';
 import * as ticketDb from '../src/services/ticketDb';
 import { completeLLM } from '../src/services/llmService';
 import { streamLLM } from '../src/services/llmService';
 import { OrchestratorService } from '../src/services/orchestrator';
-import { logInfo, logWarn } from '../src/logger';
+import { logInfo, logWarn, logError } from '../src/logger';
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
 
@@ -489,6 +490,172 @@ describe('Orchestrator Service', () => {
 
             expect(plan).toBe(longPlan);
             expect(logInfo).toHaveBeenCalledWith(`Full plan (truncated): ${longPlan.substring(0, 1000)}...`);
+        });
+    });
+
+    describe('routeToVerificationAgent', () => {
+        const mockCompleteLLM = completeLLM as jest.MockedFunction<typeof completeLLM>;
+
+        beforeEach(async () => {
+            mockFs.existsSync.mockReturnValue(false);
+            mockTicketDb.listTickets.mockResolvedValue([]);
+            await initializeOrchestrator(mockContext);
+            jest.clearAllMocks();
+        });
+
+        it('should call completeLLM with verification system prompt', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'PASS - All criteria met',
+                usage: undefined
+            });
+
+            const result = await routeToVerificationAgent('Add dark mode toggle', '+ darkMode: true');
+
+            expect(mockCompleteLLM).toHaveBeenCalledWith(
+                expect.stringContaining('Add dark mode toggle'),
+                expect.objectContaining({
+                    systemPrompt: expect.stringContaining('Verification agent')
+                })
+            );
+            expect(result.passed).toBe(true);
+        });
+
+        it('should parse PASS response and avoid ticket creation', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'PASS - All criteria met',
+                usage: undefined
+            });
+
+            const result = await routeToVerificationAgent('Add dark mode toggle', '+ darkMode: true');
+
+            expect(result.passed).toBe(true);
+            expect(result.explanation).toBe('All criteria met');
+            expect(mockTicketDb.createTicket).not.toHaveBeenCalled();
+        });
+
+        it('should parse FAIL response and create blocked ticket', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'FAIL - Missing status bar icon toggle',
+                usage: undefined
+            });
+
+            const result = await routeToVerificationAgent('Add dark mode toggle', '+ darkMode: true');
+
+            expect(result.passed).toBe(false);
+            expect(result.explanation).toBe('Missing status bar icon toggle');
+            expect(mockTicketDb.createTicket).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    status: 'blocked',
+                    title: expect.stringContaining('VERIFICATION FAILED')
+                })
+            );
+        });
+
+        it('should default to FAIL on ambiguous response', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Needs review before approval',
+                usage: undefined
+            });
+
+            const result = await routeToVerificationAgent('Add dark mode toggle', '+ darkMode: true');
+
+            expect(result.passed).toBe(false);
+            expect(result.explanation).toContain('Ambiguous response');
+            expect(logWarn).toHaveBeenCalled();
+        });
+
+        it('should truncate long explanations in logs', async () => {
+            const longExplanation = 'PASS - ' + 'A'.repeat(250);
+            mockCompleteLLM.mockResolvedValue({
+                content: longExplanation,
+                usage: undefined
+            });
+
+            await routeToVerificationAgent('Add dark mode toggle', '+ darkMode: true');
+
+            expect(logInfo).toHaveBeenCalledWith(
+                expect.stringContaining(`${'A'.repeat(200)}...`)
+            );
+        });
+
+        it('should fail fast when code diff is empty', async () => {
+            const result = await routeToVerificationAgent('Add dark mode toggle', '   ');
+
+            expect(result.passed).toBe(false);
+            expect(result.explanation).toBe('No code diff provided for verification.');
+            expect(mockCompleteLLM).not.toHaveBeenCalled();
+            expect(mockTicketDb.createTicket).toHaveBeenCalled();
+        });
+
+        it('should handle LLM errors without creating duplicate tickets', async () => {
+            mockCompleteLLM.mockRejectedValue(new Error('Timeout'));
+
+            const result = await routeToVerificationAgent('Add dark mode toggle', '+ darkMode: true');
+
+            expect(result.passed).toBe(false);
+            expect(result.explanation).toContain('Verification failed');
+            expect(mockTicketDb.createTicket).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Planning Agent', () => {
+        it('should stream plan chunks to logs via callback', async () => {
+            // Setup: Mock streamLLM to call callback for each chunk
+            const chunks = ['Step 1: ', 'Design component\n', 'Step 2: ', 'Implement UI\n'];
+            const mockStreamCallback = jest.fn();
+
+            (streamLLM as jest.Mock).mockImplementation(
+                (prompt, callback) => {
+                    chunks.forEach(chunk => callback(chunk));
+                    return Promise.resolve({ content: chunks.join('') });
+                }
+            );
+
+            // Initialize orchestrator first
+            await initializeOrchestrator(mockContext);
+
+            // Get instance and call planning agent
+            const orchestrator = getOrchestratorInstance();
+            const plan = await orchestrator.routeToPlanningAgent('Add dark mode toggle');
+
+            // Verify: streamLLM was called with callback
+            expect(streamLLM).toHaveBeenCalledWith(
+                'Add dark mode toggle',
+                expect.any(Function),
+                expect.objectContaining({
+                    systemPrompt: expect.stringContaining('Planning agent')
+                })
+            );
+
+            // Verify: plan returned as result
+            expect(plan).toContain('Step 1');
+            expect(plan).toContain('Step 2');
+        });
+
+        it('should handle empty plan response', async () => {
+            (streamLLM as jest.Mock).mockResolvedValue({ content: '' });
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const plan = await orchestrator.routeToPlanningAgent('Test task');
+
+            expect(plan).toBe('');
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('Planning agent returned an empty response')
+            );
+        });
+
+        it('should handle planning timeout by returning fallback message', async () => {
+            (streamLLM as jest.Mock).mockRejectedValue(new Error('Request timeout'));
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const plan = await orchestrator.routeToPlanningAgent('Test task');
+
+            expect(plan).toContain('Planning service is currently unavailable');
+            expect(logError).toHaveBeenCalledWith(
+                expect.stringContaining('Planning agent failed')
+            );
         });
     });
 });

@@ -27,6 +27,18 @@
             {
                 "command": "coe.refreshTickets",
                 "title": "COE: Refresh Tickets"
+            },
+            {
+                "command": "coe.planTask",
+                "title": "COE: Plan Task"
+            },
+            {
+                "command": "coe.verifyTask",
+                "title": "COE: Verify Task"
+            },
+            {
+                "command": "coe.verifyLastTicket",
+                "title": "COE: Verify Last Ticket"
             }
         ],
         "viewsContainers": {

@@ -25,6 +25,7 @@ export interface Ticket {
     id: string;           // Unique ID (e.g., "TICKET-001")
     title: string;        // Short description
     status: 'open' | 'in-progress' | 'done' | 'blocked';
+    type?: 'ai_to_human' | 'human_to_ai'; // Optional ticket type for routing
     createdAt: string;    // ISO timestamp (e.g., "2026-02-01T10:30:00Z")
     updatedAt: string;    // ISO timestamp
     description?: string; // Optional long description
@@ -91,6 +92,7 @@ class TicketDatabase {
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
                     status TEXT NOT NULL,
+                    type TEXT,
                     createdAt TEXT NOT NULL,
                     updatedAt TEXT NOT NULL,
                     description TEXT
@@ -159,6 +161,7 @@ class TicketDatabase {
             id,
             title: data.title,
             status: data.status,
+            type: data.type,
             description: data.description,
             createdAt: now,
             updatedAt: now,
@@ -168,9 +171,9 @@ class TicketDatabase {
             this.inMemoryStore!.set(id, ticket);
         } else {
             await this.runSQL(
-                `INSERT INTO tickets (id, title, status, description, createdAt, updatedAt)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [ticket.id, ticket.title, ticket.status, ticket.description || null, ticket.createdAt, ticket.updatedAt]
+                `INSERT INTO tickets (id, title, status, type, description, createdAt, updatedAt)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [ticket.id, ticket.title, ticket.status, ticket.type || null, ticket.description || null, ticket.createdAt, ticket.updatedAt]
             );
         }
 
@@ -240,6 +243,7 @@ class TicketDatabase {
             id: row.id,
             title: row.title,
             status: row.status,
+            type: row.type || undefined,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
             description: row.description || undefined,

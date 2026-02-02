@@ -1,11 +1,110 @@
 import * as vscode from 'vscode';
-import { initializeLogger, logInfo } from './logger';
-import { initializeTicketDb, createTicket, updateTicket } from './services/ticketDb';
-import { initializeOrchestrator, routeQuestionToAnswer, getOrchestratorInstance } from './services/orchestrator';
+import { initializeLogger, logInfo, logError, logWarn } from './logger';
+import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange } from './services/ticketDb';
+import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
 import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
+
+/**
+ * Setup auto-planning listener
+ * Triggers Planning Agent when a new ai_to_human ticket is created
+ */
+async function setupAutoPlanning(): Promise<void> {
+    onTicketChange(async () => {
+        try {
+            // Fetch all tickets, get last created
+            const tickets = await listTickets();
+            if (tickets.length === 0) return;
+
+            const lastTicket = tickets[0]; // listTickets returns DESC by createdAt
+            
+            // Only auto-plan if type is 'ai_to_human' and status is 'open'
+            if (lastTicket.type === 'ai_to_human' && lastTicket.status === 'open') {
+                logInfo(`[Auto-Plan] Detected new ai_to_human ticket: ${lastTicket.id}`);
+                
+                // Call planning agent
+                const orchestrator = getOrchestratorInstance();
+                const plan = await orchestrator.routeToPlanningAgent(lastTicket.title);
+                
+                // Store plan in ticket description
+                await updateTicket(lastTicket.id, { 
+                    description: plan 
+                });
+                
+                logInfo(`[Auto-Plan] DONE - Plan stored in ${lastTicket.id}`);
+            }
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logError(`[Auto-Plan] Failed: ${msg}`);
+        }
+    });
+    logInfo('[Auto-Plan] Listener registered');
+}
+
+/**
+ * Handle "COE: Verify Last Ticket" command
+ * Finds last open/in-progress ticket and runs verification
+ */
+async function handleVerifyLastTicket(): Promise<void> {
+    try {
+        // Get all tickets
+        const tickets = await listTickets();
+        
+        // Find last open or in-progress ticket
+        const lastOpenTicket = tickets.find(
+            t => t.status === 'open' || t.status === 'in-progress'
+        );
+        
+        if (!lastOpenTicket) {
+            logWarn('[Verify] No open ticket found');
+            vscode.window.showInformationMessage(
+                'COE: No open ticket to verify. Create one first.'
+            );
+            return;
+        }
+        
+        logInfo(`[Verify] Checking ticket ${lastOpenTicket.id}`);
+        
+        // Get plan from ticket description (or use title if no plan)
+        const plan = lastOpenTicket.description || lastOpenTicket.title;
+        
+        // Fake diff for demo
+        const fakeDiff = `
++ Feature: ${lastOpenTicket.title}
+- Status: Blocked
++ Status: Verified
+        `.trim();
+        
+        // Call verification agent
+        const orchestrator = getOrchestratorInstance();
+        const result = await orchestrator.routeToVerificationAgent(
+            plan,
+            fakeDiff
+        );
+        
+        // Update ticket status based on result
+        if (result.passed) {
+            await updateTicket(lastOpenTicket.id, { status: 'done' });
+            logInfo(`[INFO] Ticket ${lastOpenTicket.id} verified DONE`);
+            vscode.window.showInformationMessage(
+                `✅ Ticket ${lastOpenTicket.id} verified: ${result.explanation}`
+            );
+        } else {
+            // Keep status as 'blocked'
+            await updateTicket(lastOpenTicket.id, { status: 'blocked' });
+            logInfo(`[INFO] Ticket ${lastOpenTicket.id} verification FAILED`);
+            vscode.window.showWarningMessage(
+                `❌ Ticket ${lastOpenTicket.id} failed verification: ${result.explanation}`
+            );
+        }
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logError(`[Verify] Error: ${msg}`);
+        vscode.window.showErrorMessage(`Verification failed: ${msg}`);
+    }
+}
 
 /**
  * This function is called when the extension is activated.
@@ -28,6 +127,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Start MCP server after Orchestrator is ready
     startMCPServer();
+
+    // Setup auto-planning listener for ai_to_human tickets
+    await setupAutoPlanning();
 
     // Initialize TreeView providers for sidebar (Agents and Tickets tabs)
     // AgentsTreeDataProvider = static hardcoded agent list
@@ -58,25 +160,50 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`Plan generated: ${plan.substring(0, 50)}...`);
     });
 
-    // TEMP TEST CODE - Remove after verification of auto-refresh
-    /* setTimeout(async () => {
-        const newTicket = await createTicket({
-            title: 'Test Ticket for Refresh',
-            status: 'open'
-        });
-        logInfo(`Created test ticket ${newTicket.id} - sidebar should auto-refresh now`);
-        
-        // Wait 3 seconds, then update the ticket status
-        setTimeout(async () => {
-            await updateTicket(newTicket.id, { status: 'in-progress' });
-            logInfo(`Updated test ticket - sidebar should refresh again`);
-        }, 3000);
-    }, 5000); 
+    const verifyTaskCommand = vscode.commands.registerCommand('coe.verifyTask', async () => {
+        logInfo('User triggered: Verify Task');
 
-     setTimeout(async () => {
-    const answer = await routeQuestionToAnswer("Explain what a VS Code extension is in simple terms.");
-    console.log("LLM ANSWER:", answer);
-}, 3000); */
+        const taskDescription = 'Add dark mode toggle. Success criteria: config flag added, status bar icon toggles.';
+        const codeDiff = '+ darkMode: true in config.json';
+
+        try {
+            const orchestratorInstance = getOrchestratorInstance();
+            const result = await orchestratorInstance.routeToVerificationAgent(taskDescription, codeDiff);
+
+            if (!result.passed) {
+                vscode.window.showErrorMessage(`Verification FAILED: ${result.explanation}`);
+            } else {
+                vscode.window.showInformationMessage(`Verification PASSED: ${result.explanation}`);
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Verification command error: ${message}`);
+            vscode.window.showErrorMessage('Verification failed - see logs for details.');
+        }
+    });
+
+    const verifyLastTicketCommand = vscode.commands.registerCommand(
+        'coe.verifyLastTicket',
+        async () => {
+            logInfo('[Verify] User triggered: Verify Last Ticket');
+            await handleVerifyLastTicket();
+        }
+    );
+
+    // TEMP TEST CODE - Creates an ai_to_human ticket to trigger auto-planning
+    setTimeout(async () => {
+        try {
+            const testTicket = await createTicket({
+                title: 'Add dark mode toggle',
+                type: 'ai_to_human',
+                status: 'open'
+            });
+            logInfo(`[TEST] Created ticket: ${testTicket.id} - auto-planning should trigger`);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logError(`[TEST] Failed to create test ticket: ${msg}`);
+        }
+    }, 2000);
 
     // OPTIONAL ERROR TEST - Uncomment to test error handling in sidebar
     // To test: Add this line at the start of listTickets() in ticketDb.ts:
@@ -108,6 +235,8 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(refreshAgentsCommand);
     context.subscriptions.push(refreshTicketsCommand);
     context.subscriptions.push(planTaskCommand);
+    context.subscriptions.push(verifyTaskCommand);
+    context.subscriptions.push(verifyLastTicketCommand);
 
     logInfo('Extension fully activated');
 }

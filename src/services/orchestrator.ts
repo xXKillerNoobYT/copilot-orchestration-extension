@@ -26,7 +26,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logInfo, logWarn, logError } from '../logger';
-import { listTickets, createTicket, Ticket } from './ticketDb';
+import { listTickets, createTicket } from './ticketDb';
 import { completeLLM, streamLLM } from './llmService';
 
 /**
@@ -40,6 +40,12 @@ const ANSWER_SYSTEM_PROMPT = "You are an Answer agent in a coding orchestration 
  * Tells the LLM how to break down coding tasks into atomic steps
  */
 const PLANNING_SYSTEM_PROMPT = "You are a Planning agent. Break coding tasks into small atomic steps (15-25 min each), number them, include file names to modify/create, and add 1-sentence success criteria per step.";
+
+/**
+ * Verification system prompt for the Verification agent
+ * Tells the LLM to check if code matches task success criteria
+ */
+const VERIFICATION_SYSTEM_PROMPT = "You are a Verification agent. Check if the code meets the task success criteria. Return only: PASS or FAIL, then 1-2 sentence explanation. Be strict.";
 
 /**
  * Task interface - represents a work item in the queue
@@ -187,8 +193,9 @@ export class OrchestratorService {
             logInfo('Answer agent response received');
             return response.content;
 
-        } catch (error: any) {
-            logError(`Answer agent failed: ${error.message}`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Answer agent failed: ${message}`);
 
             // Ticket is already created in completeLLM, just return fallback
             return 'LLM service is currently unavailable. A ticket has been created for manual review.';
@@ -229,9 +236,84 @@ export class OrchestratorService {
 
             return fullPlan;
 
-        } catch (error: any) {
-            logError(`Planning agent failed: ${error.message}`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Planning agent failed: ${message}`);
             return 'Planning service is currently unavailable. A ticket has been created for manual review.';
+        }
+    }
+
+    /**
+     * Route a task to the Verification agent
+     *
+     * Combines task description + code diff, then asks the LLM to verify.
+     * Returns pass/fail plus a short explanation.
+     */
+    async routeToVerificationAgent(
+        taskDescription: string,
+        codeDiff: string
+    ): Promise<{ passed: boolean; explanation: string }> {
+        const trimmedDiff = codeDiff.trim();
+        if (!trimmedDiff) {
+            const explanation = 'No code diff provided for verification.';
+            logWarn(explanation);
+            await createTicket({
+                title: `VERIFICATION FAILED: ${taskDescription || 'Unknown Task'}`,
+                status: 'blocked',
+                description: `Explanation: ${explanation}\n\nCode diff:\n${codeDiff}`
+            });
+            return { passed: false, explanation };
+        }
+
+        const verificationPrompt = `Task: ${taskDescription}\nCode diff: ${codeDiff}`;
+        logInfo(`Routing task to Verification agent: ${taskDescription}`);
+
+        try {
+            const response = await completeLLM(verificationPrompt, {
+                systemPrompt: VERIFICATION_SYSTEM_PROMPT,
+                temperature: 0.3
+            });
+
+            const content = response.content.trim();
+            const match = content.match(/\b(PASS|FAIL)\b/i);
+            let passed = false;
+            let explanation = '';
+
+            if (match) {
+                passed = match[1].toUpperCase() === 'PASS';
+                const matchIndex = match.index ?? 0;
+                const afterMatch = content.slice(matchIndex + match[1].length);
+                explanation = afterMatch.replace(/^[:\-\s]+/, '').trim();
+            } else {
+                explanation = 'Ambiguous response from verification - defaulting to FAIL.';
+                logWarn(`Verification response was ambiguous: ${content.substring(0, 100)}...`);
+            }
+
+            if (!explanation) {
+                explanation = passed ? 'All criteria met.' : 'Criteria not met.';
+            }
+
+            const logExplanation = explanation.length > 200
+                ? `${explanation.substring(0, 200)}...`
+                : explanation;
+            logInfo(`Verification: ${passed ? 'PASS' : 'FAIL'} - ${logExplanation}`);
+
+            if (!passed) {
+                await createTicket({
+                    title: `VERIFICATION FAILED: ${taskDescription || 'Unknown Task'}`,
+                    status: 'blocked',
+                    description: `Explanation: ${explanation}\n\nCode diff:\n${codeDiff}`
+                });
+            }
+
+            return { passed, explanation };
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Verification agent failed: ${message}`);
+            return {
+                passed: false,
+                explanation: 'Verification failed due to an LLM error. See logs for details.'
+            };
         }
     }
 
@@ -405,6 +487,22 @@ export async function routeToPlanningAgent(question: string): Promise<string> {
         throw new Error('Orchestrator not initialized');
     }
     return orchestratorInstance.routeToPlanningAgent(question);
+}
+
+/**
+ * Route a task to the Verification agent
+ *
+ * @param taskDescription Description + success criteria
+ * @param codeDiff Code diff to verify
+ */
+export async function routeToVerificationAgent(
+    taskDescription: string,
+    codeDiff: string
+): Promise<{ passed: boolean; explanation: string }> {
+    if (!orchestratorInstance) {
+        throw new Error('Orchestrator not initialized');
+    }
+    return orchestratorInstance.routeToVerificationAgent(taskDescription, codeDiff);
 }
 
 /**
