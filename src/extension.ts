@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { initializeLogger, logInfo } from './logger';
 import { initializeTicketDb } from './services/ticketDb';
+import { initializeOrchestrator } from './services/orchestrator';
 
 /**
  * This function is called when the extension is activated.
@@ -12,8 +13,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
     logInfo('Copilot Orchestration Extension is activating...');
 
-    // Initialize Ticket DB (NEW)
+    // Initialize Ticket DB
     await initializeTicketDb(context);
+
+    // Initialize Orchestrator after TicketDb (depends on it)
+    await initializeOrchestrator(context);
 
     // Keep your existing command and status bar code here
     const helloCommand = vscode.commands.registerCommand('coe.sayHello', () => {
