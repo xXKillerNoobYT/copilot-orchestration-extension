@@ -767,4 +767,145 @@ describe('TicketDb', () => {
             expect(retrieved?.title).toBe('Fallback Test');
         });
     });
+
+    // ========== Phase 5: Error Scenarios ==========
+    
+    describe('Error Handling', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+            jest.resetModules();
+            jest.unmock('sqlite3');
+            mockContext = new ExtensionContext('/mock/extension/path');
+        });
+
+        /**
+         * Helper: Creates a mock SQLite Database that simulates errors
+         * Returns a Database class where specified operations fail
+         */
+        function mockSQLiteError(operationToFail: 'run' | 'all' | 'get', errorMsg: string, sqlPattern?: string) {
+            return class MockErrorDatabase {
+                run: any; all: any; get: any; close: any;
+                constructor(filename: string, callback?: any) {
+                    if (callback) setTimeout(() => callback(null), 0);
+                    
+                    this.run = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        // Only fail if operationToFail matches AND SQL pattern matches (if provided)
+                        const shouldFail = operationToFail === 'run' && (!sqlPattern || sql.includes(sqlPattern));
+                        if (shouldFail) {
+                            if (cb) setTimeout(() => cb(new Error(errorMsg)), 0);
+                        } else {
+                            if (cb) setTimeout(() => cb(null), 0);
+                        }
+                    });
+
+                    this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        const shouldFail = operationToFail === 'all' && (!sqlPattern || sql.includes(sqlPattern));
+                        if (shouldFail) {
+                            if (cb) setTimeout(() => cb(new Error(errorMsg)), 0);
+                        } else if (sql.includes('PRAGMA')) {
+                            setTimeout(() => cb(null, [{ name: 'id' }, { name: 'title' }, { name: 'type' }]), 0);
+                        } else {
+                            setTimeout(() => cb(null, []), 0);
+                        }
+                    });
+
+                    this.get = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        const shouldFail = operationToFail === 'get' && (!sqlPattern || sql.includes(sqlPattern));
+                        if (shouldFail) {
+                            if (cb) setTimeout(() => cb(new Error(errorMsg)), 0);
+                        } else {
+                            if (cb) setTimeout(() => cb(null, undefined), 0);
+                        }
+                    });
+
+                    this.close = jest.fn();
+                }
+                verbose() { return this; }
+            };
+        }
+
+        it('should handle createTicket error in SQLite mode', async () => {
+            // Arrange: Mock db.run to fail ONLY on INSERT (not CREATE TABLE)
+            const MockErrDB = mockSQLiteError('run', 'Database locked', 'INSERT INTO');
+            jest.doMock('sqlite3', () => ({
+                verbose: () => ({ Database: MockErrDB })
+            }));
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            const { initializeTicketDb: initErr, createTicket: createErr } = require('../src/services/ticketDb');
+            await initErr(mockContext);
+
+            // Act & Assert: createTicket should throw/reject due to DB error
+            await expect(createErr({ title: 'Test', status: 'open' }))
+                .rejects.toThrow();
+        });
+
+        it('should handle getAllTickets error in SQLite mode', async () => {
+            // Arrange: Mock db.all to fail on SELECT (not PRAGMA)
+            const MockErrDB = mockSQLiteError('all', 'Disk I/O error', 'SELECT');
+            jest.doMock('sqlite3', () => ({
+                verbose: () => ({ Database: MockErrDB })
+            }));
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            const { initializeTicketDb: initErr2, listTickets: listErr } = require('../src/services/ticketDb');
+            await initErr2(mockContext);
+
+            // Act & Assert: listTickets should throw/reject due to DB error
+            await expect(listErr()).rejects.toThrow();
+        });
+
+        it('should handle getTicket error in SQLite mode', async () => {
+            // Arrange: Mock db.get to fail on SELECT
+            const MockErrDB = mockSQLiteError('get', 'Connection timeout', 'WHERE id');
+            jest.doMock('sqlite3', () => ({
+                verbose: () => ({ Database: MockErrDB })
+            }));
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            const { initializeTicketDb: initErr3, getTicket: getErr } = require('../src/services/ticketDb');
+            await initErr3(mockContext);
+
+            // Act & Assert: getTicket should throw/reject due to DB error
+            await expect(getErr('TICKET-001')).rejects.toThrow();
+        });
+
+        it('should warn when initialize is called twice', async () => {
+            // Arrange: Mock logger to capture warnings
+            const mockLogWarn = jest.fn();
+            jest.doMock('../src/logger', () => ({
+                logInfo: jest.fn(),
+                logWarn: mockLogWarn,
+                logError: jest.fn()
+            }));
+
+            // Mock sqlite3 to throw (in-memory mode)
+            jest.doMock('sqlite3', () => {
+                throw new Error('sqlite3 not available');
+            });
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            const { initializeTicketDb: initDouble, resetTicketDbForTests: resetDouble } = require('../src/services/ticketDb');
+            
+            // Act: Initialize twice
+            await initDouble(mockContext);
+            await initDouble(mockContext); // Second call
+
+            // Assert: Warning should be logged
+            expect(mockLogWarn).toHaveBeenCalled();
+            const warnCalls = mockLogWarn.mock.calls.map((call: any[]) => call[0]);
+            expect(warnCalls.some((msg: string) => msg.includes('already initialized'))).toBe(true);
+        });
+    });
 });
