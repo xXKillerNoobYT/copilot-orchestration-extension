@@ -198,7 +198,7 @@ describe('Extension Commands', () => {
         // Find the handler for the 'coe.openTicket' command
         const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
         const openTicketCall = registerCommandCalls.find(call => call[0] === 'coe.openTicket');
-        
+
         if (openTicketCall) {
             const openTicketHandler = openTicketCall[1];
 
@@ -239,7 +239,7 @@ describe('Extension Commands', () => {
         // Find and execute the handler
         const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
         const openTicketCall = registerCommandCalls.find(call => call[0] === 'coe.openTicket');
-        
+
         if (openTicketCall) {
             const openTicketHandler = openTicketCall[1];
             await openTicketHandler('TICKET-456');
@@ -268,7 +268,7 @@ describe('Extension Commands', () => {
         // Find and execute the handler
         const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
         const openTicketCall = registerCommandCalls.find(call => call[0] === 'coe.openTicket');
-        
+
         if (openTicketCall) {
             const openTicketHandler = openTicketCall[1];
             await openTicketHandler('TICKET-MISSING');
