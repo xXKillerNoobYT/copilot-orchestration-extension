@@ -54,7 +54,66 @@ export const window = {
   showInformationMessage: jest.fn(),
   showWarningMessage: jest.fn(),
   showErrorMessage: jest.fn(),
+  registerTreeDataProvider: jest.fn(),
 };
+
+// Mock TreeItemCollapsibleState enum
+export enum TreeItemCollapsibleState {
+  None = 0,
+  Collapsed = 1,
+  Expanded = 2,
+}
+
+// Mock TreeItem class
+export class TreeItem {
+  label?: string;
+  description?: string;
+  tooltip?: string;
+  iconPath?: any;
+  command?: any;
+  collapsibleState: TreeItemCollapsibleState;
+
+  constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
+    this.label = label;
+    this.collapsibleState = collapsibleState ?? TreeItemCollapsibleState.None;
+  }
+}
+
+// Mock ThemeIcon class
+export class ThemeIcon {
+  id: string;
+  color?: ThemeColor;
+
+  constructor(id: string, color?: ThemeColor) {
+    this.id = id;
+    this.color = color;
+  }
+}
+
+// Mock ThemeColor class
+export class ThemeColor {
+  id: string;
+
+  constructor(id: string) {
+    this.id = id;
+  }
+}
+
+// Mock EventEmitter class
+export class EventEmitter<T> {
+  private listeners: Array<(e: T) => void> = [];
+
+  get event() {
+    return (listener: (e: T) => void) => {
+      this.listeners.push(listener);
+      return { dispose: () => { } };
+    };
+  }
+
+  fire(data?: T): void {
+    this.listeners.forEach(listener => listener(data as T));
+  }
+}
 
 // Mock ExtensionContext
 export class ExtensionContext {

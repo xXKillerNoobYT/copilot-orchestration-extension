@@ -19,8 +19,39 @@
             {
                 "command": "coe.sayHello",
                 "title": "COE: Say Hello"
+            },
+            {
+                "command": "coe.refreshAgents",
+                "title": "COE: Refresh Agents"
+            },
+            {
+                "command": "coe.refreshTickets",
+                "title": "COE: Refresh Tickets"
             }
         ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "coe-views",
+                    "title": "COE",
+                    "icon": "media/coe-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "coe-views": [
+                {
+                    "id": "coe-agents",
+                    "name": "Agents",
+                    "icon": "$(organization)"
+                },
+                {
+                    "id": "coe-tickets",
+                    "name": "Tickets",
+                    "icon": "$(checklist)"
+                }
+            ]
+        },
         "statusBar": [
             {
                 "id": "coe.status",

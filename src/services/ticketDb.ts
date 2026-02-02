@@ -17,7 +17,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { logInfo, logWarn, logError } from '../logger';
+import { EventEmitter } from 'events';
+import { logInfo, logWarn } from '../logger';
 
 // Ticket interface - defines what a ticket looks like
 export interface Ticket {
@@ -35,6 +36,7 @@ class TicketDatabase {
     private db: any = null; // SQLite database instance
     private inMemoryStore: Map<string, Ticket> | null = null;
     private isInMemoryMode: boolean = false;
+    private _changeEmitter = new EventEmitter(); // EventEmitter = notification system to auto-update sidebar when data changes
 
     async initialize(context: vscode.ExtensionContext): Promise<void> {
         // Step 1: Read dbPath from config (or use default)
@@ -69,6 +71,7 @@ class TicketDatabase {
     private async tryInitializeSQLite(): Promise<void> {
         try {
             // Import sqlite3 (might fail if native module not built)
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const sqlite3 = require('sqlite3').verbose();
 
             // Open database (creates file if doesn't exist)
@@ -172,7 +175,46 @@ class TicketDatabase {
         }
 
         logInfo(`Created ticket: ${id}`);
+        logInfo('Emitting change event to refresh sidebar'); // EventEmitter = notification system to auto-update sidebar
+        this._changeEmitter.emit('change'); // Emit 'change' event = notify listeners (e.g., sidebar) that data changed
         return ticket;
+    }
+
+    async updateTicket(id: string, updates: Partial<Omit<Ticket, 'id' | 'createdAt'>>): Promise<Ticket | null> {
+        const existing = await this.getTicket(id);
+        if (!existing) {
+            logWarn(`Ticket ${id} not found for update`);
+            return null;
+        }
+
+        const now = new Date().toISOString();
+        const updated: Ticket = {
+            ...existing,
+            ...updates,
+            id: existing.id, // Never change ID
+            createdAt: existing.createdAt, // Never change createdAt
+            updatedAt: now, // Auto-update timestamp
+        };
+
+        if (this.isInMemoryMode) {
+            this.inMemoryStore!.set(id, updated);
+        } else {
+            // SQLite UPDATE SET query
+            await this.runSQL(
+                `UPDATE tickets SET title = ?, status = ?, description = ?, updatedAt = ? WHERE id = ?`,
+                [updated.title, updated.status, updated.description || null, updated.updatedAt, id]
+            );
+        }
+
+        logInfo(`Updated ticket: ${id}`);
+        logInfo('Emitting change event to refresh sidebar'); // EventEmitter = notification system to auto-update sidebar
+        this._changeEmitter.emit('change'); // Notify listeners of the change
+        return updated;
+    }
+
+    // onTicketChange = register a listener that gets called when tickets change (create/update)
+    onTicketChange(listener: () => void): void {
+        this._changeEmitter.on('change', listener);
     }
 
     async getTicket(id: string): Promise<Ticket | null> {
@@ -247,6 +289,22 @@ export async function listTickets(): Promise<Ticket[]> {
         throw new Error('TicketDb not initialized');
     }
     return dbInstance.listTickets();
+}
+
+// Update ticket with partial changes
+export async function updateTicket(id: string, updates: Partial<Omit<Ticket, 'id' | 'createdAt'>>): Promise<Ticket | null> {
+    if (!dbInstance) {
+        throw new Error('TicketDb not initialized');
+    }
+    return dbInstance.updateTicket(id, updates);
+}
+
+// Register listener for ticket changes (create/update events)
+export function onTicketChange(listener: () => void): void {
+    if (!dbInstance) {
+        throw new Error('TicketDb not initialized');
+    }
+    dbInstance.onTicketChange(listener);
 }
 
 export function resetTicketDbForTests(): void {
