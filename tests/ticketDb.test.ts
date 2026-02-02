@@ -658,4 +658,113 @@ describe('TicketDb', () => {
             expect(ticket?.type).toBeUndefined(); // No type = undefined (not 'ai_to_human')
         });
     });
+
+    // ========== Phase 4: Integration Tests ==========
+    
+    describe('Integration: Full CRUD Flow', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+            jest.resetModules();
+            // Re-mock sqlite3 to throw (for in-memory mode)
+            jest.doMock('sqlite3', () => {
+                throw new Error('sqlite3 module not found (simulated)');
+            });
+            mockContext = new ExtensionContext('/mock/extension/path');
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+        });
+
+        it('should complete full CRUD lifecycle: create → read → update → read', async () => {
+            // Arrange: Get fresh imports and initialize
+            const { initializeTicketDb: initCRUD, createTicket: createCRUD, getTicket: getCRUD, updateTicket: updateCRUD, resetTicketDbForTests: resetCRUD } = require('../src/services/ticketDb');
+            resetCRUD();
+            await initCRUD(mockContext);
+
+            // Act & Assert: Step-by-step CRUD flow
+
+            // Step 1: CREATE
+            const created = await createCRUD({ 
+                title: 'Integration Test', 
+                status: 'open',
+                description: 'Testing full lifecycle' 
+            });
+            expect(created).toHaveProperty('id');
+            expect(created.title).toBe('Integration Test');
+            expect(created.status).toBe('open');
+
+            // Step 2: READ  
+            const retrieved = await getCRUD(created.id);
+            expect(retrieved).not.toBeNull();
+            expect(retrieved?.id).toBe(created.id);
+            expect(retrieved?.title).toBe('Integration Test');
+
+            // Step 3: UPDATE
+            const updated = await updateCRUD(created.id, { 
+                title: 'Updated Integration Test',
+                status: 'done' 
+            });
+            expect(updated).not.toBeNull();
+            expect(updated?.title).toBe('Updated Integration Test');
+            expect(updated?.status).toBe('done');
+            expect(updated?.createdAt).toBe(created.createdAt); // Unchanged
+            expect(updated?.updatedAt).not.toBe(created.updatedAt); // Changed
+
+            // Step 4: READ again (verify update persisted)
+            const finalRead = await getCRUD(created.id);
+            expect(finalRead).not.toBeNull();
+            expect(finalRead?.title).toBe('Updated Integration Test');
+            expect(finalRead?.status).toBe('done');
+        });
+
+        it('should handle concurrent updates on same ticket', async () => {
+            // Arrange
+            const { initializeTicketDb: initConc, createTicket: createConc, updateTicket: updateConc, getTicket: getConc, resetTicketDbForTests: resetConc } = require('../src/services/ticketDb');
+            resetConc();
+            await initConc(mockContext);
+            const ticket = await createConc({ title: 'Concurrent Test', status: 'open' });
+
+            // Act: Simulate concurrent updates (both should succeed - SQLite handles locking)
+            const [result1, result2] = await Promise.all([
+                updateConc(ticket.id, { title: 'Update 1', status: 'in-progress' }),
+                updateConc(ticket.id, { title: 'Update 2', status: 'done' })
+            ]);
+
+            // Assert: Both updates completed without errors
+            expect(result1).not.toBeNull();
+            expect(result2).not.toBeNull();
+
+            // Final state should be last update (Update 2) since in-memory is synchronous
+            const final = await getConc(ticket.id);
+            expect(final?.title).toBe('Update 2');
+            expect(final?.status).toBe('done');
+        });
+
+        it('should gracefully fall back to in-memory when SQLite fails', async () => {
+            // Arrange: Mock SQLite to fail during initialization
+            jest.resetModules();
+            jest.doMock('sqlite3', () => {
+                throw new Error('SQLite native module unavailable');
+            });
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            // Act: Initialize (should fall back to in-memory)
+            const { initializeTicketDb: initFallback, createTicket: createFallback, getTicket: getFallback, resetTicketDbForTests: resetFallback } = require('../src/services/ticketDb');
+            resetFallback();
+            await initFallback(mockContext);
+
+            // Create ticket in fallback mode
+            const ticket = await createFallback({ title: 'Fallback Test', status: 'open' });
+
+            // Assert: Ticket was created successfully in-memory
+            expect(ticket).toHaveProperty('id');
+            expect(ticket.title).toBe('Fallback Test');
+
+            // Verify retrieval works
+            const retrieved = await getFallback(ticket.id);
+            expect(retrieved).not.toBeNull();
+            expect(retrieved?.title).toBe('Fallback Test');
+        });
+    });
 });
