@@ -23,6 +23,7 @@ export interface LLMConfig {
 export interface LLMRequestOptions {
     systemPrompt?: string;
     temperature?: number;
+    messages?: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
 }
 
 /**
@@ -139,8 +140,12 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
  * This function sends a prompt to the LLM and waits for the complete response.
  * Uses fetch() to make HTTP POST request and AbortController for timeout.
  * 
- * @param prompt - The user's question or prompt
- * @param options - Optional system prompt and temperature
+ * Supports two modes:
+ * 1. Legacy: Pass prompt + systemPrompt in options
+ * 2. New: Pass pre-built messages array in options.messages (for conversation history)
+ * 
+ * @param prompt - The user's question or prompt (can be empty string if using options.messages)
+ * @param options - Optional system prompt, temperature, or messages array
  * @returns Promise with the full response and token usage
  */
 export async function completeLLM(
@@ -149,13 +154,22 @@ export async function completeLLM(
 ): Promise<LLMResponse> {
     const config = llmServiceInstance.getConfig();
 
-    // Build messages array
-    // If there's a system prompt, it tells the LLM how to behave (like "you are a helpful assistant")
-    const messages: any[] = [];
-    if (options?.systemPrompt) {
-        messages.push({ role: 'system', content: options.systemPrompt });
+    // Build messages array - support two modes for backward compatibility
+    // Mode 1: If messages array provided in options, use it directly (for multi-turn history)
+    // Mode 2: Otherwise, build from prompt + optional systemPrompt (legacy behavior)
+    let messages: any[];
+    
+    if (options?.messages && options.messages.length > 0) {
+        // Multi-turn mode: use provided messages array directly
+        messages = options.messages;
+    } else {
+        // Legacy mode: build from prompt and optional system prompt
+        messages = [];
+        if (options?.systemPrompt) {
+            messages.push({ role: 'system', content: options.systemPrompt });
+        }
+        messages.push({ role: 'user', content: prompt });
     }
-    messages.push({ role: 'user', content: prompt });
 
     // Build request body for LM Studio API (OpenAI-compatible format)
     const body = {
