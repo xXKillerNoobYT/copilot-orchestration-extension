@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { initializeLogger, logInfo, logWarn, logError } from './logger';
+import { initializeLogger, logInfo } from './logger';
 
 /**
  * This function is called when the extension is activated.

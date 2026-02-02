@@ -1,3 +1,24 @@
+/**
+ * Simple reusable logger for the COE extension.
+ *
+ * Features:
+ * - Logs to dedicated VS Code Output channel "COE Logs" + console
+ * - Supports levels: info / warn / error
+ * - Reads initial logLevel from .coe/config.json (debug.logLevel)
+ * - Must be initialized once by calling initializeLogger(context) during extension activation
+ *
+ * Usage:
+ * 1. In extension.ts activate():
+ *    initializeLogger(context);
+ * 2. Then use:
+ *    logInfo("message")
+ *    logWarn("warning")
+ *    logError("error or Error object")
+ *
+ * Why separate init function?
+ * → Needs ExtensionContext to build correct config path
+ * → Only called once to avoid duplicate channels
+ */
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -30,6 +51,11 @@ function initLogger(context: vscode.ExtensionContext) {
     }
 }
 
+/**
+ * Initializes the logger by reading config and creating the output channel.
+ * Must be called exactly once during extension activation.
+ * @param context The VS Code ExtensionContext
+ */
 export function initializeLogger(context: vscode.ExtensionContext) {
     initLogger(context);
     getOutputChannel().appendLine(`[INFO] Logger initialized – level: ${logLevel}`);
