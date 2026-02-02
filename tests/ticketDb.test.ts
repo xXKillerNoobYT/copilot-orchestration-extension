@@ -534,4 +534,128 @@ describe('TicketDb', () => {
             expect(listener).toHaveBeenCalledTimes(1);
         });
     });
+
+    // ========== Phase 3: Migration & Compatibility ==========
+    
+    describe('Migration & Backward Compatibility', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+            jest.resetModules();
+            jest.unmock('sqlite3');
+            mockContext = new ExtensionContext('/mock/extension/path');
+        });
+
+        it('should migrate SQLite table without type column', async () => {
+            // Arrange: Mock PRAGMA to return schema WITHOUT type column
+            const mockRunSpy = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                if (cb) setTimeout(() => cb(null), 0);
+            });
+
+            class MockDBForMigration {
+                run: any; all: any; get: any; close: any;
+                constructor(filename: string, callback?: any) {
+                    if (callback) setTimeout(() => callback(null), 0);
+                    this.run = mockRunSpy;
+                    // PRAGMA table_info returns columns WITHOUT 'type'
+                    this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        if (sql.includes('PRAGMA table_info')) {
+                            setTimeout(() => cb(null, [
+                                { name: 'id' },
+                                { name: 'title' },
+                                { name: 'description' },
+                                { name: 'status' },
+                                { name: 'priority' },
+                                { name: 'createdAt' },
+                                { name: 'updatedAt' }
+                                // NOTE: 'type' column is MISSING (old schema)
+                            ]), 0);
+                        } else {
+                            setTimeout(() => cb(null, []), 0);
+                        }
+                    });
+                    this.get = jest.fn();
+                    this.close = jest.fn();
+                }
+                verbose() { return this; }
+            }
+
+            jest.doMock('sqlite3', () => ({
+                verbose: () => ({ Database: MockDBForMigration })
+            }));
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            // Act: Initialize (should trigger migration)
+            const { initializeTicketDb: initMig } = require('../src/services/ticketDb');
+            await initMig(mockContext);
+
+            // Assert: Verify ALTER TABLE was called to add type column
+            expect(mockRunSpy).toHaveBeenCalled();
+            const alterCall = mockRunSpy.mock.calls.find((call: any[]) => 
+                typeof call[0] === 'string' && call[0].includes('ALTER TABLE') && call[0].includes('ADD COLUMN type')
+            );
+            expect(alterCall).toBeDefined();
+        });
+
+        it('should read old tickets without type field as undefined', async () => {
+            // Arrange: Mock SQLite with a ticket row that has NO type field (old schema)
+            const oldTicketRow = {
+                id: 'OLD-001',
+                title: 'Old Ticket',
+                description: 'Created before type column existed',
+                status: 'open',
+                createdAt: '2025-01-01T00:00:00Z',
+                updatedAt: '2025-01-01T00:00:00Z'
+                // NOTE: No 'type' field (old data)
+            };
+
+            class MockDBForOldTicket {
+                run: any; all: any; get: any; close: any;
+                constructor(filename: string, callback?: any) {
+                    if (callback) setTimeout(() => callback(null), 0);
+                    this.run = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        if (cb) setTimeout(() => cb(null), 0);
+                    });
+                    this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        if (sql.includes('PRAGMA table_info')) {
+                            setTimeout(() => cb(null, [{ name: 'id' }, { name: 'title' }, { name: 'type' }]), 0);
+                        } else if (sql.includes('SELECT') && sql.includes('FROM tickets')) {
+                            setTimeout(() => cb(null, [oldTicketRow]), 0);
+                        } else {
+                            setTimeout(() => cb(null, []), 0);
+                        }
+                    });
+                    this.get = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        setTimeout(() => cb(null, oldTicketRow), 0);
+                    });
+                    this.close = jest.fn();
+                }
+                verbose() { return this; }
+            }
+
+            jest.doMock('sqlite3', () => ({
+                verbose: () => ({ Database: MockDBForOldTicket })
+            }));
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            // Act: Get the old ticket
+            const { initializeTicketDb: initOld, getTicket: getOld } = require('../src/services/ticketDb');
+            await initOld(mockContext);
+            const ticket = await getOld('OLD-001');
+
+            // Assert: Old ticket should have type: undefined (backward compatibility)
+            expect(ticket).not.toBeNull();
+            expect(ticket?.id).toBe('OLD-001');
+            expect(ticket?.title).toBe('Old Ticket');
+            expect(ticket?.type).toBeUndefined(); // No type = undefined (not 'ai_to_human')
+        });
+    });
 });
