@@ -535,8 +535,7 @@ export class OrchestratorService {
         isContinue?: boolean
     ): Promise<string> {
         logInfo(
-            `[Answer] ${isContinue ? 'Continuing' : 'Starting'} conversation${
-                chatId ? ` (${chatId})` : ''
+            `[Answer] ${isContinue ? 'Continuing' : 'Starting'} conversation${chatId ? ` (${chatId})` : ''
             }: ${question.substring(0, 50)}...`
         );
 

@@ -158,7 +158,7 @@ export async function completeLLM(
     // Mode 1: If messages array provided in options, use it directly (for multi-turn history)
     // Mode 2: Otherwise, build from prompt + optional systemPrompt (legacy behavior)
     let messages: any[];
-    
+
     if (options?.messages && options.messages.length > 0) {
         // Multi-turn mode: use provided messages array directly
         messages = options.messages;
