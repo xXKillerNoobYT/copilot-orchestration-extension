@@ -155,7 +155,7 @@ describe('TicketDb', () => {
     });
 
     // ========== Phase 1: SQLite Mode Operations ==========
-    
+
     describe('SQLite Mode Operations', () => {
         /**
          * Helper: Creates a mock SQLite Database that simulates successful operations
@@ -163,7 +163,7 @@ describe('TicketDb', () => {
          */
         function mockSQLiteSuccess() {
             const ticketStore: any[] = []; // In-memory store to simulate SQLite behavior
-            
+
             return class MockDatabase {
                 run: any;
                 all: any;
@@ -273,7 +273,7 @@ describe('TicketDb', () => {
             jest.clearAllMocks();
             jest.resetModules(); // Clear module cache
             mockContext = new ExtensionContext('/mock/extension/path');
-            
+
             // Unmock sqlite3 to allow per-test mocking
             jest.unmock('sqlite3');
         });
@@ -409,12 +409,12 @@ describe('TicketDb', () => {
     });
 
     // ========== Phase 2: updateTicket Coverage ==========
-    
+
     describe('updateTicket', () => {
         beforeEach(async () => {
             jest.clearAllMocks();
             jest.resetModules(); // Reset to prevent module contamination from SQLite tests
-            
+
             // Re-mock sqlite3 to throw (for in-memory mode)
             jest.doMock('sqlite3', () => {
                 throw new Error('sqlite3 module not found (simulated)');
@@ -495,7 +495,7 @@ describe('TicketDb', () => {
 
             // Assert: Verify db.run was called with UPDATE SQL
             expect(mockRunSpy).toHaveBeenCalled();
-            const updateCall = mockRunSpy.mock.calls.find((call: any[]) => 
+            const updateCall = mockRunSpy.mock.calls.find((call: any[]) =>
                 typeof call[0] === 'string' && call[0].includes('UPDATE tickets')
             );
             expect(updateCall).toBeDefined();
@@ -536,7 +536,7 @@ describe('TicketDb', () => {
     });
 
     // ========== Phase 3: Migration & Compatibility ==========
-    
+
     describe('Migration & Backward Compatibility', () => {
         beforeEach(() => {
             jest.clearAllMocks();
@@ -594,7 +594,7 @@ describe('TicketDb', () => {
 
             // Assert: Verify ALTER TABLE was called to add type column
             expect(mockRunSpy).toHaveBeenCalled();
-            const alterCall = mockRunSpy.mock.calls.find((call: any[]) => 
+            const alterCall = mockRunSpy.mock.calls.find((call: any[]) =>
                 typeof call[0] === 'string' && call[0].includes('ALTER TABLE') && call[0].includes('ADD COLUMN type')
             );
             expect(alterCall).toBeDefined();
@@ -660,7 +660,7 @@ describe('TicketDb', () => {
     });
 
     // ========== Phase 4: Integration Tests ==========
-    
+
     describe('Integration: Full CRUD Flow', () => {
         beforeEach(() => {
             jest.clearAllMocks();
@@ -683,10 +683,10 @@ describe('TicketDb', () => {
             // Act & Assert: Step-by-step CRUD flow
 
             // Step 1: CREATE
-            const created = await createCRUD({ 
-                title: 'Integration Test', 
+            const created = await createCRUD({
+                title: 'Integration Test',
                 status: 'open',
-                description: 'Testing full lifecycle' 
+                description: 'Testing full lifecycle'
             });
             expect(created).toHaveProperty('id');
             expect(created.title).toBe('Integration Test');
@@ -699,9 +699,9 @@ describe('TicketDb', () => {
             expect(retrieved?.title).toBe('Integration Test');
 
             // Step 3: UPDATE
-            const updated = await updateCRUD(created.id, { 
+            const updated = await updateCRUD(created.id, {
                 title: 'Updated Integration Test',
-                status: 'done' 
+                status: 'done'
             });
             expect(updated).not.toBeNull();
             expect(updated?.title).toBe('Updated Integration Test');
@@ -769,7 +769,7 @@ describe('TicketDb', () => {
     });
 
     // ========== Phase 5: Error Scenarios ==========
-    
+
     describe('Error Handling', () => {
         beforeEach(() => {
             jest.clearAllMocks();
@@ -787,7 +787,7 @@ describe('TicketDb', () => {
                 run: any; all: any; get: any; close: any;
                 constructor(filename: string, callback?: any) {
                     if (callback) setTimeout(() => callback(null), 0);
-                    
+
                     this.run = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
                         const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
                         // Only fail if operationToFail matches AND SQL pattern matches (if provided)
@@ -898,7 +898,7 @@ describe('TicketDb', () => {
 
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { initializeTicketDb: initDouble } = require('../src/services/ticketDb');
-            
+
             // Act: Initialize twice
             await initDouble(mockContext);
             await initDouble(mockContext); // Second call

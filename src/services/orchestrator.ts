@@ -35,19 +35,19 @@ import { updateStatusBar } from '../extension';
  * System prompt for the Answer agent
  * Tells the LLM how to behave when answering questions
  */
-const ANSWER_SYSTEM_PROMPT = "You are an Answer agent in a coding orchestration system. Provide concise, actionable responses to developer questions. Focus on clarity and practical solutions.";
+export const ANSWER_SYSTEM_PROMPT = "You are an Answer agent in a coding orchestration system. Provide concise, actionable responses to developer questions. Focus on clarity and practical solutions.";
 
 /**
  * Planning system prompt for the Answer agent
  * Tells the LLM how to break down coding tasks into atomic steps
  */
-const PLANNING_SYSTEM_PROMPT = "You are a Planning agent. Break coding tasks into small atomic steps (15-25 min each), number them, include file names to modify/create, and add 1-sentence success criteria per step.";
+export const PLANNING_SYSTEM_PROMPT = "You are a Planning agent. Break coding tasks into small atomic steps (15-25 min each), number them, include file names to modify/create, and add 1-sentence success criteria per step.";
 
 /**
  * Verification system prompt for the Verification agent
  * Tells the LLM to check if code matches task success criteria
  */
-const VERIFICATION_SYSTEM_PROMPT = "You are a Verification agent. Check if the code meets the task success criteria. Return only: PASS or FAIL, then 1-2 sentence explanation. Be strict.";
+export const VERIFICATION_SYSTEM_PROMPT = "You are a Verification agent. Check if the code meets the task success criteria. Return only: PASS or FAIL, then 1-2 sentence explanation. Be strict.";
 
 /**
  * Task interface - represents a work item in the queue
