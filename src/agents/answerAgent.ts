@@ -1,5 +1,6 @@
 import { ANSWER_SYSTEM_PROMPT } from '../services/orchestrator';
 import { logInfo, logError } from '../logger';
+import { completeLLM } from '../services/llmService';
 
 /**
  * Message interface for conversation history
@@ -52,11 +53,50 @@ export class AnswerAgent {
         );
 
         try {
-            // Placeholder: implementation deferred to Phase 3
-            // After Phase 2 extends llmService.completeLLM to accept messages param
-            throw new Error(
-                'ask() implementation pending Phase 3 - llmService extension required'
+            // Get existing history or start with empty array
+            const existingHistory = this.conversationHistory.get(sessionId) || [];
+
+            // Build messages array: system prompt + history + current question
+            const messages: Message[] = [
+                { role: 'system', content: ANSWER_SYSTEM_PROMPT },
+                ...existingHistory,
+                { role: 'user', content: question }
+            ];
+
+            logInfo(
+                `[Answer Agent] Chat ${sessionId} with ${existingHistory.length} previous messages`
             );
+
+            // Call LLM with message history using new multi-turn mode
+            const response = await completeLLM('', {
+                messages: messages
+            });
+
+            const answer = response.content;
+
+            // Append user question and assistant response to history
+            const updatedHistory: Message[] = [
+                ...existingHistory,
+                { role: 'user', content: question },
+                { role: 'assistant', content: answer }
+            ];
+
+            // Trim history to max exchanges if over limit (keep last N user-assistant pairs)
+            // This prevents token overflow while maintaining context
+            if (updatedHistory.length > MAX_HISTORY_EXCHANGES * 2) {
+                const trimmedHistory: Message[] = updatedHistory.slice(
+                    -(MAX_HISTORY_EXCHANGES * 2)
+                );
+                this.conversationHistory.set(sessionId, trimmedHistory);
+                logInfo(
+                    `[Answer Agent] Chat ${sessionId} history trimmed to last ${MAX_HISTORY_EXCHANGES} exchanges`
+                );
+            } else {
+                this.conversationHistory.set(sessionId, updatedHistory);
+            }
+
+            logInfo(`[Answer Agent] Chat ${sessionId} response complete`);
+            return answer;
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             logError(`[Answer Agent] Error in chat ${sessionId}: ${message}`);
