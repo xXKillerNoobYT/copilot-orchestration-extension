@@ -4,7 +4,7 @@
  * Tests both SQLite and in-memory modes
  */
 
-import { initializeTicketDb, createTicket, getTicket, listTickets, resetTicketDbForTests } from '../src/services/ticketDb';
+import { initializeTicketDb, createTicket, getTicket, listTickets, updateTicket, onTicketChange, resetTicketDbForTests } from '../src/services/ticketDb';
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -405,6 +405,133 @@ describe('TicketDb', () => {
             expect(tickets).toHaveLength(2);
             expect(tickets[0].title).toBe('First');
             expect(tickets[1].title).toBe('Second');
+        });
+    });
+
+    // ========== Phase 2: updateTicket Coverage ==========
+    
+    describe('updateTicket', () => {
+        beforeEach(async () => {
+            jest.clearAllMocks();
+            jest.resetModules(); // Reset to prevent module contamination from SQLite tests
+            
+            // Re-mock sqlite3 to throw (for in-memory mode)
+            jest.doMock('sqlite3', () => {
+                throw new Error('sqlite3 module not found (simulated)');
+            });
+
+            mockContext = new ExtensionContext('/mock/extension/path');
+
+            // Setup default in-memory mock
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({
+                tickets: { dbPath: './.coe/tickets.db' }
+            }));
+        });
+
+        it('should update ticket in in-memory mode', async () => {
+            // Arrange: Get fresh imports and initialize in-memory mode
+            const { initializeTicketDb: initMem, createTicket: createMem, updateTicket: updateMem, resetTicketDbForTests: resetMem } = require('../src/services/ticketDb');
+            resetMem(); // Ensure clean state
+            await initMem(mockContext);
+            const created = await createMem({ title: 'Original', status: 'open' });
+
+            // Act: Update the ticket
+            const updated = await updateMem(created.id, { title: 'Updated Title', status: 'done' });
+
+            // Assert: Verify changes
+            expect(updated).not.toBeNull();
+            expect(updated?.title).toBe('Updated Title');
+            expect(updated?.status).toBe('done');
+            expect(updated?.createdAt).toBe(created.createdAt); // createdAt unchanged
+            expect(updated?.updatedAt).not.toBe(created.updatedAt); // updatedAt changed
+        });
+
+        it('should update ticket in SQLite mode', async () => {
+            // Arrange: Setup SQLite mock with UPDATE tracking
+            const mockRunSpy = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                if (cb) setTimeout(() => cb(null), 0);
+            });
+
+            const ticketInDb = {
+                id: 'TEST-123',
+                title: 'Original',
+                status: 'open',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            class MockDBForUpdate {
+                run: any; all: any; get: any; close: any;
+                constructor(filename: string, callback?: any) {
+                    if (callback) setTimeout(() => callback(null), 0);
+                    this.run = mockRunSpy;
+                    this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        setTimeout(() => cb(null, [{ name: 'id' }, { name: 'title' }, { name: 'type' }]), 0);
+                    });
+                    this.get = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
+                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
+                        setTimeout(() => cb(null, ticketInDb), 0);
+                    });
+                    this.close = jest.fn();
+                }
+                verbose() { return this; }
+            }
+
+            jest.doMock('sqlite3', () => ({
+                verbose: () => ({ Database: MockDBForUpdate })
+            }));
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
+
+            const { initializeTicketDb: init4, updateTicket: update4 } = require('../src/services/ticketDb');
+            await init4(mockContext);
+
+            // Act: Update ticket
+            const result = await update4('TEST-123', { title: 'Updated', status: 'done' });
+
+            // Assert: Verify db.run was called with UPDATE SQL
+            expect(mockRunSpy).toHaveBeenCalled();
+            const updateCall = mockRunSpy.mock.calls.find((call: any[]) => 
+                typeof call[0] === 'string' && call[0].includes('UPDATE tickets')
+            );
+            expect(updateCall).toBeDefined();
+            expect(result?.title).toBe('Updated');
+            expect(result?.status).toBe('done');
+        });
+
+        it('should return null for non-existent ticket', async () => {
+            // Arrange: Get fresh imports
+            const { initializeTicketDb: initNull, updateTicket: updateNull, resetTicketDbForTests: resetNull } = require('../src/services/ticketDb');
+            resetNull();
+            await initNull(mockContext);
+
+            // Act: Try to update non-existent ticket
+            const result = await updateNull('NONEXISTENT-999', { title: 'Should Fail' });
+
+            // Assert
+            expect(result).toBeNull();
+        });
+
+        it('should emit change event on update', async () => {
+            // Arrange: Get fresh imports and register listener before update
+            const { initializeTicketDb: initEvt, createTicket: createEvt, updateTicket: updateEvt, onTicketChange: onEvt, resetTicketDbForTests: resetEvt } = require('../src/services/ticketDb');
+            resetEvt();
+            await initEvt(mockContext);
+            const created = await createEvt({ title: 'Test', status: 'open' });
+
+            const listener = jest.fn();
+            onEvt(listener);
+
+            // Act: Update ticket
+            await updateEvt(created.id, { title: 'Changed' });
+
+            // Assert: Listener was called
+            expect(listener).toHaveBeenCalled();
+            expect(listener).toHaveBeenCalledTimes(1);
         });
     });
 });
