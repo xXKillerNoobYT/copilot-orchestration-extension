@@ -558,4 +558,5 @@ describe('MCP Server', () => {
 
             expect(mockOrchestrator.routeToVerificationAgent).toHaveBeenCalledWith('Verification', '+ test: true');
         });
-    });});
+    });
+});

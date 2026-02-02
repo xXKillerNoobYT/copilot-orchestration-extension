@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { initializeLogger, logInfo, logError, logWarn } from './logger';
-import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange } from './services/ticketDb';
+import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange, getTicket } from './services/ticketDb';
 import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
 import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
@@ -228,6 +228,54 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    /**
+     * Command: coe.openTicket
+     * Opens a ticket's plan/description in a new editor tab as Markdown
+     * Called when user clicks a ticket in the Tickets sidebar
+     * @param ticketId The ticket ID (passed as argument from TreeItem.command)
+     */
+    const openTicketCommand = vscode.commands.registerCommand(
+        'coe.openTicket',
+        async (ticketId: string) => {
+            try {
+                logInfo(`Opening ticket: ${ticketId}`);
+
+                // Fetch ticket from database
+                const ticket = await getTicket(ticketId);
+
+                // Handle deleted/not found ticket
+                if (!ticket) {
+                    logWarn(`Ticket not found: ${ticketId}`);
+                    vscode.window.showWarningMessage(`Ticket ${ticketId} not found or was deleted`);
+                    return;
+                }
+
+                // Prepare content (fallback if no description)
+                const content = ticket.description ||
+                    `# No Plan Yet\n\nThis ticket doesn't have a plan.\n\n` +
+                    `Use **COE: Plan Task** to generate one.`;
+
+                // Create Markdown document (untitled, in memory)
+                const doc = await vscode.workspace.openTextDocument({
+                    content,
+                    language: 'markdown'
+                });
+
+                // Open in editor (not preview mode, so it's a permanent tab)
+                await vscode.window.showTextDocument(doc, {
+                    preview: false,
+                    viewColumn: vscode.ViewColumn.One
+                });
+
+                logInfo(`Ticket ${ticketId} opened in editor: ${ticket.title}`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`Error opening ticket: ${message}`);
+                vscode.window.showErrorMessage(`Failed to open ticket: ${message}`);
+            }
+        }
+    );
+
     // TEMP TEST CODE - Creates an ai_to_human ticket to trigger auto-planning
     setTimeout(async () => {
         try {
@@ -277,6 +325,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(verifyTaskCommand);
     context.subscriptions.push(verifyLastTicketCommand);
     context.subscriptions.push(askAnswerAgentCommand);
+    context.subscriptions.push(openTicketCommand);
 
     logInfo('Extension fully activated');
 }

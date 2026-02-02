@@ -39,6 +39,10 @@
             {
                 "command": "coe.verifyLastTicket",
                 "title": "COE: Verify Last Ticket"
+            },
+            {
+                "command": "coe.openTicket",
+                "title": "COE: Open Ticket"
             }
         ],
         "viewsContainers": {

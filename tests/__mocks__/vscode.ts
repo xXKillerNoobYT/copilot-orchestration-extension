@@ -55,6 +55,7 @@ export const window = {
   showWarningMessage: jest.fn(),
   showErrorMessage: jest.fn(),
   registerTreeDataProvider: jest.fn(),
+  showTextDocument: jest.fn().mockResolvedValue(undefined),
 };
 
 // Mock TreeItemCollapsibleState enum
@@ -114,6 +115,32 @@ export class EventEmitter<T> {
     this.listeners.forEach(listener => listener(data as T));
   }
 }
+
+// Mock ViewColumn enum
+export enum ViewColumn {
+  One = 1,
+  Two = 2,
+  Three = 3,
+  Four = 4,
+  Five = 5,
+  Six = 6,
+  Seven = 7,
+  Eight = 8,
+  Nine = 9,
+  Active = -1,
+  Beside = -2,
+}
+
+// Mock workspace namespace for document handling
+export const workspace = {
+  openTextDocument: jest.fn().mockResolvedValue({
+    uri: { scheme: 'untitled' },
+    languageId: 'markdown',
+    getText: jest.fn().mockReturnValue(''),
+    isDirty: false,
+    isClosed: false,
+  }),
+};
 
 // Mock ExtensionContext
 export class ExtensionContext {

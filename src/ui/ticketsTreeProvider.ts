@@ -117,6 +117,14 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
         // Icon = status-based ThemeIcon
         item.iconPath = this.getIconForStatus(ticket.status);
 
+        // Command = make item clickable, passing ticket.id as argument
+        // When user clicks this ticket, VS Code will execute 'coe.openTicket' with ticketId
+        item.command = {
+            command: 'coe.openTicket',
+            title: 'Open Ticket',
+            arguments: [ticket.id]
+        };
+
         return item;
     }
 

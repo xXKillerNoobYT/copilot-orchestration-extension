@@ -458,6 +458,58 @@ describe('TicketsTreeDataProvider', () => {
         });
     });
 
+    describe('TreeItem command for clickable tickets', () => {
+        it('should set command property on TreeItem to make it clickable', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-123',
+                    title: 'Add dark mode toggle',
+                    status: 'open',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                    description: '# Plan\nStep 1: Design\nStep 2: Code'
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            // Verify command is set
+            expect(items[0].command).toBeDefined();
+            expect(items[0].command?.command).toBe('coe.openTicket');
+            expect(items[0].command?.title).toBe('Open Ticket');
+            expect(items[0].command?.arguments).toEqual(['TICKET-123']);
+        });
+
+        it('should pass correct ticket ID to command arguments', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-456',
+                    title: 'First ticket',
+                    status: 'open',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+                {
+                    id: 'TICKET-789',
+                    title: 'Second ticket',
+                    status: 'in-progress',
+                    createdAt: '2026-02-01T11:00:00Z',
+                    updatedAt: '2026-02-01T11:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            // Verify each item has correct ticket ID in arguments
+            expect(items[0].command?.arguments?.[0]).toBe('TICKET-456');
+            expect(items[1].command?.arguments?.[0]).toBe('TICKET-789');
+        });
+    });
+
     describe('refresh', () => {
         it('should fire onDidChangeTreeData event', () => {
             const fireSpy = jest.spyOn(provider['_onDidChangeTreeData'], 'fire');
