@@ -15,7 +15,21 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
-        "commands": []
+        "commands": [
+            {
+                "command": "coe.sayHello",
+                "title": "COE: Say Hello"
+            }
+        ],
+        "statusBar": [
+            {
+                "id": "coe.status",
+                "text": "$(rocket) COE Ready",
+                "command": "coe.sayHello",
+                "alignment": "right",
+                "priority": 100
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

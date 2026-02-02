@@ -5,15 +5,29 @@ import * as vscode from 'vscode';
  * Activation happens when VS Code starts up (due to "onStartupFinished" event).
  */
 export function activate(context: vscode.ExtensionContext) {
-    // Create an output channel for COE logs
+    // Create output channel (keep this line)
     const outputChannel = vscode.window.createOutputChannel('COE');
-
-    // Display activation message
     outputChannel.appendLine('Copilot Orchestration Extension activated');
-    outputChannel.show(true); // Show the output panel (true = preserve focus)
 
-    // Log to console as well (visible in Extension Development Host console)
-    console.log('Copilot Orchestration Extension is now active!');
+    // ── NEW: Register the command ──
+    const helloCommand = vscode.commands.registerCommand('coe.sayHello', () => {
+        vscode.window.showInformationMessage('Hello from COE!');
+        outputChannel.appendLine('User ran COE: Say Hello');
+    });
+
+    // ── NEW: Add status bar item ──
+    const statusBarItem = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Right,
+        100 // higher = more to the right
+    );
+    statusBarItem.text = '$(rocket) COE Ready';
+    statusBarItem.command = 'coe.sayHello';
+    statusBarItem.tooltip = 'Click to say hello from COE';
+    statusBarItem.show();
+
+    // Tell VS Code to clean up when extension deactivates
+    context.subscriptions.push(helloCommand);
+    context.subscriptions.push(statusBarItem);
 }
 
 /**
