@@ -165,7 +165,7 @@ class OrchestratorService {
     async routeQuestionToAnswer(question: string): Promise<string> {
         // Stub: Log the question for now
         logInfo(`ROUTE_QUESTION: ${question}`);
-        
+
         // TODO: In Phase 3, this will call the Answer team via MCP or LLM endpoint
         // For now, return placeholder response
         return 'Routing not implemented yet. Will route to Answer team in Phase 3.';
@@ -232,34 +232,34 @@ class OrchestratorService {
      */
     private async checkForBlockedTasks(): Promise<void> {
         const now = Date.now();
-        
+
         // Check both pending queue and in-flight picked tasks
         const allTasks = [...this.taskQueue, ...this.pickedTasks];
-        
+
         // Iterate through all tasks
         for (const task of allTasks) {
             // Skip if task hasn't been picked yet (no lastPickedAt)
             if (!task.lastPickedAt) {
                 continue;
             }
-            
+
             // Calculate how long ago task was picked (in milliseconds)
             const pickedTime = new Date(task.lastPickedAt).getTime();
             const idleTimeMs = now - pickedTime;
             const idleTimeSeconds = idleTimeMs / 1000;
-            
+
             // If task idle > timeout AND not already blocked
             if (idleTimeSeconds > this.taskTimeoutSeconds && !task.blockedAt) {
                 // Mark task as blocked
                 task.blockedAt = new Date().toISOString();
                 task.status = 'blocked';
-                
+
                 // Remove from pickedTasks if it's there
                 const pickedIndex = this.pickedTasks.indexOf(task);
                 if (pickedIndex > -1) {
                     this.pickedTasks.splice(pickedIndex, 1);
                 }
-                
+
                 // Create P1 ticket in TicketDb
                 try {
                     await createTicket({

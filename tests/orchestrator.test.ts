@@ -40,16 +40,16 @@ describe('Orchestrator Service', () => {
         // Clear all mocks before each test
         jest.clearAllMocks();
         jest.useRealTimers(); // Ensure we're not in fake timer mode
-        
+
         // Reset orchestrator singleton
         resetOrchestratorForTests();
-        
+
         // Create mock context
         mockContext = new ExtensionContext('/mock/extension/path');
-        
+
         // Default: config file doesn't exist (use defaults)
         mockFs.existsSync.mockReturnValue(false);
-        
+
         // Default: TicketDb has no tickets
         mockTicketDb.listTickets.mockResolvedValue([]);
     });
@@ -63,10 +63,10 @@ describe('Orchestrator Service', () => {
             // Setup: no config file
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([]);
-            
+
             // Execute: initialize orchestrator
             await expect(initializeOrchestrator(mockContext)).resolves.not.toThrow();
-            
+
             // Verify: no errors thrown, initialized successfully
             expect(mockTicketDb.listTickets).toHaveBeenCalled();
         });
@@ -80,10 +80,10 @@ describe('Orchestrator Service', () => {
                 }
             }));
             mockTicketDb.listTickets.mockResolvedValue([]);
-            
+
             // Execute: initialize orchestrator
             await initializeOrchestrator(mockContext);
-            
+
             // Verify: no error (actual timeout verification happens in next test)
             expect(mockTicketDb.listTickets).toHaveBeenCalled();
         });
@@ -98,10 +98,10 @@ describe('Orchestrator Service', () => {
                 // Note: no orchestrator config
             }));
             mockTicketDb.listTickets.mockResolvedValue([]);
-            
+
             // Execute: initialize
             await initializeOrchestrator(mockContext);
-            
+
             // Verify: initialized without error
             expect(mockTicketDb.listTickets).toHaveBeenCalled();
         });
@@ -133,17 +133,17 @@ describe('Orchestrator Service', () => {
                     updatedAt: '2026-02-01T10:02:00Z'
                 }
             ];
-            
+
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue(mockTickets);
-            
+
             // Execute: initialize and get tasks one by one
             await initializeOrchestrator(mockContext);
-            
+
             const task1 = await getNextTask();
             const task2 = await getNextTask();
             const task3 = await getNextTask();
-            
+
             // Verify: tasks returned in order (FIFO = first in, first out)
             expect(task1?.id).toBe('TICKET-1');
             expect(task2?.id).toBe('TICKET-2');
@@ -154,11 +154,11 @@ describe('Orchestrator Service', () => {
             // Setup: no tickets
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([]);
-            
+
             // Execute: initialize (empty queue) and get next task
             await initializeOrchestrator(mockContext);
             const task = await getNextTask();
-            
+
             // Verify: null returned for empty queue
             expect(task).toBeNull();
         });
@@ -195,18 +195,18 @@ describe('Orchestrator Service', () => {
                     updatedAt: '2026-02-01T10:03:00Z'
                 }
             ];
-            
+
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue(mockTickets);
-            
+
             // Execute: initialize
             await initializeOrchestrator(mockContext);
-            
+
             // Get first 2 tasks (should only be TICKET-1 and TICKET-2)
             const task1 = await getNextTask();
             const task2 = await getNextTask();
             const task3 = await getNextTask(); // Should be null
-            
+
             // Verify: only open and in-progress tickets loaded
             expect(task1?.id).toBe('TICKET-1');
             expect(task2?.id).toBe('TICKET-2');
@@ -224,7 +224,7 @@ describe('Orchestrator Service', () => {
                 createdAt: '2026-02-01T10:00:00Z',
                 updatedAt: '2026-02-01T10:00:00Z'
             };
-            
+
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([mockTicket]);
             mockTicketDb.createTicket.mockResolvedValue({
@@ -234,24 +234,24 @@ describe('Orchestrator Service', () => {
                 createdAt: '2026-02-01T10:31:00Z',
                 updatedAt: '2026-02-01T10:31:00Z'
             });
-            
+
             // Execute: use fake timers to test timeout
             jest.useFakeTimers();
-            
+
             // Initialize orchestrator
             await initializeOrchestrator(mockContext);
-            
+
             // Pick the task (sets lastPickedAt to "now")
             const pickedTask = await getNextTask();
             expect(pickedTask?.id).toBe('TICKET-1');
             expect(pickedTask?.lastPickedAt).toBeDefined();
-            
+
             // Fast-forward time by 31 seconds
             jest.advanceTimersByTime(31 * 1000);
-            
+
             // Call getNextTask again - should trigger timeout check and create blocked ticket
             const nextTask = await getNextTask();
-            
+
             // Verify: createTicket was called for the blocked task
             expect(mockTicketDb.createTicket).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -259,7 +259,7 @@ describe('Orchestrator Service', () => {
                     title: expect.stringContaining('BLOCKED')
                 })
             );
-            
+
             jest.useRealTimers();
         });
 
@@ -272,7 +272,7 @@ describe('Orchestrator Service', () => {
                 createdAt: '2026-02-01T10:00:00Z',
                 updatedAt: '2026-02-01T10:00:00Z'
             };
-            
+
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([mockTicket]);
             mockTicketDb.createTicket.mockResolvedValue({
@@ -282,24 +282,24 @@ describe('Orchestrator Service', () => {
                 createdAt: '2026-02-01T10:31:00Z',
                 updatedAt: '2026-02-01T10:31:00Z'
             });
-            
+
             // Execute: use fake timers
             jest.useFakeTimers();
-            
+
             await initializeOrchestrator(mockContext);
             const pickedTask = await getNextTask();
-            
+
             // Advance past timeout
             jest.advanceTimersByTime(31 * 1000);
-            
+
             // Call getNextTask multiple times - should only create ticket once
             await getNextTask();
             await getNextTask();
             await getNextTask();
-            
+
             // Verify: createTicket called only once (not multiple times)
             expect(mockTicketDb.createTicket).toHaveBeenCalledTimes(1);
-            
+
             jest.useRealTimers();
         });
     });
@@ -309,12 +309,12 @@ describe('Orchestrator Service', () => {
             // Setup: initialize first
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([]);
-            
+
             await initializeOrchestrator(mockContext);
-            
+
             // Execute: route a question
             const response = await routeQuestionToAnswer('How do I fix this?');
-            
+
             // Verify: response is a string (stub implementation)
             expect(typeof response).toBe('string');
             expect(response).toContain('Routing not implemented yet');
@@ -326,10 +326,10 @@ describe('Orchestrator Service', () => {
             // Setup: TicketDb throws error
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockRejectedValue(new Error('TicketDb connection failed'));
-            
+
             // Execute: initialize (should not throw)
             await expect(initializeOrchestrator(mockContext)).resolves.not.toThrow();
-            
+
             // Verify: queue is empty after error
             const task = await getNextTask();
             expect(task).toBeNull();
@@ -338,7 +338,7 @@ describe('Orchestrator Service', () => {
         it('Test 11: should throw error if getNextTask called before initialization', async () => {
             // Setup: don't call initializeOrchestrator, just reset
             resetOrchestratorForTests();
-            
+
             // Execute & Verify: should throw
             await expect(getNextTask()).rejects.toThrow('Orchestrator not initialized');
         });
@@ -347,15 +347,15 @@ describe('Orchestrator Service', () => {
             // Setup
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([]);
-            
+
             // Execute: initialize twice
             await initializeOrchestrator(mockContext);
-            
+
             // Reset mocks to track second initialization
             mockTicketDb.listTickets.mockClear();
-            
+
             await initializeOrchestrator(mockContext);
-            
+
             // Verify: listTickets not called second time (due to singleton check)
             // Note: might be called once from first init, not called again
             // (The singleton prevents re-initialization)
