@@ -68,8 +68,8 @@ describe('Extension Commands', () => {
             subscriptions: [],
         } as any;
 
-        // We manually call activate() because Jest doesn't run the real extension host —
-        // this simulates extension startup and should trigger all registerCommand calls
+        // Manually call activate() because Jest does not run the extension host —
+        // this simulates real startup and triggers all registerCommand calls
         await activate(mockContext);
 
         // Verify that registerCommand was called with 'coe.planTask' command
