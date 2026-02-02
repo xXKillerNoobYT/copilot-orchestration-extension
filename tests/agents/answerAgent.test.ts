@@ -1,0 +1,450 @@
+import AnswerAgent, { Message, createChatId, MAX_HISTORY_EXCHANGES } from '../../src/agents/answerAgent';
+import * as llmService from '../../src/services/llmService';
+import { logInfo, logError } from '../../src/logger';
+
+// Mock the llmService
+jest.mock('../../src/services/llmService');
+jest.mock('../../src/logger');
+
+const mockCompleteLLM = llmService.completeLLM as jest.MockedFunction<typeof llmService.completeLLM>;
+
+describe('AnswerAgent', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    describe('createChatId', () => {
+        it('should generate unique chat IDs', () => {
+            const id1 = createChatId();
+            const id2 = createChatId();
+
+            expect(id1).toMatch(/^chat-/);
+            expect(id2).toMatch(/^chat-/);
+            expect(id1).not.toBe(id2);
+        });
+
+        it('should generate chat IDs with expected format', () => {
+            const id = createChatId();
+            const parts = id.split('-');
+
+            expect(parts.length).toBe(3); // "chat-{timestamp}-{random}"
+            expect(parts[0]).toBe('chat');
+            expect(parts[1]).toMatch(/^[a-z0-9]+$/); // timestamp in base36
+            expect(parts[2]).toMatch(/^[a-z0-9]+$/); // random string
+        });
+    });
+
+    describe('AnswerAgent.ask() - Single Turn', () => {
+        it('should answer a question and return the response', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const question = 'What is TypeScript?';
+            const expectedAnswer = 'TypeScript is a typed superset of JavaScript.';
+
+            mockCompleteLLM.mockResolvedValue({
+                content: expectedAnswer,
+                usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+            });
+
+            // Act
+            const answer = await agent.ask(question);
+
+            // Assert
+            expect(answer).toBe(expectedAnswer);
+            expect(mockCompleteLLM).toHaveBeenCalledTimes(1);
+
+            // Verify messages format
+            const callArgs = mockCompleteLLM.mock.calls[0];
+            const options = callArgs[1];
+            expect(options?.messages).toBeDefined();
+            expect(options?.messages?.length).toBe(2); // system + user
+
+            const messages = options?.messages || [];
+            expect(messages[0]).toEqual({
+                role: 'system',
+                content: expect.any(String)
+            });
+            expect(messages[1]).toEqual({
+                role: 'user',
+                content: question
+            });
+        });
+
+        it('should store question and answer in history after first ask', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-1';
+            const question = 'What is React?';
+            const answer = 'React is a JavaScript library for building UIs.';
+
+            mockCompleteLLM.mockResolvedValue({
+                content: answer,
+                usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+            });
+
+            // Act
+            await agent.ask(question, chatId);
+
+            // Assert - verify history was stored
+            const history = agent.getHistory(chatId);
+            expect(history).toBeDefined();
+            expect(history?.length).toBe(2); // user + assistant
+            expect(history?.[0]).toEqual({ role: 'user', content: question });
+            expect(history?.[1]).toEqual({ role: 'assistant', content: answer });
+        });
+
+        it('should generate new chatId if none provided', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const question = 'Question?';
+            const answer = 'Answer.';
+
+            mockCompleteLLM.mockResolvedValue({ content: answer });
+
+            // Act
+            const result = await agent.ask(question);
+
+            // Assert
+            expect(result).toBe(answer);
+            // Verify a chatId was generated and stored (at least one history entry)
+            const logInfoCalls = (logInfo as jest.Mock).mock.calls;
+            const hasChatId = logInfoCalls.some(call =>
+                call[0].includes('chat-') && call[0].includes('question in chat')
+            );
+            expect(hasChatId).toBeTruthy();
+        });
+    });
+
+    describe('AnswerAgent.ask() - Multi-Turn', () => {
+        it('should include previous Q&A in messages for follow-up', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-2';
+            const q1 = 'What is JavaScript?';
+            const a1 = 'JavaScript is a programming language.';
+            const q2 = 'How is it different from TypeScript?';
+            const a2 = 'TypeScript adds static typing to JavaScript.';
+
+            mockCompleteLLM
+                .mockResolvedValueOnce({ content: a1 })
+                .mockResolvedValueOnce({ content: a2 });
+
+            // Act - First question
+            const answer1 = await agent.ask(q1, chatId);
+            // Act - Follow-up question
+            const answer2 = await agent.ask(q2, chatId);
+
+            // Assert
+            expect(answer1).toBe(a1);
+            expect(answer2).toBe(a2);
+
+            // Verify second call included history
+            const secondCallArgs = mockCompleteLLM.mock.calls[1];
+            const secondCallMessages = secondCallArgs[1]?.messages;
+
+            expect(secondCallMessages?.length).toBe(4); // system + Q1 + A1 + Q2
+            expect(secondCallMessages?.[1]).toEqual({ role: 'user', content: q1 });
+            expect(secondCallMessages?.[2]).toEqual({ role: 'assistant', content: a1 });
+            expect(secondCallMessages?.[3]).toEqual({ role: 'user', content: q2 });
+        });
+
+        it('should maintain separate histories for different chatIds', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId1 = 'chat-1';
+            const chatId2 = 'chat-2';
+            const q1a = 'Q1 in chat 1';
+            const a1a = 'A1 in chat 1';
+            const q1b = 'Q1 in chat 2';
+            const a1b = 'A1 in chat 2';
+
+            mockCompleteLLM
+                .mockResolvedValueOnce({ content: a1a })
+                .mockResolvedValueOnce({ content: a1b });
+
+            // Act
+            await agent.ask(q1a, chatId1);
+            await agent.ask(q1b, chatId2);
+
+            // Assert - verify separate histories
+            const history1 = agent.getHistory(chatId1);
+            const history2 = agent.getHistory(chatId2);
+
+            expect(history1).toEqual([
+                { role: 'user', content: q1a },
+                { role: 'assistant', content: a1a }
+            ]);
+            expect(history2).toEqual([
+                { role: 'user', content: q1b },
+                { role: 'assistant', content: a1b }
+            ]);
+        });
+
+        it('should trim history to MAX_HISTORY_EXCHANGES when exceeded', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-3';
+            const answers = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9'];
+
+            mockCompleteLLM.mockImplementation(async () => {
+                const callCount = mockCompleteLLM.mock.calls.length;
+                return { content: answers[callCount - 1] };
+            });
+
+            // Act - Ask 9 questions to exceed 5-exchange limit
+            for (let i = 1; i <= 9; i++) {
+                await agent.ask(`Question ${i}`, chatId);
+            }
+
+            // Assert - verify only last 5 exchanges (10 messages) are kept
+            const history = agent.getHistory(chatId);
+
+            // After 9 exchanges, history should have only 10 messages (5 exchanges)
+            expect(history?.length).toBe(MAX_HISTORY_EXCHANGES * 2);
+
+            // Verify the stored history contains the last exchanges
+            // Last exchange should be Q9/A9
+            expect(history?.[history.length - 2]).toEqual({
+                role: 'user',
+                content: 'Question 9'
+            });
+            expect(history?.[history.length - 1]).toEqual({
+                role: 'assistant',
+                content: 'A9'
+            });
+
+            // First message should be from around Q5 (because we keep last 5)
+            // With 9 questions, we should have Q5-Q9 (5 exchanges)
+            expect(history?.[0].content).toContain('Question 5');
+        });
+
+        it('should pass complete message history to LLM on each turn', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-4';
+
+            mockCompleteLLM
+                .mockResolvedValueOnce({ content: 'A1' })
+                .mockResolvedValueOnce({ content: 'A2' })
+                .mockResolvedValueOnce({ content: 'A3' });
+
+            // Act - Ask 3 questions
+            await agent.ask('Q1', chatId);
+            await agent.ask('Q2', chatId);
+            await agent.ask('Q3', chatId);
+
+            // Assert - verify each call has correct message count
+            const firstCallMessages = mockCompleteLLM.mock.calls[0][1]?.messages;
+            const secondCallMessages = mockCompleteLLM.mock.calls[1][1]?.messages;
+            const thirdCallMessages = mockCompleteLLM.mock.calls[2][1]?.messages;
+
+            expect(firstCallMessages?.length).toBe(2); // system + Q1
+            expect(secondCallMessages?.length).toBe(4); // system + Q1 + A1 + Q2
+            expect(thirdCallMessages?.length).toBe(6); // system + Q1 + A1 + Q2 + A2 + Q3
+        });
+    });
+
+    describe('AnswerAgent.getHistory()', () => {
+        it('should return undefined for non-existent chatId', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+
+            // Act
+            const history = agent.getHistory('non-existent');
+
+            // Assert
+            expect(history).toBeUndefined();
+        });
+
+        it('should return empty array equivalent (via getHistory) for new chatId', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'new-chat';
+            const question = 'Q1';
+
+            mockCompleteLLM.mockResolvedValue({ content: 'A1' });
+
+            // Act
+            await agent.ask(question, chatId);
+            const history = agent.getHistory(chatId);
+
+            // Assert
+            expect(history).toBeDefined();
+            expect(history?.length).toBe(2); // Q1 + A1
+        });
+    });
+
+    describe('AnswerAgent.clearHistory()', () => {
+        it('should remove history for specified chatId', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-5';
+
+            mockCompleteLLM.mockResolvedValue({ content: 'Answer' });
+            await agent.ask('Question', chatId);
+
+            // Verify history exists
+            expect(agent.getHistory(chatId)).toBeDefined();
+
+            // Act
+            agent.clearHistory(chatId);
+
+            // Assert
+            expect(agent.getHistory(chatId)).toBeUndefined();
+        });
+
+        it('should not affect other chatIds when clearing one', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId1 = 'chat-1';
+            const chatId2 = 'chat-2';
+
+            mockCompleteLLM
+                .mockResolvedValueOnce({ content: 'A1' })
+                .mockResolvedValueOnce({ content: 'A2' });
+
+            await agent.ask('Q1', chatId1);
+            await agent.ask('Q2', chatId2);
+
+            // Act
+            agent.clearHistory(chatId1);
+
+            // Assert
+            expect(agent.getHistory(chatId1)).toBeUndefined();
+            expect(agent.getHistory(chatId2)).toBeDefined();
+        });
+    });
+
+    describe('AnswerAgent Error Handling', () => {
+        it('should handle LLM errors gracefully', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-error';
+            const errorMessage = 'LLM service unavailable';
+
+            mockCompleteLLM.mockRejectedValue(new Error(errorMessage));
+
+            // Act & Assert
+            await expect(agent.ask('Question', chatId)).rejects.toThrow(errorMessage);
+
+            // History should not be updated on error
+            expect(agent.getHistory(chatId)).toBeUndefined();
+        });
+
+        it('should log error when LLM fails', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-error-2';
+            const errorMessage = 'Network error';
+
+            mockCompleteLLM.mockRejectedValue(new Error(errorMessage));
+
+            // Act
+            try {
+                await agent.ask('Q', chatId);
+            } catch {
+                // Expected error
+            }
+
+            // Assert
+            expect(logError).toHaveBeenCalled();
+            const logErrorCall = (logError as jest.Mock).mock.calls[0];
+            expect(logErrorCall[0]).toContain('Error');
+        });
+    });
+
+    describe('Message Format Validation', () => {
+        it('should send messages in correct OpenAI format', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-format';
+
+            mockCompleteLLM.mockResolvedValue({ content: 'Answer' });
+
+            // Act
+            await agent.ask('Question', chatId);
+
+            // Assert
+            const callMessages = mockCompleteLLM.mock.calls[0][1]?.messages;
+            expect(Array.isArray(callMessages)).toBe(true);
+
+            callMessages?.forEach((msg: any) => {
+                expect(msg).toHaveProperty('role');
+                expect(msg).toHaveProperty('content');
+                expect(['user', 'assistant', 'system']).toContain(msg.role);
+                expect(typeof msg.content).toBe('string');
+            });
+        });
+
+        it('should always include system prompt as first message', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-system';
+
+            mockCompleteLLM.mockResolvedValue({ content: 'A1' });
+
+            // Act
+            await agent.ask('Q', chatId);
+
+            // Assert
+            const messages = mockCompleteLLM.mock.calls[0][1]?.messages;
+            expect(messages?.[0]?.role).toBe('system');
+            expect(messages?.[0]?.content).toContain('Answer agent');
+        });
+    });
+
+    describe('Edge Cases', () => {
+        it('should handle empty question string', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            mockCompleteLLM.mockResolvedValue({ content: 'Answer' });
+
+            // Act
+            const result = await agent.ask('');
+
+            // Assert
+            expect(result).toBe('Answer');
+            expect(mockCompleteLLM).toHaveBeenCalled();
+        });
+
+        it('should handle very long question text', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const longQuestion = 'Q'.repeat(10000);
+            mockCompleteLLM.mockResolvedValue({ content: 'Answer' });
+
+            // Act
+            const result = await agent.ask(longQuestion);
+
+            // Assert
+            expect(result).toBe('Answer');
+            const messages = mockCompleteLLM.mock.calls[0][1]?.messages;
+            expect(messages?.[messages.length - 1]?.content).toBe(longQuestion);
+        });
+
+        it('should handle exactly MAX_HISTORY_EXCHANGES exchanges without trimming', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const chatId = 'test-chat-exact';
+            const maxExchanges = MAX_HISTORY_EXCHANGES;
+
+            mockCompleteLLM.mockImplementation(async () => {
+                return { content: `Answer ${mockCompleteLLM.mock.calls.length}` };
+            });
+
+            // Act - Ask exactly 5 questions
+            for (let i = 1; i <= maxExchanges; i++) {
+                await agent.ask(`Q${i}`, chatId);
+            }
+
+            // Assert - should have all 10 messages (no trimming yet)
+            const history = agent.getHistory(chatId);
+            expect(history?.length).toBe(maxExchanges * 2); // Q1,A1,Q2,A2...Q5,A5
+
+            // 6th question should trigger trimming
+            await agent.ask('Q6', chatId);
+            const historyAfter = agent.getHistory(chatId);
+            expect(historyAfter?.length).toBe(maxExchanges * 2); // Still 10 (trimmed to last 5)
+        });
+    });
+});
