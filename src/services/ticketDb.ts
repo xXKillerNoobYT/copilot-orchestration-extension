@@ -99,6 +99,21 @@ class TicketDatabase {
                 )
             `);
 
+            // Migration: Add type column to existing tables that don't have it
+            // Uses PRAGMA table_info to check if column exists, adds it if missing
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasTypeColumn = columns.some((col: any) => col.name === 'type');
+                
+                if (!hasTypeColumn) {
+                    logInfo('Migrating tickets table: adding type column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN type TEXT');
+                    logInfo('Migration complete: type column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
             logInfo(`Ticket DB initialized: SQLite at ${this.dbPath}`);
             this.isInMemoryMode = false;
         } catch (err) {

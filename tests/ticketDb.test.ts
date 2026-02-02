@@ -78,6 +78,42 @@ describe('TicketDb', () => {
             expect(ticket.createdAt).toBeTruthy();
         });
 
+        it('should create a ticket with ai_to_human type', async () => {
+            const ticket = await createTicket({
+                title: 'Auto Plan Task',
+                status: 'open',
+                type: 'ai_to_human',
+                description: 'This should trigger auto-planning'
+            });
+
+            expect(ticket.type).toBe('ai_to_human');
+            expect(ticket.title).toBe('Auto Plan Task');
+        });
+
+        it('should retrieve ticket with type field', async () => {
+            const created = await createTicket({
+                title: 'Type Test',
+                status: 'open',
+                type: 'ai_to_human'
+            });
+
+            const found = await getTicket(created.id);
+
+            expect(found?.type).toBe('ai_to_human');
+        });
+
+        it('should handle ticket without type (backward compatibility)', async () => {
+            const ticket = await createTicket({
+                title: 'No Type Ticket',
+                status: 'open'
+            });
+
+            expect(ticket.type).toBeUndefined();
+            
+            const found = await getTicket(ticket.id);
+            expect(found?.type).toBeUndefined();
+        });
+
         it('should retrieve a ticket by ID', async () => {
             const created = await createTicket({
                 title: 'Find Me',

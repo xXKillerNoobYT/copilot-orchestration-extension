@@ -316,7 +316,7 @@ describe('TicketsTreeDataProvider', () => {
 
         it('should clean whitespace in plan preview', async () => {
             const multilinePlan = 'Step 1: Design\nStep 2: Code\tStep 3: Test\r\nStep 4: Review';
-           const mockTickets: ticketDb.Ticket[] = [
+            const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
                     title: 'Multiline',
