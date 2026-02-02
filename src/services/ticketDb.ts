@@ -104,7 +104,7 @@ class TicketDatabase {
             try {
                 const columns = await this.querySQL("PRAGMA table_info(tickets)");
                 const hasTypeColumn = columns.some((col: any) => col.name === 'type');
-                
+
                 if (!hasTypeColumn) {
                     logInfo('Migrating tickets table: adding type column');
                     await this.runSQL('ALTER TABLE tickets ADD COLUMN type TEXT');

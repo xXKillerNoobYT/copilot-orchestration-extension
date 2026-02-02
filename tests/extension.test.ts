@@ -121,6 +121,31 @@ describe('Extension Commands', () => {
         );
     });
 
+    it('should register the COE: Ask Answer Agent command', async () => {
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        await activate(mockContext);
+
+        // Verify that registerCommand was called with 'coe.askAnswerAgent' command
+        expect(vscode.commands.registerCommand).toHaveBeenCalledWith('coe.askAnswerAgent', expect.any(Function));
+
+        // Find the handler for the 'coe.askAnswerAgent' command
+        const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+        const askAnswerAgentCall = registerCommandCalls.find(call => call[0] === 'coe.askAnswerAgent');
+        expect(askAnswerAgentCall).toBeDefined();
+
+        const askAnswerAgentHandler = askAnswerAgentCall![1];
+
+        // Execute the handler
+        await askAnswerAgentHandler();
+
+        // Verify that showInformationMessage was called with expected message
+        expect(vscode.window.showInformationMessage).toHaveBeenCalled();
+    });
+
     describe('Orchestration Flow', () => {
         it('should register the COE: Verify Last Ticket command', async () => {
             const mockContext = {

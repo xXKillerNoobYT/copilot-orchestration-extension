@@ -213,6 +213,21 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    const askAnswerAgentCommand = vscode.commands.registerCommand('coe.askAnswerAgent', async () => {
+        logInfo('User triggered: Ask Answer Agent');
+        try {
+            const orchestratorInstance = getOrchestratorInstance();
+            const response = await orchestratorInstance.routeToAnswerAgent(
+                'Explain what is VS Code extension?'
+            );
+            vscode.window.showInformationMessage(`Answer: ${response.substring(0, 100)}...`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Answer Agent command error: ${message}`);
+            vscode.window.showErrorMessage('Answer Agent failed - see logs for details.');
+        }
+    });
+
     // TEMP TEST CODE - Creates an ai_to_human ticket to trigger auto-planning
     setTimeout(async () => {
         try {
@@ -261,6 +276,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(planTaskCommand);
     context.subscriptions.push(verifyTaskCommand);
     context.subscriptions.push(verifyLastTicketCommand);
+    context.subscriptions.push(askAnswerAgentCommand);
 
     logInfo('Extension fully activated');
 }

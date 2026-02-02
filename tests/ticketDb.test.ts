@@ -109,7 +109,7 @@ describe('TicketDb', () => {
             });
 
             expect(ticket.type).toBeUndefined();
-            
+
             const found = await getTicket(ticket.id);
             expect(found?.type).toBeUndefined();
         });

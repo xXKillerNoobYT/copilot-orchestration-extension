@@ -658,4 +658,237 @@ describe('Orchestrator Service', () => {
             );
         });
     });
+
+    describe('Answer Agent', () => {
+        it('should call completeLLM and log response', async () => {
+            // Setup: Mock completeLLM to return a simple answer
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: 'VS Code extensions allow you to add features and functionality to VS Code.'
+            });
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('What is a VS Code extension?');
+
+            // Verify: completeLLM was called with question and system prompt
+            expect(completeLLM).toHaveBeenCalledWith(
+                'What is a VS Code extension?',
+                expect.objectContaining({
+                    systemPrompt: expect.stringContaining('Answer agent')
+                })
+            );
+
+            // Verify: response was logged
+            expect(logInfo).toHaveBeenCalledWith(
+                expect.stringContaining('[INFO] Answer:')
+            );
+
+            // Verify: answer returned
+            expect(answer).toBe('VS Code extensions allow you to add features and functionality to VS Code.');
+        });
+
+        it('should create ticket when response contains "ticket" keyword', async () => {
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: 'You should create a ticket to track this enhancement.'
+            });
+            mockTicketDb.createTicket.mockResolvedValue({
+                id: 'TICKET-100',
+                title: 'ANSWER NEEDS ACTION: What is a VS Code extension?...',
+                description: 'You should create a ticket to track this enhancement.',
+                status: 'blocked',
+                createdAt: '2026-02-02T00:00:00Z',
+                updatedAt: '2026-02-02T00:00:00Z'
+            } as any);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('What is a VS Code extension?');
+
+            // Verify: ticket was created
+            expect(mockTicketDb.createTicket).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: expect.stringContaining('ANSWER NEEDS ACTION:'),
+                    status: 'blocked',
+                    description: expect.stringContaining('create a ticket')
+                })
+            );
+
+            expect(answer).toContain('create a ticket');
+        });
+
+        it('should create ticket when response contains "create" keyword', async () => {
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: 'Create a new component for this feature.'
+            });
+            mockTicketDb.createTicket.mockResolvedValue({
+                id: 'TICKET-101',
+                title: 'ANSWER NEEDS ACTION:...',
+                description: 'Create a new component for this feature.',
+                status: 'blocked',
+                createdAt: '2026-02-02T00:00:00Z',
+                updatedAt: '2026-02-02T00:00:00Z'
+            } as any);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            await orchestrator.routeToAnswerAgent('How should I structure this?');
+
+            expect(mockTicketDb.createTicket).toHaveBeenCalled();
+        });
+
+        it('should not create ticket for normal response without action keywords', async () => {
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: 'VS Code extensions are built using Node.js and TypeScript.'
+            });
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('What are VS Code extensions?');
+
+            // Verify: ticket was NOT created
+            expect(mockTicketDb.createTicket).not.toHaveBeenCalled();
+
+            // Verify: response was still logged
+            expect(logInfo).toHaveBeenCalledWith(
+                expect.stringContaining('[INFO] Answer:')
+            );
+
+            expect(answer).toBe('VS Code extensions are built using Node.js and TypeScript.');
+        });
+
+        it('should warn and return early for empty question', async () => {
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('');
+
+            // Verify: warn was logged for empty question
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('Empty question')
+            );
+
+            // Verify: completeLLM was NOT called (early return)
+            expect(completeLLM).not.toHaveBeenCalled();
+
+            // Verify: fallback message returned
+            expect(answer).toBe('Please ask a question.');
+        });
+
+        it('should warn and return early for whitespace-only question', async () => {
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('   ');
+
+            // Verify: completeLLM was NOT called
+            expect(completeLLM).not.toHaveBeenCalled();
+
+            expect(answer).toBe('Please ask a question.');
+        });
+
+        it('should truncate long response in logs (>500 chars)', async () => {
+            const longAnswer = 'a'.repeat(600); // 600 characters
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: longAnswer
+            });
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('Test question?');
+
+            // Verify: log was truncated (contains '...' at end)
+            expect(logInfo).toHaveBeenCalledWith(
+                expect.stringContaining('[INFO] Answer:')
+            );
+            const logCall = (logInfo as jest.Mock).mock.calls.find(call =>
+                call[0].includes('[INFO] Answer:')
+            );
+            expect(logCall![0]).toContain('...');
+
+            // Verify: full answer still returned (not truncated)
+            expect(answer).toBe(longAnswer);
+            expect(answer.length).toBe(600);
+        });
+
+        it('should handle case-insensitive keyword detection', async () => {
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: 'IMPLEMENT new functionality here with a TICKET system.'
+            });
+            mockTicketDb.createTicket.mockResolvedValue({
+                id: 'TICKET-102',
+                title: 'ANSWER NEEDS ACTION:...',
+                description: 'IMPLEMENT new functionality here with a TICKET system.',
+                status: 'blocked',
+                createdAt: '2026-02-02T00:00:00Z',
+                updatedAt: '2026-02-02T00:00:00Z'
+            } as any);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            await orchestrator.routeToAnswerAgent('What should I do?');
+
+            // Verify: ticket was created despite uppercase keywords
+            expect(mockTicketDb.createTicket).toHaveBeenCalled();
+        });
+
+        it('should handle completeLLM timeout error gracefully', async () => {
+            (completeLLM as jest.Mock).mockRejectedValue(
+                new Error('Request timeout')
+            );
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('Test question?');
+
+            // Verify: error was logged
+            expect(logError).toHaveBeenCalledWith(
+                expect.stringContaining('Answer agent failed')
+            );
+
+            // Verify: fallback message returned
+            expect(answer).toContain('LLM service is currently unavailable');
+        });
+
+        it('should handle empty LLM response', async () => {
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: ''
+            });
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const answer = await orchestrator.routeToAnswerAgent('Test question?');
+
+            // Verify: warning was logged
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('empty response')
+            );
+
+            // Verify: fallback message returned
+            expect(answer).toBe('Could not generate an answer.');
+        });
+
+        it('should create ticket with truncated question in title', async () => {
+            const longQuestion = 'How do I ' + 'a'.repeat(100);
+            (completeLLM as jest.Mock).mockResolvedValue({
+                content: 'Answer with create action needed.'
+            });
+            mockTicketDb.createTicket.mockResolvedValue({
+                id: 'TICKET-103',
+                title: 'ANSWER NEEDS ACTION: How do I aaaa...',
+                description: 'Answer with create action needed.',
+                status: 'blocked',
+                createdAt: '2026-02-02T00:00:00Z',
+                updatedAt: '2026-02-02T00:00:00Z'
+            } as any);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            await orchestrator.routeToAnswerAgent(longQuestion);
+
+            // Verify: ticket title is truncated properly
+            expect(mockTicketDb.createTicket).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: expect.stringMatching(/ANSWER NEEDS ACTION:.*/)
+                })
+            );
+        });
+    });
 });

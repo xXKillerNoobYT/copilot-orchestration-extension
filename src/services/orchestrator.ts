@@ -346,6 +346,71 @@ export class OrchestratorService {
     }
 
     /**
+     * Route a question to the Answer agent
+     *
+     * Provides concise, actionable responses to developer questions.
+     * If the response contains action keywords, creates a ticket for manual follow-up.
+     *
+     * @param question The question to answer
+     * @returns Response from Answer agent via LLM
+     */
+    async routeToAnswerAgent(question: string): Promise<string> {
+        // Validate: warn and return early for empty question
+        if (!question || question.trim() === '') {
+            logWarn('[Answer] Empty question provided');
+            return 'Please ask a question.';
+        }
+
+        logInfo(`[Answer] Routing question to Answer agent: ${question}`);
+
+        try {
+            const response = await completeLLM(
+                question,
+                {
+                    systemPrompt: ANSWER_SYSTEM_PROMPT
+                }
+            );
+
+            const fullAnswer = response.content;
+
+            if (!fullAnswer) {
+                logWarn('[Answer] Answer agent returned an empty response.');
+                return 'Could not generate an answer.';
+            }
+
+            // Log response (truncated if >500 chars for readability)
+            const displayAnswer = fullAnswer.length > 500
+                ? `${fullAnswer.substring(0, 500)}...`
+                : fullAnswer;
+            logInfo(`[INFO] Answer: ${displayAnswer}`);
+
+            // Check if response contains action keywords (case-insensitive)
+            const actionKeywords = ['ticket', 'create', 'fix', 'implement'];
+            const lowerAnswer = fullAnswer.toLowerCase();
+            const needsAction = actionKeywords.some(keyword => lowerAnswer.includes(keyword));
+
+            // Create ticket if action needed
+            if (needsAction) {
+                const ticketTitle = `ANSWER NEEDS ACTION: ${question.substring(0, 50)}${question.length > 50 ? '...' : ''}`;
+                await createTicket({
+                    title: ticketTitle,
+                    status: 'blocked',
+                    description: fullAnswer
+                });
+                logInfo(`[Answer] Created ticket for action: ${ticketTitle}`);
+            }
+
+            return fullAnswer;
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[Answer] Answer agent failed: ${message}`);
+
+            // Ticket is already created in completeLLM, just return fallback
+            return 'LLM service is currently unavailable. A ticket has been created for manual review.';
+        }
+    }
+
+    /**
      * Load tasks from TicketDb
      * 
      * Steps:
