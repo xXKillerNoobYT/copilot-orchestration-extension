@@ -29,6 +29,7 @@ export interface Ticket {
     createdAt: string;    // ISO timestamp (e.g., "2026-02-01T10:30:00Z")
     updatedAt: string;    // ISO timestamp
     description?: string; // Optional long description
+    conversationHistory?: string; // Optional serialized Answer Agent history (JSON)
 }
 
 // Database abstraction - works with SQLite OR in-memory
@@ -109,6 +110,22 @@ class TicketDatabase {
                     logInfo('Migrating tickets table: adding type column');
                     await this.runSQL('ALTER TABLE tickets ADD COLUMN type TEXT');
                     logInfo('Migration complete: type column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            // Migration: Add conversationHistory column for Answer Agent persistence
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasConversationHistoryColumn = columns.some(
+                    (col: any) => col.name === 'conversationHistory'
+                );
+
+                if (!hasConversationHistoryColumn) {
+                    logInfo('Migrating tickets table: adding conversationHistory column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN conversationHistory TEXT');
+                    logInfo('Migration complete: conversationHistory column added');
                 }
             } catch (migrationErr) {
                 logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
@@ -262,6 +279,7 @@ class TicketDatabase {
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
             description: row.description || undefined,
+            conversationHistory: row.conversationHistory || undefined,
         };
     }
 
