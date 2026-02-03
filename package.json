@@ -55,8 +55,23 @@
             {
                 "command": "coe.addTicketComment",
                 "title": "Add User Comment"
+            },
+            {
+                "command": "coe.researchWithAgent",
+                "title": "COE: Research with Agent"
             }
         ],
+        "configuration": {
+            "type": "object",
+            "title": "COE Configuration",
+            "properties": {
+                "coe.enableResearchAgent": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable the Research Agent for detailed research queries and MD reports. When enabled, allows running time-intensive research operations (~10 min delay)."
+                }
+            }
+        },
         "menus": {
             "view/item/context": [
                 {

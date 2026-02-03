@@ -8,6 +8,7 @@ import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
 import { agentStatusTracker } from './ui/agentStatusTracker';
 import { createChatId } from './agents/answerAgent';
+import { ResearchAgent } from './agents/researchAgent';
 
 // Module-level status bar item - can be updated from orchestrator
 let statusBarItem: vscode.StatusBarItem | null = null;
@@ -540,6 +541,83 @@ export async function activate(context: vscode.ExtensionContext) {
         logInfo('User ran COE: Say Hello');
     });
 
+    /**
+     * Command: coe.researchWithAgent
+     * Performs detailed research using the Research Agent and generates an MD report
+     */
+    const researchWithAgentCommand = vscode.commands.registerCommand(
+        'coe.researchWithAgent',
+        async () => {
+            logInfo('User triggered: Research with Agent');
+
+            try {
+                // Check if Research Agent is enabled in settings
+                const config = vscode.workspace.getConfiguration('coe');
+                const enabled = config.get<boolean>('enableResearchAgent', false);
+
+                if (!enabled) {
+                    vscode.window.showInformationMessage(
+                        'Research Agent is disabled. Enable it in Settings: COE > Enable Research Agent'
+                    );
+                    logInfo('[ResearchAgent] Feature disabled in settings');
+                    return;
+                }
+
+                // Prompt user for research query
+                const query = await vscode.window.showInputBox({
+                    prompt: 'Enter your research query',
+                    placeHolder: 'E.g., Explain the benefits of TypeScript over JavaScript',
+                    validateInput: (value) => {
+                        return value.trim() ? null : 'Query cannot be empty';
+                    }
+                });
+
+                // User cancelled or provided empty query
+                if (!query?.trim()) {
+                    logInfo('[ResearchAgent] No query provided, aborting');
+                    return;
+                }
+
+                // Show progress indicator during research
+                await vscode.window.withProgress(
+                    {
+                        location: vscode.ProgressLocation.Notification,
+                        title: 'Research Agent',
+                        cancellable: false
+                    },
+                    async (progress) => {
+                        progress.report({ message: 'Conducting research... (~10 min)' });
+
+                        // Run research
+                        const agent = new ResearchAgent();
+                        const report = await agent.runResearch(query);
+
+                        progress.report({ message: 'Opening report...' });
+
+                        // Open report in new editor tab
+                        const doc = await vscode.workspace.openTextDocument({
+                            content: report,
+                            language: 'markdown'
+                        });
+
+                        await vscode.window.showTextDocument(doc, {
+                            preview: false,
+                            viewColumn: vscode.ViewColumn.One
+                        });
+
+                        logInfo('[ResearchAgent] Report generated and opened successfully');
+                    }
+                );
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`Research Agent command error: ${message}`);
+                vscode.window.showErrorMessage(
+                    `Research Agent failed: ${message}`
+                );
+            }
+        }
+    );
+
     // Initialize status bar item at module level
     statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Right,
@@ -567,6 +645,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(viewTicketProgressCommand);
     context.subscriptions.push(updateTicketStatusCommand);
     context.subscriptions.push(addTicketCommentCommand);
+    context.subscriptions.push(researchWithAgentCommand);
 
     logInfo('Extension fully activated');
 }
