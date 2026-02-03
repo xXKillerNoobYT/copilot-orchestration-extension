@@ -11,6 +11,13 @@ export interface Message {
     content: string;
 }
 
+export interface ConversationMetadata {
+    chatId: string;
+    createdAt: string;
+    lastActivityAt: string;
+    messages: Message[];
+}
+
 /**
  * Maximum number of exchanges (user + assistant pairs) to keep in history
  * Each exchange = 1 user message + 1 assistant message = 2 messages
@@ -33,7 +40,7 @@ export function createChatId(): string {
  * Maintains separate conversation history per chatId in a Map
  */
 export class AnswerAgent {
-    private conversationHistory: Map<string, Message[]>;
+    private conversationHistory: Map<string, ConversationMetadata>;
 
     constructor() {
         this.conversationHistory = new Map();
@@ -54,7 +61,8 @@ export class AnswerAgent {
 
         try {
             // Get existing history or start with empty array
-            const existingHistory = this.conversationHistory.get(sessionId) || [];
+            const existingMetadata = this.conversationHistory.get(sessionId);
+            const existingHistory = existingMetadata?.messages || [];
 
             // Build messages array: system prompt + history + current question
             const messages: Message[] = [
@@ -87,12 +95,22 @@ export class AnswerAgent {
                 const trimmedHistory: Message[] = updatedHistory.slice(
                     -(MAX_HISTORY_EXCHANGES * 2)
                 );
-                this.conversationHistory.set(sessionId, trimmedHistory);
+                this.conversationHistory.set(sessionId, {
+                    chatId: sessionId,
+                    createdAt: existingMetadata?.createdAt ?? '',
+                    lastActivityAt: existingMetadata?.lastActivityAt ?? '',
+                    messages: trimmedHistory
+                });
                 logInfo(
                     `[Answer Agent] Chat ${sessionId} history trimmed to last ${MAX_HISTORY_EXCHANGES} exchanges`
                 );
             } else {
-                this.conversationHistory.set(sessionId, updatedHistory);
+                this.conversationHistory.set(sessionId, {
+                    chatId: sessionId,
+                    createdAt: existingMetadata?.createdAt ?? '',
+                    lastActivityAt: existingMetadata?.lastActivityAt ?? '',
+                    messages: updatedHistory
+                });
             }
 
             logInfo(`[Answer Agent] Chat ${sessionId} response complete`);
@@ -109,8 +127,10 @@ export class AnswerAgent {
      * @param chatId The chat ID to clear
      */
     clearHistory(chatId: string): void {
-        this.conversationHistory.delete(chatId);
-        logInfo(`[Answer Agent] Cleared history for chat ${chatId}`);
+        const deleted = this.conversationHistory.delete(chatId);
+        if (deleted) {
+            logInfo(`[Answer Agent] Cleared history for chat ${chatId}`);
+        }
     }
 
     /**
@@ -119,7 +139,7 @@ export class AnswerAgent {
      * @returns The message history or undefined if not found
      */
     getHistory(chatId: string): Message[] | undefined {
-        return this.conversationHistory.get(chatId);
+        return this.conversationHistory.get(chatId)?.messages;
     }
 }
 
