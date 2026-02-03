@@ -52,37 +52,56 @@ jest.mock('../src/ui/ticketsTreeProvider', () => ({
     })),
 }));
 
-jest.mock('vscode', () => ({
-    commands: {
-        registerCommand: jest.fn((cmd, handler) => ({ dispose: jest.fn() })),
-    },
-    window: {
-        registerTreeDataProvider: jest.fn(() => ({ dispose: jest.fn() })),
-        createStatusBarItem: jest.fn(() => ({
-            text: '',
-            show: jest.fn(),
-            dispose: jest.fn(),
-        })),
-        showInformationMessage: jest.fn(),
-        showWarningMessage: jest.fn(),
-        showErrorMessage: jest.fn(),
-        showTextDocument: jest.fn().mockResolvedValue(undefined),
-    },
-    workspace: {
-        openTextDocument: jest.fn().mockResolvedValue({
-            uri: { scheme: 'untitled' },
-            languageId: 'markdown',
-            getText: jest.fn().mockReturnValue(''),
-        }),
-    },
-    ViewColumn: {
-        One: 1,
-        Two: 2,
-    },
-    StatusBarAlignment: {
-        Right: 1,
-    },
-}));
+jest.mock('vscode', () => {
+    // EventEmitter implementation for testing
+    class EventEmitter {
+        private listeners: Array<(e: any) => void> = [];
+
+        get event() {
+            return (listener: (e: any) => void) => {
+                this.listeners.push(listener);
+                return { dispose: () => { } };
+            };
+        }
+
+        fire(data?: any): void {
+            this.listeners.forEach(listener => listener(data));
+        }
+    }
+
+    return {
+        EventEmitter,
+        commands: {
+            registerCommand: jest.fn((cmd, handler) => ({ dispose: jest.fn() })),
+        },
+        window: {
+            registerTreeDataProvider: jest.fn(() => ({ dispose: jest.fn() })),
+            createStatusBarItem: jest.fn(() => ({
+                text: '',
+                show: jest.fn(),
+                dispose: jest.fn(),
+            })),
+            showInformationMessage: jest.fn(),
+            showWarningMessage: jest.fn(),
+            showErrorMessage: jest.fn(),
+            showTextDocument: jest.fn().mockResolvedValue(undefined),
+        },
+        workspace: {
+            openTextDocument: jest.fn().mockResolvedValue({
+                uri: { scheme: 'untitled' },
+                languageId: 'markdown',
+                getText: jest.fn().mockReturnValue(''),
+            }),
+        },
+        ViewColumn: {
+            One: 1,
+            Two: 2,
+        },
+        StatusBarAlignment: {
+            Right: 1,
+        },
+    };
+});
 
 describe('Extension Commands', () => {
     it('should register the COE: Plan Task command', async () => {

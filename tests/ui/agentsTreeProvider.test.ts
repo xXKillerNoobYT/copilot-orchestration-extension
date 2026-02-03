@@ -355,5 +355,132 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             expect(provider.getChildren(item)).toEqual([]);
         });
     });
+
+    describe('edge cases and comprehensive coverage', () => {
+        it('should handle agent with no timestamp gracefully', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: 'Processing',
+                // No timestamp field
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            expect(result[0].tooltip).toContain('Active');
+            expect(result[0].tooltip).toContain('Processing');
+            // Should not crash
+        });
+
+        it('should show all 4 agents with different icons simultaneously', () => {
+            const statuses: { [key: string]: AgentStatus | undefined } = {
+                Planning: { status: 'Active', currentTask: 'Creating plan', timestamp: Date.now() },
+                Orchestrator: { status: 'Waiting', lastResult: 'Awaiting response', timestamp: Date.now() },
+                Answer: { status: 'Idle', timestamp: Date.now() },
+                Verification: { status: 'Failed', lastResult: 'Timeout', timestamp: Date.now() },
+            };
+
+            mockGetAgentStatus.mockImplementation((name: string) => statuses[name]);
+
+            const result = provider.getChildren();
+
+            // Verify each has correct icon
+            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('loading~spin'); // Planning - Active
+            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('check');        // Orchestrator - Waiting
+            expect((result[2].iconPath as vscode.ThemeIcon).id).toBe('circle-outline'); // Answer - Idle
+            expect((result[3].iconPath as vscode.ThemeIcon).id).toBe('error');        // Verification - Failed
+
+            // Verify descriptions have correct format
+            expect(result[0].description).toContain('Active');
+            expect(result[0].description).toContain('Task:');
+            expect(result[1].description).toContain('Waiting');
+            expect(result[1].description).toContain('Last:');
+            expect(result[2].description).toBe('Idle');
+            expect(result[3].description).toContain('Failed');
+            expect(result[3].description).toContain('Last:');
+        });
+
+        it('should handle very long currentTask and lastResult both present', () => {
+            const longTask = 'T'.repeat(200);
+            const longResult = 'R'.repeat(200);
+
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: longTask,
+                lastResult: longResult,
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            const desc = result[0].description as string;
+            const tooltip = result[0].tooltip as string;
+
+            // Description should only show truncated task (priority)
+            expect(desc).toContain('T'.repeat(50));
+            expect(desc).toContain('...');
+            expect(desc).not.toContain('R'.repeat(50));
+
+            // Tooltip should show full task (not truncated in tooltip)
+            expect(tooltip).toContain('Task:');
+            expect(tooltip.length).toBeGreaterThan(200);
+        });
+
+        it('should handle status change subscription error gracefully', () => {
+            // Mock to throw error on subscription
+            const mockOnStatusChange = jest.fn(() => {
+                throw new Error('Subscription failed');
+            });
+            (agentStatusTracker as any).onStatusChange = mockOnStatusChange;
+
+            // Should not crash, just log error
+            expect(() => {
+                new AgentsTreeDataProvider();
+            }).not.toThrow();
+
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to subscribe to status changes'));
+        });
+
+        it('should format timestamp correctly in tooltip', () => {
+            const ts = 1704067200000; // Specific timestamp
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                timestamp: ts,
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            const tooltip = result[0].tooltip as string;
+
+            // Should include formatted time
+            expect(tooltip).toContain('Updated:');
+            // toLocaleTimeString will format based on system locale
+            expect(tooltip).toMatch(/Updated: \d+:\d+:\d+/);
+        });
+
+        it('should handle empty string currentTask', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: '',
+                lastResult: 'Some result',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            const desc = result[0].description as string;
+
+            // Empty task should fall back to lastResult
+            expect(desc).toContain('Last:');
+            expect(desc).toContain('Some result');
+        });
+
+        it('should handle empty string lastResult', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Waiting',
+                currentTask: '',
+                lastResult: '',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            expect(result[0].description).toBe('Waiting');
+        });
+    });
 });
 
