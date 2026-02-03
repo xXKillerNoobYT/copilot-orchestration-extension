@@ -125,6 +125,10 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
             arguments: [ticket.id]
         };
 
+        // Context value = enables right-click context menu targeting
+        // VS Code uses this to show context menu items with "when": "viewItem == ticket"
+        item.contextValue = 'ticket';
+
         return item;
     }
 
