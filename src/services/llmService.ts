@@ -448,6 +448,24 @@ export async function streamLLM(
 
     let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
+    // Cleanup helper function - idempotent (safe to call multiple times)
+    const cleanup = async (): Promise<void> => {
+        logInfo(`Cleanup: aborting (reason=${abortReason || 'none'}), clearing timers and reader`);
+        if (checkInterval !== null) {
+            clearInterval(checkInterval);
+            checkInterval = null;
+        }
+        if (startupTimeout !== null) {
+            clearTimeout(startupTimeout);
+            startupTimeout = null;
+        }
+        if (reader !== null) {
+            await reader.cancel(); // Close the stream
+            reader = null;
+        }
+        llmStatusBar.end();
+    };
+
     try {
         // Make the streaming request
         const response = await fetch(config.endpoint + '/chat/completions', {
@@ -547,15 +565,6 @@ export async function streamLLM(
             throw error;
         }
     } finally {
-        if (checkInterval) {
-            clearInterval(checkInterval);
-        }
-        if (startupTimeout) {
-            clearTimeout(startupTimeout);
-        }
-        if (reader) {
-            await reader.cancel(); // Close the stream
-        }
-        llmStatusBar.end();
+        await cleanup(); // Call cleanup helper - runs only once, idempotent
     }
 }
