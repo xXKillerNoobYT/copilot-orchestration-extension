@@ -77,6 +77,47 @@ class LLMService {
 const llmServiceInstance = new LLMService();
 
 /**
+ * Type alias for message objects used in LLM conversations
+ */
+type Message = { role: 'user' | 'assistant' | 'system'; content: string };
+
+/**
+ * Estimate the number of tokens in a text string
+ * 
+ * Uses a simple heuristic: ~4 characters per token + word count * 0.3
+ * This is approximate but sufficient for defensive trimming (±20% variance).
+ * 
+ * @param text - The text to estimate tokens for
+ * @returns Estimated token count
+ */
+function estimateTokens(text: string): number {
+    if (!text || text.length === 0) {
+        return 0;
+    }
+    
+    // Character-based estimation: 1 token ≈ 4 characters
+    const charEstimate = Math.ceil(text.length / 4);
+    
+    // Word-based adjustment: Add weight for word boundaries
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const wordAdjustment = Math.ceil(words.length * 0.3);
+    
+    return charEstimate + wordAdjustment;
+}
+
+/**
+ * Estimate total tokens for an array of messages
+ * 
+ * Sums up token estimates for all message contents.
+ * 
+ * @param messages - Array of messages to estimate
+ * @returns Total estimated token count
+ */
+function estimateMessagesTokens(messages: Message[]): number {
+    return messages.reduce((sum, message) => sum + estimateTokens(message.content), 0);
+}
+
+/**
  * Initialize the LLM service by reading and validating config
  * 
  * This function reads the config from .coe/config.json and validates it.
