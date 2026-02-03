@@ -380,10 +380,13 @@ export async function streamLLM(
     }
     messages.push({ role: 'user', content: prompt });
 
+    // Apply defensive token trimming before sending to LLM
+    const trimmedMessages = trimMessagesToTokenLimit(messages, config.maxTokens);
+
     // Build request body with stream: true
     const body = {
         model: config.model,
-        messages,
+        messages: trimmedMessages,
         max_tokens: config.maxTokens,
         stream: true, // Streaming mode - chunks arrive as they're generated
         temperature: options?.temperature ?? 0.7
