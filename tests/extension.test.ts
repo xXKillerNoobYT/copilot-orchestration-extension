@@ -25,6 +25,9 @@ jest.mock('../src/services/orchestrator', () => ({
         routeToVerificationAgent: jest.fn(async () => ({
             passed: true,
             explanation: 'All criteria met'
+        })),
+        getAnswerAgent: jest.fn(() => ({
+            cleanupInactiveConversations: jest.fn(async () => {})
         }))
     })),
 }));
@@ -315,6 +318,9 @@ describe('Extension Commands', () => {
                 routeToVerificationAgent: jest.fn(async () => ({
                     passed: true,
                     explanation: 'All criteria met'
+                })),
+                getAnswerAgent: jest.fn(() => ({
+                    cleanupInactiveConversations: jest.fn(async () => {})
                 }))
             }));
 
@@ -365,6 +371,9 @@ describe('Extension Commands', () => {
                 routeToVerificationAgent: jest.fn(async () => ({
                     passed: false,
                     explanation: 'Missing criteria'
+                })),
+                getAnswerAgent: jest.fn(() => ({
+                    cleanupInactiveConversations: jest.fn(async () => {})
                 }))
             }));
 
