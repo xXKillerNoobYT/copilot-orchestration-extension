@@ -495,7 +495,7 @@ describe('LLM Service', () => {
                 const words = longText.split(/\s+/).filter(w => w.length > 0);
                 const wordAdjustment = Math.ceil(words.length * 0.3);
                 const totalEstimate = charEstimate + wordAdjustment;
-                
+
                 // Should be in reasonable range (not 0, not absurdly high)
                 expect(totalEstimate).toBeGreaterThan(10);
                 expect(totalEstimate).toBeLessThan(100);
@@ -701,7 +701,7 @@ describe('LLM Service', () => {
 
                 const longContent = 'D'.repeat(150);
                 const chunks: string[] = [];
-                
+
                 await streamLLM('Test', (chunk) => chunks.push(chunk), { systemPrompt: longContent });
 
                 // Trimming may or may not occur depending on content length

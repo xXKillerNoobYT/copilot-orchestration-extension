@@ -94,14 +94,14 @@ function estimateTokens(text: string): number {
     if (!text || text.length === 0) {
         return 0;
     }
-    
+
     // Character-based estimation: 1 token ≈ 4 characters
     const charEstimate = Math.ceil(text.length / 4);
-    
+
     // Word-based adjustment: Add weight for word boundaries
     const words = text.split(/\s+/).filter(w => w.length > 0);
     const wordAdjustment = Math.ceil(words.length * 0.3);
-    
+
     return charEstimate + wordAdjustment;
 }
 
@@ -133,13 +133,13 @@ function estimateMessagesTokens(messages: Message[]): number {
 function trimMessagesToTokenLimit(messages: Message[], maxTokens: number): Message[] {
     const TRIM_THRESHOLD = 0.8; // 80% of maxTokens
     const MIN_EXCHANGES_TO_KEEP = 3; // Keep last 3 user/assistant exchanges (6 messages)
-    
+
     // Quick exit: if under threshold, no trimming needed
     const totalTokens = estimateMessagesTokens(messages);
     if (totalTokens <= maxTokens * TRIM_THRESHOLD) {
         return messages;
     }
-    
+
     // If only 1 message or empty, can't trim further
     if (messages.length <= 1) {
         if (messages.length === 1 && totalTokens > maxTokens) {
@@ -147,41 +147,41 @@ function trimMessagesToTokenLimit(messages: Message[], maxTokens: number): Messa
         }
         return messages;
     }
-    
+
     // Separate system message from conversation messages
     const systemMessage: Message | null = (messages[0]?.role === 'system') ? messages[0] : null;
     const conversationMessages = systemMessage ? messages.slice(1) : messages;
-    
+
     // Start with system message + last N exchanges
     const messagesToKeep = MIN_EXCHANGES_TO_KEEP * 2; // 3 exchanges = 6 messages
     let trimmedConversation = conversationMessages.slice(-messagesToKeep);
-    
+
     // Build candidate array
-    let candidateMessages = systemMessage 
+    let candidateMessages = systemMessage
         ? [systemMessage, ...trimmedConversation]
         : trimmedConversation;
-    
+
     // If still over limit, remove oldest conversation messages one by one
     let candidateTokens = estimateMessagesTokens(candidateMessages);
     while (candidateTokens > maxTokens * TRIM_THRESHOLD && trimmedConversation.length > 1) {
         // Remove the oldest conversation message
         trimmedConversation = trimmedConversation.slice(1);
-        candidateMessages = systemMessage 
+        candidateMessages = systemMessage
             ? [systemMessage, ...trimmedConversation]
             : trimmedConversation;
         candidateTokens = estimateMessagesTokens(candidateMessages);
     }
-    
+
     // Final safety: if only system message remains and still over limit, keep it anyway
     if (candidateMessages.length === 1 && systemMessage && candidateTokens > maxTokens) {
         logWarn(`System message alone (${candidateTokens} tokens) exceeds maxTokens (${maxTokens}). Keeping it anyway (critical context).`);
     }
-    
+
     // Log trimming action
     if (candidateMessages.length < messages.length) {
         logWarn(`Token limit exceeded (${totalTokens} > ${Math.floor(maxTokens * TRIM_THRESHOLD)}). Trimmed messages from ${messages.length} to ${candidateMessages.length} (${candidateTokens} tokens).`);
     }
-    
+
     return candidateMessages;
 }
 
@@ -396,10 +396,12 @@ export async function streamLLM(
 
     // AbortController for cancellation
     const controller = new AbortController();
+    let abortReason: 'startup' | 'inactivity' | null = null; // Track which timeout triggered abort
     let lastChunkTime: number | null = null; // Track when we last received a chunk
     let checkInterval: NodeJS.Timeout | null = null;
     let startupTimeout: NodeJS.Timeout | null = null;
     let streamingStarted = false; // Flag to track if streaming has started
+    const startTime = Date.now(); // Track total elapsed time for logging
 
     // Validate and set startup timeout
     const startupTimeoutSeconds =
@@ -414,7 +416,14 @@ export async function streamLLM(
     // Start startup timeout
     startupTimeout = setTimeout(() => {
         if (!streamingStarted) {
-            logWarn(`LLM startup timeout after ${startupTimeoutSeconds}s`);
+            // Guard: prevent double-abort
+            if (abortReason !== null) {
+                return; // Already aborting via another timeout
+            }
+            abortReason = 'startup';
+            const timeElapsed = Date.now() - startTime;
+            logWarn(`LLM startup timeout after ${startupTimeoutSeconds}s (elapsed: ${timeElapsed}ms)`);
+            logInfo(`Streaming aborted: ${abortReason}, duration: ${timeElapsed}ms`);
             controller.abort();
         }
     }, startupTimeoutSeconds * 1000);
@@ -425,11 +434,15 @@ export async function streamLLM(
 
         const idleTime = Date.now() - lastChunkTime;
         if (idleTime > config.timeoutSeconds * 1000) {
-            logWarn(`LLM inactivity timeout after ${config.timeoutSeconds}s`);
-            controller.abort(); // Stop the stream
-            if (checkInterval) {
-                clearInterval(checkInterval);
+            // Guard: prevent double-abort
+            if (abortReason !== null) {
+                return; // Already aborting via another timeout
             }
+            abortReason = 'inactivity';
+            const timeElapsed = Date.now() - startTime;
+            logWarn(`LLM inactivity timeout after ${config.timeoutSeconds}s (elapsed: ${timeElapsed}ms)`);
+            logInfo(`Streaming aborted: ${abortReason}, duration: ${timeElapsed}ms`);
+            controller.abort(); // Stop the stream
         }
     }, 1000); // Check every second
 
@@ -513,19 +526,21 @@ export async function streamLLM(
 
         return { content: fullResponse };
     } catch (error: any) {
+        const timeElapsed = Date.now() - startTime;
         // Log the error with details
-        logError(`LLM streaming failed: ${error.message}`);
+        logError(`LLM streaming failed after ${timeElapsed}ms: ${error.message}`);
 
         // Create a blocked ticket so a human can review what went wrong
         await createTicket({
             title: `LLM STREAMING FAILURE: ${prompt.substring(0, 50)}`,
             status: 'blocked',
-            description: `Error: ${error.message}\n\nOriginal prompt:\n${prompt}`
+            description: `Error: ${error.message}\nAbort Reason: ${abortReason || 'N/A'}\nElapsed: ${timeElapsed}ms\n\nOriginal prompt:\n${prompt}`
         });
 
         // Provide specific error messages based on error type
         if (error.name === 'AbortError') {
-            throw new Error(`LLM request timed out after ${config.timeoutSeconds} seconds`);
+            const reason = abortReason || 'unknown';
+            throw new Error(`LLM streaming ${reason} timeout after ${timeElapsed}ms`);
         } else if (error.code === 'ECONNREFUSED') {
             throw new Error('LLM endpoint unreachable. Check if LM Studio is running.');
         } else {
