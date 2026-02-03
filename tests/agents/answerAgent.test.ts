@@ -1,6 +1,6 @@
 import AnswerAgent, { Message, ConversationMetadata, createChatId, MAX_HISTORY_EXCHANGES } from '../../src/agents/answerAgent';
 import * as llmService from '../../src/services/llmService';
-import { logInfo, logError } from '../../src/logger';
+import { logInfo, logError, logWarn } from '../../src/logger';
 
 // Mock the llmService
 jest.mock('../../src/services/llmService');
@@ -647,6 +647,129 @@ describe('AnswerAgent', () => {
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('35 days old'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('last active: 2025-12-01'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('removed 2 inactive conversation'));
+        });
+    });
+
+    describe('Persistence', () => {
+        it('should serialize history into JSON strings', async () => {
+            const agent = new AnswerAgent();
+            const chatId = 'chat-serialize';
+            const question = 'What is Node.js?';
+            const answer = 'Node.js is a JavaScript runtime.';
+
+            mockCompleteLLM.mockResolvedValue({
+                content: answer,
+                usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+            });
+
+            await agent.ask(question, chatId);
+
+            const serialized = agent.serializeHistory();
+
+            expect(serialized[chatId]).toBeDefined();
+
+            const parsed = JSON.parse(serialized[chatId]) as ConversationMetadata;
+            expect(parsed.chatId).toBe(chatId);
+            expect(parsed.messages).toEqual([
+                { role: 'user', content: question },
+                { role: 'assistant', content: answer }
+            ]);
+        });
+
+        it('should deserialize history back into the Map', () => {
+            const agent = new AnswerAgent();
+            const chatId = 'chat-deserialize';
+            const metadata: ConversationMetadata = {
+                chatId,
+                createdAt: '2026-02-01T00:00:00.000Z',
+                lastActivityAt: '2026-02-02T00:00:00.000Z',
+                messages: [
+                    { role: 'user', content: 'Hello' },
+                    { role: 'assistant', content: 'Hi there' }
+                ]
+            };
+
+            agent.deserializeHistory({
+                [chatId]: JSON.stringify(metadata)
+            });
+
+            expect(agent.getHistory(chatId)).toEqual(metadata.messages);
+        });
+
+        it('should support save/load cycle across instances', async () => {
+            const agent = new AnswerAgent();
+            const chatId = 'chat-save-load';
+
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Answer 1',
+                usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+            });
+
+            await agent.ask('Question 1', chatId);
+            const serialized = agent.serializeHistory();
+
+            const newAgent = new AnswerAgent();
+            newAgent.deserializeHistory(serialized);
+
+            expect(newAgent.getHistory(chatId)).toEqual(agent.getHistory(chatId));
+        });
+
+        it('should restore context after reload simulation', async () => {
+            const agent = new AnswerAgent();
+            const chatId = 'chat-reload';
+
+            mockCompleteLLM
+                .mockResolvedValueOnce({
+                    content: 'Answer 1',
+                    usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+                })
+                .mockResolvedValueOnce({
+                    content: 'Answer 2',
+                    usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+                });
+
+            await agent.ask('Question 1', chatId);
+            await agent.ask('Question 2', chatId);
+
+            const serialized = agent.serializeHistory();
+            const newAgent = new AnswerAgent();
+            newAgent.deserializeHistory(serialized);
+
+            expect(newAgent.getHistory(chatId)).toEqual(agent.getHistory(chatId));
+        });
+
+        it('should warn and skip invalid JSON entries', () => {
+            const agent = new AnswerAgent();
+
+            agent.deserializeHistory({
+                'bad-chat': '{invalid-json}'
+            });
+
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to load history for chat bad-chat')
+            );
+        });
+
+        it('should truncate oversized histories and warn', () => {
+            const agent = new AnswerAgent();
+            const chatId = 'chat-large';
+            const largeContent = 'a'.repeat(1024 * 1024);
+
+            agent['conversationHistory'].set(chatId, {
+                chatId,
+                createdAt: '2026-02-01T00:00:00.000Z',
+                lastActivityAt: '2026-02-02T00:00:00.000Z',
+                messages: [
+                    { role: 'user', content: largeContent },
+                    { role: 'assistant', content: largeContent }
+                ]
+            });
+
+            agent.serializeHistory();
+
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('History truncated due to size')
+            );
         });
     });
 });
