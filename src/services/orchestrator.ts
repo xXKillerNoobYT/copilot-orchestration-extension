@@ -29,6 +29,7 @@ import { logInfo, logWarn, logError } from '../logger';
 import { listTickets, createTicket } from './ticketDb';
 import { completeLLM, streamLLM } from './llmService';
 import { agentStatusTracker } from '../ui/agentStatusTracker';
+import { llmStatusBar } from '../ui/llmStatusBar';
 import { updateStatusBar } from '../extension';
 import AnswerAgent from '../agents/answerAgent';
 
@@ -224,6 +225,7 @@ export class OrchestratorService {
         agentStatusTracker.setAgentStatus('Planning', 'Active', '');
         await updateStatusBar('$(rocket) Planning...');
 
+        llmStatusBar.start();
         try {
             const response = await streamLLM(
                 question,
@@ -259,6 +261,8 @@ export class OrchestratorService {
             agentStatusTracker.setAgentStatus('Planning', 'Failed', message.substring(0, 100));
             await updateStatusBar('$(rocket) COE Ready');
             return 'Planning service is currently unavailable. A ticket has been created for manual review.';
+        } finally {
+            llmStatusBar.end();
         }
     }
 
@@ -293,6 +297,7 @@ export class OrchestratorService {
         const verificationPrompt = `Task: ${taskDescription}\nCode diff: ${codeDiff}`;
         logInfo(`Routing task to Verification agent: ${taskDescription}`);
 
+        llmStatusBar.start();
         try {
             const response = await completeLLM(verificationPrompt, {
                 systemPrompt: VERIFICATION_SYSTEM_PROMPT,
@@ -346,6 +351,8 @@ export class OrchestratorService {
                 passed: false,
                 explanation: 'Verification failed due to an LLM error. See logs for details.'
             };
+        } finally {
+            llmStatusBar.end();
         }
     }
 
@@ -539,6 +546,7 @@ export class OrchestratorService {
             }: ${question.substring(0, 50)}...`
         );
 
+        llmStatusBar.start();
         try {
             // Lazy initialize AnswerAgent
             if (!this.answerAgent) {
@@ -556,6 +564,8 @@ export class OrchestratorService {
 
             // Ticket is already created in completeLLM if it was an LLM error
             return 'LLM service is currently unavailable. A ticket has been created for manual review.';
+        } finally {
+            llmStatusBar.end();
         }
     }
 

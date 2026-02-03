@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logInfo, logWarn, logError } from '../logger';
 import { createTicket } from './ticketDb';
+import { llmStatusBar } from '../ui/llmStatusBar';
 
 /**
  * Configuration for LLM service
@@ -153,6 +154,7 @@ export async function completeLLM(
     options?: LLMRequestOptions
 ): Promise<LLMResponse> {
     const config = llmServiceInstance.getConfig();
+    llmStatusBar.start();
 
     // Build messages array - support two modes for backward compatibility
     // Mode 1: If messages array provided in options, use it directly (for multi-turn history)
@@ -235,6 +237,7 @@ export async function completeLLM(
     } finally {
         // Always clear the timeout, even if there was an error
         clearTimeout(timeoutId);
+        llmStatusBar.end();
     }
 }
 
@@ -256,6 +259,7 @@ export async function streamLLM(
     options?: LLMRequestOptions
 ): Promise<LLMResponse> {
     const config = llmServiceInstance.getConfig();
+    llmStatusBar.start();
 
     // Build messages array (same as completeLLM)
     const messages: any[] = [];
@@ -422,5 +426,6 @@ export async function streamLLM(
         if (reader) {
             await reader.cancel(); // Close the stream
         }
+        llmStatusBar.end();
     }
 }
