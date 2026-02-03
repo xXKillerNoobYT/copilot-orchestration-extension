@@ -923,7 +923,7 @@ describe('Extension Commands', () => {
 
             await activate(mockContext);
 
-            // Find the handler for the 'coe.researchWithAgent' command
+            // Find the handler for the 'coe.researchWithAgent' command BEFORE clearing mocks
             const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
             const researchCommandCall = registerCommandCalls.find(
                 call => call[0] === 'coe.researchWithAgent'
@@ -931,6 +931,9 @@ describe('Extension Commands', () => {
             expect(researchCommandCall).toBeDefined();
 
             const researchHandler = researchCommandCall![1];
+
+            // Clear mocks after getting handler to avoid interference
+            jest.clearAllMocks();
 
             // Execute the handler
             await researchHandler();
@@ -968,12 +971,16 @@ describe('Extension Commands', () => {
 
             await activate(mockContext);
 
+            // Get handler BEFORE clearing mocks
             const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
             const researchCommandCall = registerCommandCalls.find(
                 call => call[0] === 'coe.researchWithAgent'
             );
-
             const researchHandler = researchCommandCall![1];
+
+            // Clear mocks and re-setup showInputBox
+            jest.clearAllMocks();
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue(undefined);
 
             // Execute the handler
             await researchHandler();
@@ -1009,12 +1016,16 @@ describe('Extension Commands', () => {
 
             await activate(mockContext);
 
+            // Get handler BEFORE clearing mocks
             const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
             const researchCommandCall = registerCommandCalls.find(
                 call => call[0] === 'coe.researchWithAgent'
             );
-
             const researchHandler = researchCommandCall![1];
+
+            // Clear mocks and re-setup showInputBox
+            jest.clearAllMocks();
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('   ');
 
             // Execute the handler
             await researchHandler();
