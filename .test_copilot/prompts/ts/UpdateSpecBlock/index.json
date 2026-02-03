@@ -1,0 +1,16 @@
+{
+    "default": [
+        {
+            "promptPath": "./UpdateSpecBlock_default_0.md"
+        },
+        {
+            "promptPath": "./UpdateSpecBlock_default_1.md"
+        },
+        {
+            "promptPath": "./UpdateSpecBlock_default_2.md"
+        },
+        {
+            "promptPath": "./UpdateSpecBlock_default_3.md"
+        }
+    ]
+}

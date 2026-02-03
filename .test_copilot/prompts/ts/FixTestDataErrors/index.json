@@ -1,0 +1,11 @@
+{
+    "default": [
+        {
+            "role": "assistant",
+            "promptPath": "./FixTestDataErrors_default_0.md"
+        },
+        {
+            "promptPath": "./FixTestDataErrors_default_1.md"
+        }
+    ]
+}

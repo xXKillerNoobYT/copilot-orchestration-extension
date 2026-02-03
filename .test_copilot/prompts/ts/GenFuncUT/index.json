@@ -1,0 +1,14 @@
+{
+    "default": [
+        {
+            "promptPath": "./GenFuncUT_default_0.md"
+        },
+        {
+            "promptPath": "./GenFuncUT_default_1.md"
+        },
+        {
+            "promptPath": "./GenFuncUT_default_2.md"
+        }
+    ],
+    "merge": []
+}

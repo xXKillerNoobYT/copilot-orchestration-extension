@@ -1,0 +1,11 @@
+{
+    "default": [
+        {
+            "promptPath": "./FillMsnStudioDocVariants_default_0.md"
+        },
+        {
+            "promptPath": "./FillMsnStudioDocVariants_default_1.md"
+        }
+    ],
+    "merge": []
+}

@@ -1,0 +1,14 @@
+{
+    "default": [
+        {
+            "promptPath": "./GenClassMemberUT_default_0.md"
+        },
+        {
+            "promptPath": "./GenClassMemberUT_default_1.md"
+        },
+        {
+            "promptPath": "./GenClassMemberUT_default_2.md"
+        }
+    ],
+    "merge": []
+}

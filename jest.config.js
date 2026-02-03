@@ -5,8 +5,8 @@ module.exports = {
   // Use Node environment (VS Code extensions run in Node.js)
   testEnvironment: 'node',
 
-  // Find test files in tests/ folder with .test.ts extension
-  testMatch: ['**/tests/**/*.test.ts'],
+  // Find test files in tests/ folder with .test.ts or .spec.ts extension
+  testMatch: ['**/tests/**/*.{test,spec}.ts'],
 
   // Where to look for source and test files
   roots: ['<rootDir>/src', '<rootDir>/tests'],
