@@ -118,6 +118,74 @@ function estimateMessagesTokens(messages: Message[]): number {
 }
 
 /**
+ * Trim messages to stay within token limit
+ * 
+ * Defensive trimming strategy:
+ * - If messages <= 80% of maxTokens, return unchanged
+ * - Otherwise, preserve system message (index 0) + last 3 user/assistant exchanges
+ * - Remove oldest conversation messages until under 80% threshold
+ * - Always keep system message even if it exceeds limit (critical context)
+ * 
+ * @param messages - Array of messages to potentially trim
+ * @param maxTokens - Maximum token limit from config
+ * @returns Trimmed messages array (or original if no trimming needed)
+ */
+function trimMessagesToTokenLimit(messages: Message[], maxTokens: number): Message[] {
+    const TRIM_THRESHOLD = 0.8; // 80% of maxTokens
+    const MIN_EXCHANGES_TO_KEEP = 3; // Keep last 3 user/assistant exchanges (6 messages)
+    
+    // Quick exit: if under threshold, no trimming needed
+    const totalTokens = estimateMessagesTokens(messages);
+    if (totalTokens <= maxTokens * TRIM_THRESHOLD) {
+        return messages;
+    }
+    
+    // If only 1 message or empty, can't trim further
+    if (messages.length <= 1) {
+        if (messages.length === 1 && totalTokens > maxTokens) {
+            logWarn(`System message alone (${totalTokens} tokens) exceeds maxTokens (${maxTokens}). Keeping it anyway (critical context).`);
+        }
+        return messages;
+    }
+    
+    // Separate system message from conversation messages
+    const systemMessage: Message | null = (messages[0]?.role === 'system') ? messages[0] : null;
+    const conversationMessages = systemMessage ? messages.slice(1) : messages;
+    
+    // Start with system message + last N exchanges
+    const messagesToKeep = MIN_EXCHANGES_TO_KEEP * 2; // 3 exchanges = 6 messages
+    let trimmedConversation = conversationMessages.slice(-messagesToKeep);
+    
+    // Build candidate array
+    let candidateMessages = systemMessage 
+        ? [systemMessage, ...trimmedConversation]
+        : trimmedConversation;
+    
+    // If still over limit, remove oldest conversation messages one by one
+    let candidateTokens = estimateMessagesTokens(candidateMessages);
+    while (candidateTokens > maxTokens * TRIM_THRESHOLD && trimmedConversation.length > 1) {
+        // Remove the oldest conversation message
+        trimmedConversation = trimmedConversation.slice(1);
+        candidateMessages = systemMessage 
+            ? [systemMessage, ...trimmedConversation]
+            : trimmedConversation;
+        candidateTokens = estimateMessagesTokens(candidateMessages);
+    }
+    
+    // Final safety: if only system message remains and still over limit, keep it anyway
+    if (candidateMessages.length === 1 && systemMessage && candidateTokens > maxTokens) {
+        logWarn(`System message alone (${candidateTokens} tokens) exceeds maxTokens (${maxTokens}). Keeping it anyway (critical context).`);
+    }
+    
+    // Log trimming action
+    if (candidateMessages.length < messages.length) {
+        logWarn(`Token limit exceeded (${totalTokens} > ${Math.floor(maxTokens * TRIM_THRESHOLD)}). Trimmed messages from ${messages.length} to ${candidateMessages.length} (${candidateTokens} tokens).`);
+    }
+    
+    return candidateMessages;
+}
+
+/**
  * Initialize the LLM service by reading and validating config
  * 
  * This function reads the config from .coe/config.json and validates it.
