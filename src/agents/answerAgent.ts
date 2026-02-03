@@ -203,6 +203,22 @@ export class AnswerAgent {
 
         return serialized;
     }
+
+    /**
+     * Deserialize conversation history from persisted data
+     * @param serialized Object mapping chatId -> JSON stringified ConversationMetadata
+     */
+    deserializeHistory(serialized: { [chatId: string]: string }): void {
+        for (const [chatId, metadataJson] of Object.entries(serialized)) {
+            try {
+                const metadata = JSON.parse(metadataJson) as ConversationMetadata;
+                this.conversationHistory.set(chatId, metadata);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[Answer Agent] Failed to load history for chat ${chatId}: ${message}`);
+            }
+        }
+    }
 }
 
 export default AnswerAgent;

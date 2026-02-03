@@ -148,6 +148,28 @@ export async function activate(context: vscode.ExtensionContext) {
     await initializeOrchestrator(context);
 
     const orchestrator = getOrchestratorInstance();
+
+    try {
+        const tickets = await listTickets();
+        const serializedHistory: { [chatId: string]: string } = {};
+        let restoredCount = 0;
+
+        for (const ticket of tickets) {
+            if (!ticket.conversationHistory) {
+                continue;
+            }
+
+            serializedHistory[ticket.id] = ticket.conversationHistory;
+            restoredCount += 1;
+        }
+
+        orchestrator.getAnswerAgent().deserializeHistory(serializedHistory);
+        logInfo(`Restored ${restoredCount} conversation histories on activate`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        logWarn(`Failed to load Answer Agent history on activate: ${message}`);
+    }
+
     await orchestrator.getAnswerAgent().cleanupInactiveConversations();
 
     // Initialize LLM service (requires Node 18+)
