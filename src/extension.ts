@@ -305,6 +305,17 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     /**
+     * Helper function to extract ticket ID from TreeItem
+     * Context menu commands receive TreeItem as argument, need to extract ID
+     * @param treeItem The TreeItem from context menu
+     * @returns Ticket ID string or null if not found
+     */
+    function extractTicketId(treeItem: vscode.TreeItem): string | null {
+        // Ticket ID is stored in command.arguments[0] by createTicketItem()
+        return treeItem.command?.arguments?.[0] || null;
+    }
+
+    /**
      * Command: coe.openTicket
      * Opens a ticket's plan/description in a new editor tab as Markdown
      * Called when user clicks a ticket in the Tickets sidebar
@@ -348,6 +359,156 @@ export async function activate(context: vscode.ExtensionContext) {
                 const message = error instanceof Error ? error.message : String(error);
                 logError(`Error opening ticket: ${message}`);
                 vscode.window.showErrorMessage(`Failed to open ticket: ${message}`);
+            }
+        }
+    );
+
+    /**
+     * Command: coe.viewTicketProgress
+     * Context menu command to view ticket progress (delegates to openTicket)
+     * @param treeItem The TreeItem selected in context menu
+     */
+    const viewTicketProgressCommand = vscode.commands.registerCommand(
+        'coe.viewTicketProgress',
+        async (treeItem: vscode.TreeItem) => {
+            try {
+                const ticketId = extractTicketId(treeItem);
+                
+                if (!ticketId) {
+                    logWarn('[ViewProgress] No ticket ID found in TreeItem');
+                    vscode.window.showWarningMessage('No ticket selected');
+                    return;
+                }
+
+                // Delegate to existing openTicket command
+                await vscode.commands.executeCommand('coe.openTicket', ticketId);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[ViewProgress] Error: ${message}`);
+                vscode.window.showErrorMessage(`Failed to view ticket progress: ${message}`);
+            }
+        }
+    );
+
+    /**
+     * Command: coe.updateTicketStatus
+     * Context menu command to manually update ticket status
+     * @param treeItem The TreeItem selected in context menu
+     */
+    const updateTicketStatusCommand = vscode.commands.registerCommand(
+        'coe.updateTicketStatus',
+        async (treeItem: vscode.TreeItem) => {
+            try {
+                const ticketId = extractTicketId(treeItem);
+                
+                if (!ticketId) {
+                    logWarn('[UpdateStatus] No ticket ID found in TreeItem');
+                    vscode.window.showWarningMessage('No ticket selected');
+                    return;
+                }
+
+                // Prompt user for new status
+                const status = await vscode.window.showQuickPick(
+                    ['open', 'in-progress', 'blocked', 'done'],
+                    {
+                        placeHolder: `Select new status for ticket ${ticketId}`
+                    }
+                );
+
+                // User cancelled
+                if (!status) {
+                    logInfo(`[UpdateStatus] User cancelled status update for ${ticketId}`);
+                    return;
+                }
+
+                logInfo(`[UpdateStatus] Updating ${ticketId} to ${status}`);
+
+                // Update ticket in database
+                // Type assertion: status is guaranteed to be one of the valid values from showQuickPick
+                const updated = await updateTicket(ticketId, { 
+                    status: status as 'open' | 'in-progress' | 'blocked' | 'done'
+                });
+
+                // Handle ticket not found (deleted while menu was open)
+                if (!updated) {
+                    logWarn(`[UpdateStatus] Ticket ${ticketId} not found`);
+                    vscode.window.showWarningMessage(`Ticket ${ticketId} not found or was deleted`);
+                    return;
+                }
+
+                // Success feedback
+                vscode.window.showInformationMessage(`Ticket ${ticketId} status updated to '${status}'`);
+                logInfo(`[UpdateStatus] Success - ${ticketId} → ${status}`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[UpdateStatus] Error: ${message}`);
+                vscode.window.showErrorMessage(`Failed to update ticket status: ${message}`);
+            }
+        }
+    );
+
+    /**
+     * Command: coe.addTicketComment
+     * Context menu command to add user comment to ticket
+     * @param treeItem The TreeItem selected in context menu
+     */
+    const addTicketCommentCommand = vscode.commands.registerCommand(
+        'coe.addTicketComment',
+        async (treeItem: vscode.TreeItem) => {
+            try {
+                const ticketId = extractTicketId(treeItem);
+                
+                if (!ticketId) {
+                    logWarn('[AddComment] No ticket ID found in TreeItem');
+                    vscode.window.showWarningMessage('No ticket selected');
+                    return;
+                }
+
+                // Prompt user for comment with validation
+                const comment = await vscode.window.showInputBox({
+                    prompt: 'Enter your comment (max 500 chars)',
+                    placeHolder: 'Add notes, questions, or updates...',
+                    validateInput: (value: string) => {
+                        if (value.length > 500) {
+                            return 'Comment too long (max 500 characters)';
+                        }
+                        return null;
+                    }
+                });
+
+                // User cancelled
+                if (!comment) {
+                    logInfo(`[AddComment] User cancelled comment for ${ticketId}`);
+                    return;
+                }
+
+                logInfo(`[AddComment] Adding comment to ${ticketId}`);
+
+                // Fetch existing ticket
+                const ticket = await getTicket(ticketId);
+
+                // Handle ticket not found
+                if (!ticket) {
+                    logWarn(`[AddComment] Ticket ${ticketId} not found`);
+                    vscode.window.showWarningMessage(`Ticket ${ticketId} not found or was deleted`);
+                    return;
+                }
+
+                // Append comment to description with timestamp separator
+                const timestamp = new Date().toLocaleString();
+                const existingDescription = ticket.description || '';
+                const updatedDescription = `${existingDescription}\n\n---\n**User Comment (${timestamp}):**\n${comment}`;
+
+                // Update ticket with new description
+                await updateTicket(ticketId, { description: updatedDescription });
+
+                // Success feedback
+                vscode.window.showInformationMessage(`Comment added to ticket ${ticketId}`);
+                logInfo(`[AddComment] Success - Comment added to ${ticketId}`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[AddComment] Error: ${message}`);
+                vscode.window.showErrorMessage(`Failed to add comment: ${message}`);
             }
         }
     );
@@ -403,6 +564,9 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(askAnswerAgentCommand);
     context.subscriptions.push(askAnswerAgentContinueCommand);
     context.subscriptions.push(openTicketCommand);
+    context.subscriptions.push(viewTicketProgressCommand);
+    context.subscriptions.push(updateTicketStatusCommand);
+    context.subscriptions.push(addTicketCommentCommand);
 
     logInfo('Extension fully activated');
 }
