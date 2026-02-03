@@ -12,6 +12,26 @@
 import { agentStatusTracker } from '../../src/ui/agentStatusTracker';
 import { logInfo } from '../../src/logger';
 
+// Mock vscode EventEmitter
+jest.mock('vscode', () => {
+    const EventEmitter = jest.fn().mockImplementation(() => {
+        const listeners: Array<(data: any) => void> = [];
+        return {
+            event: (listener: (data: any) => void) => {
+                listeners.push(listener);
+                return { dispose: () => {
+                    const index = listeners.indexOf(listener);
+                    if (index > -1) listeners.splice(index, 1);
+                }};
+            },
+            fire: (data: any) => {
+                listeners.forEach(listener => listener(data));
+            }
+        };
+    });
+    return { EventEmitter };
+}, { virtual: true });
+
 // Mock logger
 jest.mock('../../src/logger', () => ({
     logInfo: jest.fn(),
@@ -413,6 +433,169 @@ describe('AgentStatusTracker', () => {
                 expect(status).toBeDefined();
                 expect(status?.status).toBe('Idle');
             }
+        });
+    });
+
+    describe('currentTask field', () => {
+        it('should set currentTask via setAgentTask', () => {
+            agentStatusTracker.setAgentTask('Planning', 'Generating requirements...');
+
+            const status = agentStatusTracker.getAgentStatus('Planning');
+            expect(status?.currentTask).toBe('Generating requirements...');
+        });
+
+        it('should preserve currentTask when setAgentStatus is called without clearing it', () => {
+            agentStatusTracker.setAgentTask('Planning', 'Planning task X');
+            agentStatusTracker.setAgentStatus('Planning', 'Active', 'Working on plan');
+
+            const status = agentStatusTracker.getAgentStatus('Planning');
+            expect(status?.currentTask).toBe('Planning task X');
+            expect(status?.status).toBe('Active');
+            expect(status?.lastResult).toBe('Working on plan');
+        });
+
+        it('should clear currentTask when set to undefined', () => {
+            agentStatusTracker.setAgentTask('Planning', 'Task 1');
+            const status1 = agentStatusTracker.getAgentStatus('Planning');
+            expect(status1?.currentTask).toBe('Task 1');
+
+            agentStatusTracker.setAgentTask('Planning', undefined);
+            const status2 = agentStatusTracker.getAgentStatus('Planning');
+            expect(status2?.currentTask).toBeUndefined();
+        });
+
+        it('should update timestamp when setting currentTask', (done) => {
+            agentStatusTracker.setAgentTask('Planning', 'First task');
+            const timestamp1 = agentStatusTracker.getAgentStatus('Planning')?.timestamp;
+
+            setTimeout(() => {
+                agentStatusTracker.setAgentTask('Planning', 'Second task');
+                const timestamp2 = agentStatusTracker.getAgentStatus('Planning')?.timestamp;
+
+                expect(timestamp2).toBeGreaterThan(timestamp1 || 0);
+                done();
+            }, 10);
+        });
+
+        it('should log currentTask changes', () => {
+            jest.clearAllMocks();
+
+            agentStatusTracker.setAgentTask('Planning', 'Analyzing code');
+
+            expect(logInfo).toHaveBeenCalledWith(
+                expect.stringContaining('[AgentTracker] Planning task: Analyzing code')
+            );
+        });
+
+        it('should truncate currentTask in logs to 50 chars', () => {
+            jest.clearAllMocks();
+
+            const longTask = 'A'.repeat(100);
+            agentStatusTracker.setAgentTask('Planning', longTask);
+
+            const allCalls = (logInfo as jest.Mock).mock.calls;
+            const logCall = allCalls[allCalls.length - 1][0];
+            expect(logCall).toContain('A'.repeat(50));
+            expect(logCall).not.toContain('A'.repeat(51));
+        });
+
+        it('should handle setting task for non-existent agent gracefully', () => {
+            // Should not throw even if agent doesn't exist
+            expect(() => {
+                agentStatusTracker.setAgentTask('NonExistent', 'Task');
+            }).not.toThrow();
+        });
+
+        it('should clear currentTask on resetAll', () => {
+            agentStatusTracker.setAgentTask('Planning', 'Task 1');
+            agentStatusTracker.setAgentTask('Answer', 'Task 2');
+
+            agentStatusTracker.resetAll();
+
+            expect(agentStatusTracker.getAgentStatus('Planning')?.currentTask).toBeUndefined();
+            expect(agentStatusTracker.getAgentStatus('Answer')?.currentTask).toBeUndefined();
+        });
+    });
+
+    describe('event emission', () => {
+        it('should expose onStatusChange event emitter', () => {
+            expect(agentStatusTracker.onStatusChange).toBeDefined();
+            expect(typeof agentStatusTracker.onStatusChange).toBe('function');
+        });
+
+        it('should fire event when setAgentStatus is called', () => {
+            const listener = jest.fn();
+            const subscription = agentStatusTracker.onStatusChange(listener);
+
+            agentStatusTracker.setAgentStatus('Planning', 'Active', 'Working');
+
+            expect(listener).toHaveBeenCalledWith({
+                agentName: 'Planning',
+                status: expect.objectContaining({
+                    status: 'Active',
+                    lastResult: 'Working',
+                })
+            });
+
+            subscription.dispose();
+        });
+
+        it('should fire event when setAgentTask is called', () => {
+            const listener = jest.fn();
+            const subscription = agentStatusTracker.onStatusChange(listener);
+
+            agentStatusTracker.setAgentTask('Planning', 'Task X');
+
+            expect(listener).toHaveBeenCalledWith({
+                agentName: 'Planning',
+                status: expect.objectContaining({
+                    currentTask: 'Task X',
+                })
+            });
+
+            subscription.dispose();
+        });
+
+        it('should fire events for each agent on resetAll', () => {
+            const listener = jest.fn();
+            const subscription = agentStatusTracker.onStatusChange(listener);
+
+            agentStatusTracker.resetAll();
+
+            // Should fire 4 events (one per agent)
+            expect(listener).toHaveBeenCalledTimes(4);
+
+            subscription.dispose();
+        });
+
+        it('should allow multiple listeners to subscribe', () => {
+            const listener1 = jest.fn();
+            const listener2 = jest.fn();
+
+            const sub1 = agentStatusTracker.onStatusChange(listener1);
+            const sub2 = agentStatusTracker.onStatusChange(listener2);
+
+            agentStatusTracker.setAgentStatus('Planning', 'Active');
+
+            expect(listener1).toHaveBeenCalled();
+            expect(listener2).toHaveBeenCalled();
+
+            sub1.dispose();
+            sub2.dispose();
+        });
+
+        it('should not notify disposed listeners', () => {
+            const listener = jest.fn();
+            const subscription = agentStatusTracker.onStatusChange(listener);
+
+            agentStatusTracker.setAgentStatus('Planning', 'Active');
+            expect(listener).toHaveBeenCalledTimes(1);
+
+            subscription.dispose();
+            
+            agentStatusTracker.setAgentStatus('Planning', 'Waiting');
+            // Should still be 1 (not called after disposal)
+            expect(listener).toHaveBeenCalledTimes(1);
         });
     });
 });

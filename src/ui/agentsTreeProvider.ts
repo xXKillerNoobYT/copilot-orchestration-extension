@@ -11,7 +11,7 @@
 import * as vscode from 'vscode';
 import { agentStatusTracker } from './agentStatusTracker';
 import { onTicketChange } from '../services/ticketDb';
-import { logError } from '../logger';
+import { logError, logInfo } from '../logger';
 
 export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     // EventEmitter for notifying VS Code when tree data changes (triggers refresh)
@@ -26,6 +26,16 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
             });
         } catch (err) {
             logError(`[AgentsTreeProvider] Failed to subscribe to ticket changes: ${err}`);
+        }
+
+        // Subscribe to agent status changes for real-time updates
+        try {
+            agentStatusTracker.onStatusChange(() => {
+                this.refresh();
+            });
+            logInfo('[AgentsTreeProvider] Subscribed to agent status changes');
+        } catch (err) {
+            logError(`[AgentsTreeProvider] Failed to subscribe to status changes: ${err}`);
         }
     }
 
@@ -54,24 +64,36 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
         return agentNames.map(name => {
             const status = agentStatusTracker.getAgentStatus(name);
             const statusText = status?.status || 'Idle';
+            const currentTask = status?.currentTask || '';
             const lastResult = status?.lastResult || '';
 
-            // Build description: "{status}, Last: {result}" or just "{status}"
-            const description = lastResult
-                ? `${statusText}, Last: ${lastResult.substring(0, 50)}${lastResult.length > 50 ? '...' : ''}`
-                : statusText;
+            // Build description: prioritize currentTask for active agents, show lastResult for completed
+            let description: string;
+            if (currentTask) {
+                // Show current task (e.g., "Active, Task: Planning requirements...")
+                const truncated = currentTask.substring(0, 50);
+                description = `${statusText}, Task: ${truncated}${currentTask.length > 50 ? '...' : ''}`;
+            } else if (lastResult) {
+                // Show last result (e.g., "Waiting, Last: Step 1 completed")
+                const truncated = lastResult.substring(0, 50);
+                description = `${statusText}, Last: ${truncated}${lastResult.length > 50 ? '...' : ''}`;
+            } else {
+                // Just show status (e.g., "Idle")
+                description = statusText;
+            }
 
-            // Map status to appropriate icon
+            // Map status to appropriate icon with progress indicator for Active
             let icon: vscode.ThemeIcon;
             switch (statusText) {
                 case 'Active':
-                    icon = new vscode.ThemeIcon('sync~spin', new vscode.ThemeColor('testing.iconPassed'));
+                    // Use spinning loader icon for active agents (progress indicator)
+                    icon = new vscode.ThemeIcon('loading~spin', new vscode.ThemeColor('charts.green'));
                     break;
                 case 'Waiting':
-                    icon = new vscode.ThemeIcon('check');
+                    icon = new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.blue'));
                     break;
                 case 'Failed':
-                    icon = new vscode.ThemeIcon('error');
+                    icon = new vscode.ThemeIcon('error', new vscode.ThemeColor('charts.red'));
                     break;
                 case 'Idle':
                 default:
@@ -79,10 +101,17 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
                     break;
             }
 
-            // Additional tooltip info
-            const tooltip = lastResult
-                ? `${name}: ${statusText}\nLast: ${lastResult}\nUpdated: ${new Date(status?.timestamp || 0).toLocaleTimeString()}`
-                : `${name}: ${statusText}`;
+            // Build rich tooltip with all available info
+            let tooltip = `${name}: ${statusText}`;
+            if (currentTask) {
+                tooltip += `\nTask: ${currentTask}`;
+            }
+            if (lastResult) {
+                tooltip += `\nLast Result: ${lastResult}`;
+            }
+            if (status?.timestamp) {
+                tooltip += `\nUpdated: ${new Date(status.timestamp).toLocaleTimeString()}`;
+            }
 
             return this.createAgentItem(name, description, tooltip, icon);
         });

@@ -1,4 +1,5 @@
 import { logInfo } from '../logger';
+import { EventEmitter } from 'vscode';
 
 /**
  * Represents the current status of an agent.
@@ -7,6 +8,7 @@ import { logInfo } from '../logger';
 export interface AgentStatus {
   status: 'Idle' | 'Active' | 'Waiting' | 'Failed';
   lastResult?: string;
+  currentTask?: string; // Current task description (e.g., "Planning task X", "Verifying step 2")
   timestamp?: number;
 }
 
@@ -21,6 +23,8 @@ export interface AgentStatus {
 class AgentStatusTracker {
   private static instance: AgentStatusTracker;
   private _statusMap: Map<string, AgentStatus> = new Map();
+  private _onStatusChange = new EventEmitter<{ agentName: string; status: AgentStatus }>();
+  readonly onStatusChange = this._onStatusChange.event;
 
   private constructor() {
     // Initialize all agents to Idle
@@ -50,14 +54,42 @@ class AgentStatusTracker {
    * @param lastResult - Optional: Last result/plan/explanation (will be truncated in UI)
    */
   setAgentStatus(name: string, status: 'Idle' | 'Active' | 'Waiting' | 'Failed', lastResult?: string): void {
+    const currentStatus = this._statusMap.get(name);
     const agentStatus: AgentStatus = {
       status,
       lastResult: lastResult || undefined,
+      currentTask: currentStatus?.currentTask, // Preserve currentTask if not explicitly cleared
       timestamp: Date.now(),
     };
 
     this._statusMap.set(name, agentStatus);
     logInfo(`[AgentTracker] ${name} → ${status}${lastResult ? ` (${lastResult.substring(0, 50)})` : ''}`);
+    
+    // Emit event for real-time UI updates
+    this._onStatusChange.fire({ agentName: name, status: agentStatus });
+  }
+
+  /**
+   * Set the current task for an agent (what it's working on right now).
+   * Useful for showing "Planning task X" or "Verifying step 2" in the sidebar.
+   *
+   * @param name - Agent name
+   * @param task - Description of current task (e.g., "Generating requirements...")
+   */
+  setAgentTask(name: string, task: string | undefined): void {
+    const currentStatus = this._statusMap.get(name);
+    if (currentStatus) {
+      const agentStatus: AgentStatus = {
+        ...currentStatus,
+        currentTask: task,
+        timestamp: Date.now(),
+      };
+      this._statusMap.set(name, agentStatus);
+      logInfo(`[AgentTracker] ${name} task: ${task ? task.substring(0, 50) : 'cleared'}`);
+      
+      // Emit event for real-time UI updates
+      this._onStatusChange.fire({ agentName: name, status: agentStatus });
+    }
   }
 
   /**
@@ -76,7 +108,10 @@ class AgentStatusTracker {
    */
   resetAll(): void {
     this._statusMap.forEach((_, key) => {
-      this._statusMap.set(key, { status: 'Idle' });
+      const agentStatus: AgentStatus = { status: 'Idle', timestamp: Date.now() };
+      this._statusMap.set(key, agentStatus);
+      // Emit event for each agent reset
+      this._onStatusChange.fire({ agentName: key, status: agentStatus });
     });
     logInfo('[AgentTracker] All agents reset to Idle');
   }

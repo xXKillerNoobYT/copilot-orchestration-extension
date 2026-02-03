@@ -117,7 +117,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('sync~spin');
+            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('loading~spin');
         });
 
         it('should use check icon for Waiting agent', () => {
@@ -197,6 +197,105 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             expect(result[0].description).toBe('Waiting');
             expect((result[0].description as string).indexOf('Last')).toBe(-1);
         });
+
+        it('should display currentTask in description when available', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: 'Planning task X',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            expect(result[0].description).toContain('Active');
+            expect(result[0].description).toContain('Task:');
+            expect(result[0].description).toContain('Planning task X');
+        });
+
+        it('should prioritize currentTask over lastResult in description', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: 'Generating requirements',
+                lastResult: 'Previous plan completed',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            const desc = result[0].description as string;
+            expect(desc).toContain('Task:');
+            expect(desc).toContain('Generating requirements');
+            expect(desc).not.toContain('Last:');
+            expect(desc).not.toContain('Previous plan');
+        });
+
+        it('should truncate currentTask to 50 chars', () => {
+            const longTask = 'A'.repeat(100);
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: longTask,
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            const desc = result[0].description as string;
+            expect(desc).toContain('A'.repeat(50));
+            expect(desc).toContain('...');
+        });
+
+        it('should include currentTask in tooltip', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: 'Verifying step 2',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            expect(result[0].tooltip).toContain('Active');
+            expect(result[0].tooltip).toContain('Task:');
+            expect(result[0].tooltip).toContain('Verifying step 2');
+        });
+
+        it('should include both currentTask and lastResult in tooltip', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Active',
+                currentTask: 'Analyzing code',
+                lastResult: 'Previous: Found 3 issues',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            const tooltip = result[0].tooltip as string;
+            expect(tooltip).toContain('Active');
+            expect(tooltip).toContain('Task: Analyzing code');
+            expect(tooltip).toContain('Last Result: Previous: Found 3 issues');
+        });
+
+        it('should show "Idle" with no extra info when agent has no task or result', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Idle',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            expect(result[0].description).toBe('Idle');
+            const tooltip = result[0].tooltip as string;
+            expect(tooltip).toContain('Idle');
+            expect(tooltip).not.toContain('Task:');
+            expect(tooltip).not.toContain('Last Result:');
+        });
+
+        it('should handle Failed agent with error message in tooltip', () => {
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Failed',
+                lastResult: 'LLM connection timeout after 30s',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('error');
+            const tooltip = result[0].tooltip as string;
+            expect(tooltip).toContain('Failed');
+            expect(tooltip).toContain('LLM connection timeout');
+        });
     });
 
     describe('tree refresh on ticket change', () => {
@@ -214,6 +313,32 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             const fireSpy = jest.spyOn((provider as any)._onDidChangeTreeData, 'fire');
             provider.refresh();
             expect(fireSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('real-time updates on agent status change', () => {
+        it('should subscribe to agentStatusTracker.onStatusChange on construction', () => {
+            // Create new provider to test subscription
+            const mockOnStatusChange = jest.fn();
+            (agentStatusTracker as any).onStatusChange = mockOnStatusChange;
+            
+            new AgentsTreeDataProvider();
+            
+            // Should have subscribed
+            expect(mockOnStatusChange).toHaveBeenCalled();
+        });
+
+        it('should refresh tree when agent status changes', () => {
+            // This test verifies that status change event triggers refresh
+            const refreshSpy = jest.spyOn(provider, 'refresh');
+            
+            // Simulate a status change by triggering the event if captured
+            // (In real usage, agentStatusTracker.setAgentStatus would fire this)
+            if (capturedListener) {
+                capturedListener();
+            }
+            
+            expect(refreshSpy).toHaveBeenCalled();
         });
     });
 
