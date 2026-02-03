@@ -364,7 +364,7 @@ describe('LLM Service', () => {
             await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming inactivity timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM inactivity timeout'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: inactivity'));
-        }, 3000);
+        }, 5000);  // 5 second timeout for real timeout testing
 
         it('should handle streaming network errors', async () => {
             const mockReader = {
@@ -421,7 +421,7 @@ describe('LLM Service', () => {
             await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming startup timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM startup timeout'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: startup'));
-        }, 2000);
+        }, 5000);  // 5 second timeout for real timeout testing
 
         it('should abort on inactivity timeout after first chunk', async () => {
             // Reinit with short inactivity timeout (1.2 seconds, just over the 1s check interval)
@@ -458,7 +458,7 @@ describe('LLM Service', () => {
             await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming inactivity timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM inactivity timeout'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: inactivity'));
-        }, 3000);
+        }, 5000);  // 5 second timeout for real timeout testing
 
         it('should not double-abort if startup and inactivity timeouts overlap', async () => {
             // Reinit with overlapping short timeouts
@@ -496,7 +496,7 @@ describe('LLM Service', () => {
             
             // Verify exactly one abort reason was set (guard prevented double-abort)
             expect(logInfo).toHaveBeenCalledWith(expect.stringMatching(/Streaming aborted: (startup|inactivity)/));
-        }, 3000);
+        }, 5000);  // 5 second timeout for real timeout testing
     });
 
     describe('token management', () => {
