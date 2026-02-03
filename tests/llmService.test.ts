@@ -339,6 +339,8 @@ describe('LLM Service', () => {
             });
 
             let readCount = 0;
+            let capturedSignal: AbortSignal | undefined;
+            
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -349,15 +351,25 @@ describe('LLM Service', () => {
                             value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hi"}}]}\n')
                         };
                     }
-                    // Subsequent reads hang forever
-                    return new Promise(() => { });
+                    // Subsequent reads: wait and check if aborted
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    if (capturedSignal?.aborted) {
+                        const error = new Error('This operation was aborted');
+                        error.name = 'AbortError';
+                        throw error;
+                    }
+                    // Keep waiting
+                    return mockReader.read();
                 }),
                 cancel: jest.fn().mockResolvedValue(undefined)
             };
 
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                body: { getReader: () => mockReader }
+            (global.fetch as jest.Mock).mockImplementation((url, options) => {
+                capturedSignal = options?.signal;
+                return Promise.resolve({
+                    ok: true,
+                    body: { getReader: () => mockReader }
+                });
             });
 
             // With real timers, interval checks every 1s, so this will abort after ~2.2s total
@@ -404,17 +416,29 @@ describe('LLM Service', () => {
                 startupTimeoutSeconds: 0.5 // 500ms startup timeout
             });
 
+            let capturedSignal: AbortSignal | undefined;
+            
             const mockReader = {
-                read: jest.fn().mockImplementation(() => {
-                    // Simulate no chunks arriving - hang forever
-                    return new Promise(() => { });
+                read: jest.fn().mockImplementation(async () => {
+                    // Simulate no chunks arriving - wait and check if aborted
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    if (capturedSignal?.aborted) {
+                        const error = new Error('This operation was aborted');
+                        error.name = 'AbortError';
+                        throw error;
+                    }
+                    // Keep waiting
+                    return mockReader.read();
                 }),
                 cancel: jest.fn().mockResolvedValue(undefined)
             };
 
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                body: { getReader: () => mockReader }
+            (global.fetch as jest.Mock).mockImplementation((url, options) => {
+                capturedSignal = options?.signal;
+                return Promise.resolve({
+                    ok: true,
+                    body: { getReader: () => mockReader }
+                });
             });
 
             // With real timers, this will abort after ~500ms of no startup chunks
@@ -434,6 +458,8 @@ describe('LLM Service', () => {
             });
 
             let readCount = 0;
+            let capturedSignal: AbortSignal | undefined;
+            
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -443,15 +469,25 @@ describe('LLM Service', () => {
                             value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hello"}}]}\n')
                         };
                     }
-                    // Second read hangs forever
-                    return new Promise(() => { });
+                    // Second read: wait and check if aborted
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    if (capturedSignal?.aborted) {
+                        const error = new Error('This operation was aborted');
+                        error.name = 'AbortError';
+                        throw error;
+                    }
+                    // Keep waiting
+                    return mockReader.read();
                 }),
                 cancel: jest.fn().mockResolvedValue(undefined)
             };
 
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                body: { getReader: () => mockReader }
+            (global.fetch as jest.Mock).mockImplementation((url, options) => {
+                capturedSignal = options?.signal;
+                return Promise.resolve({
+                    ok: true,
+                    body: { getReader: () => mockReader }
+                });
             });
 
             // With real timers, interval checks every 1s, so this will abort after ~2.2s total
@@ -471,6 +507,8 @@ describe('LLM Service', () => {
             });
 
             let readCount = 0;
+            let capturedSignal: AbortSignal | undefined;
+            
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -480,20 +518,31 @@ describe('LLM Service', () => {
                             value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Test"}}]}\n')
                         };
                     }
-                    return new Promise(() => { });
+                    // Subsequent reads: wait and check if aborted
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    if (capturedSignal?.aborted) {
+                        const error = new Error('This operation was aborted');
+                        error.name = 'AbortError';
+                        throw error;
+                    }
+                    // Keep waiting
+                    return mockReader.read();
                 }),
                 cancel: jest.fn().mockResolvedValue(undefined)
             };
 
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                body: { getReader: () => mockReader }
+            (global.fetch as jest.Mock).mockImplementation((url, options) => {
+                capturedSignal = options?.signal;
+                return Promise.resolve({
+                    ok: true,
+                    body: { getReader: () => mockReader }
+                });
             });
 
             // With real timers, startup (500ms) will fire first
             // Guard ensures only one abort reason is logged
             await expect(streamLLM('Test', () => { })).rejects.toThrow();
-            
+
             // Verify exactly one abort reason was set (guard prevented double-abort)
             expect(logInfo).toHaveBeenCalledWith(expect.stringMatching(/Streaming aborted: (startup|inactivity)/));
         }, 5000);  // 5 second timeout for real timeout testing
