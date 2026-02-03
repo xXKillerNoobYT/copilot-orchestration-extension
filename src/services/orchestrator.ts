@@ -560,6 +560,16 @@ export class OrchestratorService {
     }
 
     /**
+     * Get the AnswerAgent instance (lazy initialized)
+     */
+    getAnswerAgent(): AnswerAgent {
+        if (!this.answerAgent) {
+            this.answerAgent = new AnswerAgent();
+        }
+        return this.answerAgent;
+    }
+
+    /**
      * Reset orchestrator state for tests
      * 
      * Clears the task queue and picked tasks to prevent test pollution.

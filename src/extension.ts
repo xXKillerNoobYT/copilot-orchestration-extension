@@ -146,6 +146,9 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize Orchestrator after TicketDb (depends on it)
     await initializeOrchestrator(context);
 
+    const orchestrator = getOrchestratorInstance();
+    await orchestrator.getAnswerAgent().cleanupInactiveConversations();
+
     // Initialize LLM service (requires Node 18+)
     await initializeLLMService(context);
 
@@ -235,6 +238,8 @@ export async function activate(context: vscode.ExtensionContext) {
             // Store chatId in globalState for use in Continue command
             await context.globalState.update('currentChatId', chatId);
 
+            await getOrchestratorInstance().getAnswerAgent().cleanupInactiveConversations();
+
             // Call Answer Agent with new conversation
             const response = await answerQuestion(question, chatId, false);
 
@@ -281,6 +286,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
 
                 logInfo(`Continuing conversation: ${chatId}`);
+
+                await getOrchestratorInstance().getAnswerAgent().cleanupInactiveConversations();
 
                 // Call Answer Agent with same chatId (reuses history)
                 const response = await answerQuestion(followUpQuestion, chatId, true);
