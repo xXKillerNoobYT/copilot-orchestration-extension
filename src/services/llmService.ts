@@ -282,6 +282,9 @@ export async function completeLLM(
         messages.push({ role: 'user', content: prompt });
     }
 
+    // Apply defensive token trimming before sending to LLM
+    messages = trimMessagesToTokenLimit(messages, config.maxTokens);
+
     // Build request body for LM Studio API (OpenAI-compatible format)
     const body = {
         model: config.model,
