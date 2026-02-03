@@ -43,10 +43,10 @@ TypeScript provides optional static typing, classes, and interfaces. This helps 
 
             // Act
             const promise = agent.runResearch(query);
-            
+
             // Fast-forward time by 10 minutes
             await jest.advanceTimersByTimeAsync(600000);
-            
+
             const report = await promise;
 
             // Assert
@@ -178,7 +178,7 @@ TypeScript provides optional static typing, classes, and interfaces. This helps 
             // Assert
             expect(logInfo).toHaveBeenCalledWith(
                 expect.stringMatching(/\[ResearchAgent\] Starting research for query: "A{100}\.\.\."/
-            ));
+                ));
         });
 
         it('should log completion with content length', async () => {

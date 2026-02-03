@@ -7,7 +7,7 @@ import { completeLLM } from '../services/llmService';
  */
 export class ResearchAgent {
     private readonly RESEARCH_DELAY_MS = 600000; // 10 minutes
-    private readonly SYSTEM_PROMPT = 
+    private readonly SYSTEM_PROMPT =
         'You are a research assistant. Generate a detailed markdown research report ' +
         'on the following topic. Structure your response with:\n' +
         '1. A brief summary (2-3 sentences)\n' +
@@ -46,7 +46,7 @@ export class ResearchAgent {
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             logError(`[ResearchAgent] Research failed: ${errorMessage}`);
-            
+
             // Return error report instead of throwing
             return this.formatErrorReport(query, errorMessage);
         }

@@ -374,7 +374,7 @@ export async function activate(context: vscode.ExtensionContext) {
         async (treeItem: vscode.TreeItem) => {
             try {
                 const ticketId = extractTicketId(treeItem);
-                
+
                 if (!ticketId) {
                     logWarn('[ViewProgress] No ticket ID found in TreeItem');
                     vscode.window.showWarningMessage('No ticket selected');
@@ -401,7 +401,7 @@ export async function activate(context: vscode.ExtensionContext) {
         async (treeItem: vscode.TreeItem) => {
             try {
                 const ticketId = extractTicketId(treeItem);
-                
+
                 if (!ticketId) {
                     logWarn('[UpdateStatus] No ticket ID found in TreeItem');
                     vscode.window.showWarningMessage('No ticket selected');
@@ -426,7 +426,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
                 // Update ticket in database
                 // Type assertion: status is guaranteed to be one of the valid values from showQuickPick
-                const updated = await updateTicket(ticketId, { 
+                const updated = await updateTicket(ticketId, {
                     status: status as 'open' | 'in-progress' | 'blocked' | 'done'
                 });
 
@@ -458,7 +458,7 @@ export async function activate(context: vscode.ExtensionContext) {
         async (treeItem: vscode.TreeItem) => {
             try {
                 const ticketId = extractTicketId(treeItem);
-                
+
                 if (!ticketId) {
                     logWarn('[AddComment] No ticket ID found in TreeItem');
                     vscode.window.showWarningMessage('No ticket selected');
