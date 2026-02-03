@@ -138,6 +138,50 @@ export class AnswerAgent {
     }
 
     /**
+     * Cleanup inactive conversations older than the inactivity threshold
+     */
+    async cleanupInactiveConversations(): Promise<void> {
+        try {
+            const now = Date.now();
+            const threshold = INACTIVITY_THRESHOLD_DAYS * MS_PER_DAY;
+            const chatIdsToDelete: string[] = [];
+
+            for (const [chatId, metadata] of this.conversationHistory.entries()) {
+                const lastActive = new Date(metadata.lastActivityAt).getTime();
+                const inactiveMs = now - lastActive;
+
+                if (inactiveMs > threshold) {
+                    chatIdsToDelete.push(chatId);
+                }
+            }
+
+            for (const chatId of chatIdsToDelete) {
+                const metadata = this.conversationHistory.get(chatId);
+                if (metadata) {
+                    const ageDays = Math.floor(
+                        (now - new Date(metadata.lastActivityAt).getTime()) / MS_PER_DAY
+                    );
+                    this.conversationHistory.delete(chatId);
+                    logInfo(
+                        `[Answer Agent] Auto-closed inactive chat ${chatId} (${ageDays} days old, last active: ${metadata.lastActivityAt})`
+                    );
+                }
+            }
+
+            if (chatIdsToDelete.length > 0) {
+                logInfo(
+                    `[Answer Agent] Auto-close cleanup: removed ${chatIdsToDelete.length} inactive conversation(s)`
+                );
+            } else {
+                logInfo('[Answer Agent] Auto-close cleanup: no inactive conversations found');
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[Answer Agent] Auto-close cleanup failed: ${message}`);
+        }
+    }
+
+    /**
      * Get current history for a chat (for testing/debugging)
      * @param chatId The chat ID
      * @returns The message history or undefined if not found
