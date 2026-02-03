@@ -189,6 +189,20 @@ export class AnswerAgent {
     getHistory(chatId: string): Message[] | undefined {
         return this.conversationHistory.get(chatId)?.messages;
     }
+
+    /**
+     * Serialize conversation history for persistence
+     * @returns Object mapping chatId -> JSON stringified ConversationMetadata
+     */
+    serializeHistory(): { [chatId: string]: string } {
+        const serialized: { [chatId: string]: string } = {};
+
+        for (const [chatId, metadata] of this.conversationHistory.entries()) {
+            serialized[chatId] = JSON.stringify(metadata);
+        }
+
+        return serialized;
+    }
 }
 
 export default AnswerAgent;

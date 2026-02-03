@@ -654,6 +654,28 @@ export async function activate(context: vscode.ExtensionContext) {
  * This function is called when the extension is deactivated.
  * Clean up resources here if needed.
  */
-export function deactivate() {
-    // Nothing to clean up yet
+export async function deactivate(): Promise<void> {
+    try {
+        const orchestrator = getOrchestratorInstance();
+        const answerAgent = orchestrator.getAnswerAgent();
+        const serializedHistory = answerAgent.serializeHistory();
+        const tickets = await listTickets();
+        let savedCount = 0;
+
+        for (const ticket of tickets) {
+            const conversationHistory = serializedHistory[ticket.id];
+
+            if (!conversationHistory) {
+                continue;
+            }
+
+            await updateTicket(ticket.id, { conversationHistory });
+            savedCount += 1;
+        }
+
+        logInfo(`Saved ${savedCount} conversation histories on deactivate`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        logWarn(`Failed to persist Answer Agent history on deactivate: ${message}`);
+    }
 }
