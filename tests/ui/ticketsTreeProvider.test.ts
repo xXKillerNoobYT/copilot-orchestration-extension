@@ -577,4 +577,61 @@ describe('TicketsTreeDataProvider', () => {
             expect(fireSpy).toHaveBeenCalledTimes(1);
         });
     });
+
+    describe('contextValue for context menus', () => {
+        it('should set contextValue to "ticket" on TreeItem when tickets exist', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Test ticket with context menu',
+                    status: 'open',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            // Verify contextValue is set to enable context menu targeting
+            expect(items[0].contextValue).toBe('ticket');
+        });
+
+        it('should set contextValue on all ticket items', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-001',
+                    title: 'Ticket 1',
+                    status: 'open',
+                    createdAt: '2026-02-01T10:00:00Z',
+                    updatedAt: '2026-02-01T10:00:00Z',
+                },
+                {
+                    id: 'TICKET-002',
+                    title: 'Ticket 2',
+                    status: 'blocked',
+                    createdAt: '2026-02-01T11:00:00Z',
+                    updatedAt: '2026-02-01T11:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            // All ticket items should have contextValue
+            expect(items[0].contextValue).toBe('ticket');
+            expect(items[1].contextValue).toBe('ticket');
+        });
+
+        it('should not set contextValue on placeholder item when no tickets', async () => {
+            mockListTickets.mockResolvedValue([]);
+
+            const items = await provider.getChildren();
+
+            // Placeholder item should NOT have contextValue (no context menu on placeholder)
+            expect(items[0].contextValue).toBeUndefined();
+        });
+    });
 });

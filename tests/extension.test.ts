@@ -27,7 +27,7 @@ jest.mock('../src/services/orchestrator', () => ({
             explanation: 'All criteria met'
         })),
         getAnswerAgent: jest.fn(() => ({
-            cleanupInactiveConversations: jest.fn(async () => {})
+            cleanupInactiveConversations: jest.fn(async () => { })
         }))
     })),
 }));
@@ -73,6 +73,7 @@ jest.mock('vscode', () => {
         EventEmitter,
         commands: {
             registerCommand: jest.fn((cmd, handler) => ({ dispose: jest.fn() })),
+            executeCommand: jest.fn(),
         },
         window: {
             registerTreeDataProvider: jest.fn(() => ({ dispose: jest.fn() })),
@@ -85,6 +86,8 @@ jest.mock('vscode', () => {
             showWarningMessage: jest.fn(),
             showErrorMessage: jest.fn(),
             showTextDocument: jest.fn().mockResolvedValue(undefined),
+            showQuickPick: jest.fn(),
+            showInputBox: jest.fn(),
         },
         workspace: {
             openTextDocument: jest.fn().mockResolvedValue({
@@ -339,7 +342,7 @@ describe('Extension Commands', () => {
                     explanation: 'All criteria met'
                 })),
                 getAnswerAgent: jest.fn(() => ({
-                    cleanupInactiveConversations: jest.fn(async () => {})
+                    cleanupInactiveConversations: jest.fn(async () => { })
                 }))
             }));
 
@@ -392,7 +395,7 @@ describe('Extension Commands', () => {
                     explanation: 'Missing criteria'
                 })),
                 getAnswerAgent: jest.fn(() => ({
-                    cleanupInactiveConversations: jest.fn(async () => {})
+                    cleanupInactiveConversations: jest.fn(async () => { })
                 }))
             }));
 
@@ -460,6 +463,426 @@ describe('Extension Commands', () => {
 
             // Verify: onTicketChange was called to register listener
             expect(mockTicketDb.onTicketChange).toHaveBeenCalledWith(expect.any(Function));
+        });
+    });
+
+    describe('Context Menu Commands', () => {
+        beforeEach(() => {
+            // Clear all mocks before each test in this describe block
+            jest.clearAllMocks();
+        });
+
+        it('should register the COE: View Ticket Progress command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.viewTicketProgress',
+                expect.any(Function)
+            );
+        });
+
+        it('should register the COE: Update Ticket Status command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.updateTicketStatus',
+                expect.any(Function)
+            );
+        });
+
+        it('should register the COE: Add Ticket Comment command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.addTicketComment',
+                expect.any(Function)
+            );
+        });
+
+        it('should execute openTicket when viewTicketProgress is called', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const viewProgressCall = registerCommandCalls.find(
+                call => call[0] === 'coe.viewTicketProgress'
+            );
+
+            const handler = viewProgressCall![1];
+
+            // Mock TreeItem with command.arguments containing ticket ID
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            // Mock executeCommand to track calls
+            const executeCommandSpy = jest.spyOn(vscode.commands, 'executeCommand');
+
+            await handler(mockTreeItem);
+
+            // Verify: openTicket was executed with ticket ID
+            expect(executeCommandSpy).toHaveBeenCalledWith('coe.openTicket', 'TICKET-123');
+        });
+
+        it('should show warning when viewTicketProgress called with no ticket ID', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const viewProgressCall = registerCommandCalls.find(
+                call => call[0] === 'coe.viewTicketProgress'
+            );
+
+            const handler = viewProgressCall![1];
+
+            // Mock TreeItem without command/arguments
+            const mockTreeItem = {
+                label: 'Test Ticket'
+            };
+
+            await handler(mockTreeItem);
+
+            // Verify: warning shown
+            expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No ticket selected');
+        });
+
+        it('should update ticket status when updateTicketStatus called with selection', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+            mockTicketDb.updateTicket.mockResolvedValue({
+                id: 'TICKET-123',
+                title: 'Test',
+                status: 'done',
+                createdAt: '2026-02-01T10:00:00Z',
+                updatedAt: '2026-02-01T10:00:00Z',
+            });
+
+            // Mock showQuickPick to return 'done'
+            (vscode.window.showQuickPick as jest.Mock).mockResolvedValue('done');
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const updateStatusCall = registerCommandCalls.find(
+                call => call[0] === 'coe.updateTicketStatus'
+            );
+
+            const handler = updateStatusCall![1];
+
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            await handler(mockTreeItem);
+
+            // Verify: showQuickPick was called with status options
+            expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
+                ['open', 'in-progress', 'blocked', 'done'],
+                expect.objectContaining({
+                    placeHolder: expect.stringMatching(/TICKET-123/)
+                })
+            );
+
+            // Verify: updateTicket was called with new status
+            expect(mockTicketDb.updateTicket).toHaveBeenCalledWith(
+                'TICKET-123',
+                { status: 'done' }
+            );
+
+            // Verify: success message shown
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                expect.stringMatching(/TICKET-123.*done/)
+            );
+        });
+
+        it('should handle user cancellation in updateTicketStatus', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+
+            // Mock showQuickPick to return undefined (user cancelled)
+            (vscode.window.showQuickPick as jest.Mock).mockResolvedValue(undefined);
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const updateStatusCall = registerCommandCalls.find(
+                call => call[0] === 'coe.updateTicketStatus'
+            );
+
+            const handler = updateStatusCall![1];
+
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            await handler(mockTreeItem);
+
+            // Verify: updateTicket was NOT called
+            expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
+        });
+
+        it('should show warning when updateTicketStatus ticket not found', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+            mockTicketDb.updateTicket.mockResolvedValue(null); // Ticket not found
+
+            (vscode.window.showQuickPick as jest.Mock).mockResolvedValue('done');
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const updateStatusCall = registerCommandCalls.find(
+                call => call[0] === 'coe.updateTicketStatus'
+            );
+
+            const handler = updateStatusCall![1];
+
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            await handler(mockTreeItem);
+
+            // Verify: warning shown about ticket not found
+            expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+                expect.stringMatching(/TICKET-123.*not found/)
+            );
+        });
+
+        it('should add comment to ticket when addTicketComment called', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+            mockTicketDb.getTicket.mockResolvedValue({
+                id: 'TICKET-123',
+                title: 'Test',
+                status: 'open',
+                description: 'Original description',
+                createdAt: '2026-02-01T10:00:00Z',
+                updatedAt: '2026-02-01T10:00:00Z',
+            });
+            mockTicketDb.updateTicket.mockResolvedValue({
+                id: 'TICKET-123',
+                title: 'Test',
+                status: 'open',
+                description: 'Updated with comment',
+                createdAt: '2026-02-01T10:00:00Z',
+                updatedAt: '2026-02-01T10:00:00Z',
+            });
+
+            // Mock showInputBox to return comment text
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('This is my comment');
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const addCommentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.addTicketComment'
+            );
+
+            const handler = addCommentCall![1];
+
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            await handler(mockTreeItem);
+
+            // Verify: showInputBox was called with validation
+            expect(vscode.window.showInputBox).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    prompt: expect.stringMatching(/max 500/),
+                    validateInput: expect.any(Function)
+                })
+            );
+
+            // Verify: getTicket was called
+            expect(mockTicketDb.getTicket).toHaveBeenCalledWith('TICKET-123');
+
+            // Verify: updateTicket was called with appended comment
+            expect(mockTicketDb.updateTicket).toHaveBeenCalledWith(
+                'TICKET-123',
+                expect.objectContaining({
+                    description: expect.stringMatching(/Original description.*---.*User Comment.*This is my comment/s)
+                })
+            );
+
+            // Verify: success message shown
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                expect.stringMatching(/Comment added.*TICKET-123/)
+            );
+        });
+
+        it('should validate comment length in addTicketComment', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const addCommentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.addTicketComment'
+            );
+
+            const handler = addCommentCall![1];
+
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            // Mock showInputBox to capture validator
+            let capturedValidator: ((value: string) => string | null) | undefined;
+            (vscode.window.showInputBox as jest.Mock).mockImplementation((options: any) => {
+                capturedValidator = options.validateInput;
+                return Promise.resolve(undefined); // User cancels
+            });
+
+            await handler(mockTreeItem);
+
+            // Test validator with long comment
+            const longComment = 'x'.repeat(501);
+            const validationResult = capturedValidator!(longComment);
+
+            expect(validationResult).toMatch(/too long/i);
+        });
+
+        it('should handle user cancellation in addTicketComment', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+
+            // Mock showInputBox to return undefined (user cancelled)
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue(undefined);
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const addCommentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.addTicketComment'
+            );
+
+            const handler = addCommentCall![1];
+
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            await handler(mockTreeItem);
+
+            // Verify: getTicket was NOT called
+            expect(mockTicketDb.getTicket).not.toHaveBeenCalled();
+            // Verify: updateTicket was NOT called
+            expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
+        });
+
+        it('should show warning when addTicketComment ticket not found', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+            mockTicketDb.getTicket.mockResolvedValue(null); // Ticket not found
+
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('My comment');
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const addCommentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.addTicketComment'
+            );
+
+            const handler = addCommentCall![1];
+
+            const mockTreeItem = {
+                label: 'Test Ticket',
+                command: {
+                    command: 'coe.openTicket',
+                    arguments: ['TICKET-123']
+                }
+            };
+
+            await handler(mockTreeItem);
+
+            // Verify: warning shown about ticket not found
+            expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+                expect.stringMatching(/TICKET-123.*not found/)
+            );
+
+            // Verify: updateTicket was NOT called
+            expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
         });
     });
 });
