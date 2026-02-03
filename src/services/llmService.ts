@@ -427,6 +427,8 @@ export async function streamLLM(
             controller.abort();
         }
     }, startupTimeoutSeconds * 1000);
+    // .unref() ensures timer doesn't keep Node/Jest process alive
+    startupTimeout.unref();
 
     // Start interval checker for inactivity timeout
     checkInterval = setInterval(() => {
@@ -445,6 +447,8 @@ export async function streamLLM(
             controller.abort(); // Stop the stream
         }
     }, 1000); // Check every second
+    // .unref() ensures timer doesn't keep Node/Jest process alive
+    checkInterval.unref();
 
     let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
