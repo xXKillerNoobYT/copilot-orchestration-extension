@@ -19,10 +19,12 @@ jest.mock('vscode', () => {
         return {
             event: (listener: (data: any) => void) => {
                 listeners.push(listener);
-                return { dispose: () => {
-                    const index = listeners.indexOf(listener);
-                    if (index > -1) listeners.splice(index, 1);
-                }};
+                return {
+                    dispose: () => {
+                        const index = listeners.indexOf(listener);
+                        if (index > -1) listeners.splice(index, 1);
+                    }
+                };
             },
             fire: (data: any) => {
                 listeners.forEach(listener => listener(data));
@@ -592,7 +594,7 @@ describe('AgentStatusTracker', () => {
             expect(listener).toHaveBeenCalledTimes(1);
 
             subscription.dispose();
-            
+
             agentStatusTracker.setAgentStatus('Planning', 'Waiting');
             // Should still be 1 (not called after disposal)
             expect(listener).toHaveBeenCalledTimes(1);

@@ -64,7 +64,7 @@ class AgentStatusTracker {
 
     this._statusMap.set(name, agentStatus);
     logInfo(`[AgentTracker] ${name} → ${status}${lastResult ? ` (${lastResult.substring(0, 50)})` : ''}`);
-    
+
     // Emit event for real-time UI updates
     this._onStatusChange.fire({ agentName: name, status: agentStatus });
   }
@@ -86,7 +86,7 @@ class AgentStatusTracker {
       };
       this._statusMap.set(name, agentStatus);
       logInfo(`[AgentTracker] ${name} task: ${task ? task.substring(0, 50) : 'cleared'}`);
-      
+
       // Emit event for real-time UI updates
       this._onStatusChange.fire({ agentName: name, status: agentStatus });
     }

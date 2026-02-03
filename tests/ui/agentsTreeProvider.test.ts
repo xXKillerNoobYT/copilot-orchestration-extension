@@ -321,9 +321,9 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             // Create new provider to test subscription
             const mockOnStatusChange = jest.fn();
             (agentStatusTracker as any).onStatusChange = mockOnStatusChange;
-            
+
             new AgentsTreeDataProvider();
-            
+
             // Should have subscribed
             expect(mockOnStatusChange).toHaveBeenCalled();
         });
@@ -331,13 +331,13 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
         it('should refresh tree when agent status changes', () => {
             // This test verifies that status change event triggers refresh
             const refreshSpy = jest.spyOn(provider, 'refresh');
-            
+
             // Simulate a status change by triggering the event if captured
             // (In real usage, agentStatusTracker.setAgentStatus would fire this)
             if (capturedListener) {
                 capturedListener();
             }
-            
+
             expect(refreshSpy).toHaveBeenCalled();
         });
     });
