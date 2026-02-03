@@ -24,6 +24,8 @@ export interface ConversationMetadata {
  * 5 exchanges = 10 total messages + system prompt
  */
 export const MAX_HISTORY_EXCHANGES = 5;
+export const INACTIVITY_THRESHOLD_DAYS = 30;
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Generate a unique chat ID
@@ -63,6 +65,7 @@ export class AnswerAgent {
             // Get existing history or start with empty array
             const existingMetadata = this.conversationHistory.get(sessionId);
             const existingHistory = existingMetadata?.messages || [];
+            const createdAt = existingMetadata?.createdAt ?? new Date().toISOString();
 
             // Build messages array: system prompt + history + current question
             const messages: Message[] = [
@@ -81,6 +84,7 @@ export class AnswerAgent {
             });
 
             const answer = response.content;
+            const lastActivityAt = new Date().toISOString();
 
             // Append user question and assistant response to history
             const updatedHistory: Message[] = [
@@ -97,8 +101,8 @@ export class AnswerAgent {
                 );
                 this.conversationHistory.set(sessionId, {
                     chatId: sessionId,
-                    createdAt: existingMetadata?.createdAt ?? '',
-                    lastActivityAt: existingMetadata?.lastActivityAt ?? '',
+                    createdAt: createdAt,
+                    lastActivityAt: lastActivityAt,
                     messages: trimmedHistory
                 });
                 logInfo(
@@ -107,8 +111,8 @@ export class AnswerAgent {
             } else {
                 this.conversationHistory.set(sessionId, {
                     chatId: sessionId,
-                    createdAt: existingMetadata?.createdAt ?? '',
-                    lastActivityAt: existingMetadata?.lastActivityAt ?? '',
+                    createdAt: createdAt,
+                    lastActivityAt: lastActivityAt,
                     messages: updatedHistory
                 });
             }
