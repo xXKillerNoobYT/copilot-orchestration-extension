@@ -19,10 +19,18 @@ jest.mock('../src/logger', () => ({
     logError: jest.fn()
 }));
 
+jest.mock('../src/ui/llmStatusBar', () => ({
+    llmStatusBar: {
+        start: jest.fn(),
+        end: jest.fn()
+    }
+}));
+
 jest.mock('fs');
 
 import { createTicket } from '../src/services/ticketDb';
 import { logInfo, logWarn, logError } from '../src/logger';
+import { llmStatusBar } from '../src/ui/llmStatusBar';
 
 describe('LLM Service', () => {
     let mockContext: vscode.ExtensionContext;
@@ -160,6 +168,8 @@ describe('LLM Service', () => {
             expect(result.usage?.total_tokens).toBe(30);
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('LLM request'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('LLM response'));
+            expect(llmStatusBar.start).toHaveBeenCalledTimes(1);
+            expect(llmStatusBar.end).toHaveBeenCalledTimes(1);
         });
 
         it('should include system prompt if provided', async () => {
@@ -196,6 +206,8 @@ describe('LLM Service', () => {
                 status: 'blocked',
                 description: expect.stringContaining('Network error')
             }));
+            expect(llmStatusBar.start).toHaveBeenCalledTimes(1);
+            expect(llmStatusBar.end).toHaveBeenCalledTimes(1);
         });
 
         it('should handle HTTP error responses', async () => {
@@ -276,6 +288,8 @@ describe('LLM Service', () => {
             expect(result.content).toBe('Hello world');
             expect(result.usage).toBeUndefined();
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('First LLM chunk received'));
+            expect(llmStatusBar.start).toHaveBeenCalledTimes(1);
+            expect(llmStatusBar.end).toHaveBeenCalledTimes(1);
         });
 
         it('should skip malformed SSE lines gracefully', async () => {
@@ -364,6 +378,8 @@ describe('LLM Service', () => {
             await expect(streamLLM('Test', () => { })).rejects.toThrow('Network error');
             expect(logError).toHaveBeenCalledWith(expect.stringContaining('LLM streaming failed'));
             expect(createTicket).toHaveBeenCalled();
+            expect(llmStatusBar.start).toHaveBeenCalledTimes(1);
+            expect(llmStatusBar.end).toHaveBeenCalledTimes(1);
         });
 
         it('should handle HTTP error in streaming', async () => {

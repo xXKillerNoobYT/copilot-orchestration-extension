@@ -51,6 +51,9 @@ export const window = {
   createOutputChannel(name: string): MockOutputChannel {
     return new MockOutputChannel(name);
   },
+  setStatusBarMessage: jest.fn().mockReturnValue({
+    dispose: jest.fn()
+  }),
   showInformationMessage: jest.fn(),
   showWarningMessage: jest.fn(),
   showErrorMessage: jest.fn(),
