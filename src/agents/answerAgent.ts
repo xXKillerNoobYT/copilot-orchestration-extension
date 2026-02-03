@@ -1,5 +1,5 @@
 import { ANSWER_SYSTEM_PROMPT } from '../services/orchestrator';
-import { logInfo, logError } from '../logger';
+import { logInfo, logError, logWarn } from '../logger';
 import { completeLLM } from '../services/llmService';
 
 /**
@@ -196,9 +196,26 @@ export class AnswerAgent {
      */
     serializeHistory(): { [chatId: string]: string } {
         const serialized: { [chatId: string]: string } = {};
+        const maxBytes = 1024 * 1024; // 1MB limit
+        const maxMessages = 3 * 2; // 3 exchanges = 6 messages
 
         for (const [chatId, metadata] of this.conversationHistory.entries()) {
-            serialized[chatId] = JSON.stringify(metadata);
+            let metadataToSave = metadata;
+            let jsonString = JSON.stringify(metadataToSave);
+
+            if (jsonString.length > maxBytes) {
+                const trimmedMessages = metadata.messages.slice(-maxMessages);
+                metadataToSave = {
+                    ...metadata,
+                    messages: trimmedMessages
+                };
+                jsonString = JSON.stringify(metadataToSave);
+                logWarn(
+                    `[Answer Agent] History truncated due to size for chat ${chatId} (kept last 3 exchanges)`
+                );
+            }
+
+            serialized[chatId] = jsonString;
         }
 
         return serialized;
@@ -215,7 +232,7 @@ export class AnswerAgent {
                 this.conversationHistory.set(chatId, metadata);
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error);
-                logError(`[Answer Agent] Failed to load history for chat ${chatId}: ${message}`);
+                logWarn(`[Answer Agent] Failed to load history for chat ${chatId}: ${message}`);
             }
         }
     }

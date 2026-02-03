@@ -691,8 +691,15 @@ export async function deactivate(): Promise<void> {
                 continue;
             }
 
-            await updateTicket(ticket.id, { conversationHistory });
-            savedCount += 1;
+            try {
+                await updateTicket(ticket.id, { conversationHistory });
+                savedCount += 1;
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logWarn(
+                    `Failed to persist Answer Agent history for ticket ${ticket.id}: ${message}`
+                );
+            }
         }
 
         logInfo(`Saved ${savedCount} conversation histories on deactivate`);
