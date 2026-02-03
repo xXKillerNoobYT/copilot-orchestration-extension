@@ -450,7 +450,8 @@ export async function streamLLM(
 
     // Cleanup helper function - idempotent (safe to call multiple times)
     const cleanup = async (): Promise<void> => {
-        logInfo(`Cleanup: aborting (reason=${abortReason || 'none'}), clearing timers and reader`);
+        const timeElapsed = Date.now() - startTime;
+        logInfo(`Cleanup: aborting (reason=${abortReason || 'none'}, duration=${timeElapsed}ms), clearing timers and reader`);
         if (checkInterval !== null) {
             clearInterval(checkInterval);
             checkInterval = null;
