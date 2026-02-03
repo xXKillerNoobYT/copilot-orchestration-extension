@@ -1,4 +1,4 @@
-import AnswerAgent, { Message, createChatId, MAX_HISTORY_EXCHANGES } from '../../src/agents/answerAgent';
+import AnswerAgent, { Message, ConversationMetadata, createChatId, MAX_HISTORY_EXCHANGES } from '../../src/agents/answerAgent';
 import * as llmService from '../../src/services/llmService';
 import { logInfo, logError } from '../../src/logger';
 
@@ -445,6 +445,208 @@ describe('AnswerAgent', () => {
             await agent.ask('Q6', chatId);
             const historyAfter = agent.getHistory(chatId);
             expect(historyAfter?.length).toBe(maxExchanges * 2); // Still 10 (trimmed to last 5)
+        });
+    });
+
+    describe('Auto-close inactive conversations', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('should close conversations inactive for >30 days', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const oldDate = new Date('2025-12-01T00:00:00Z');
+            jest.setSystemTime(oldDate);
+
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Old answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+
+            await agent.ask('Old question', 'old-chat');
+
+            // Act - Advance time 32 days
+            jest.setSystemTime(new Date('2026-01-02T00:00:00Z'));
+            await agent.cleanupInactiveConversations();
+
+            // Assert
+            expect(agent.getHistory('old-chat')).toBeUndefined();
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Auto-closed inactive chat old-chat'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('32 days old'));
+        });
+
+        it('should NOT close conversations active within 30 days', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const recentDate = new Date('2026-01-20T00:00:00Z');
+            jest.setSystemTime(recentDate);
+
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Recent answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+
+            await agent.ask('Recent question', 'recent-chat');
+
+            // Act - Advance only 10 days
+            jest.setSystemTime(new Date('2026-01-30T00:00:00Z'));
+            await agent.cleanupInactiveConversations();
+
+            // Assert
+            const history = agent.getHistory('recent-chat');
+            expect(history).toBeDefined();
+            expect(history?.length).toBe(2); // user + assistant
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('no inactive conversations found'));
+        });
+
+        it('should handle exactly 30 days (boundary condition)', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            jest.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+
+            await agent.ask('Question', 'boundary-chat');
+
+            // Act - Exactly 30 days = 30 * 24 * 60 * 60 * 1000 ms
+            jest.setSystemTime(new Date('2026-01-31T00:00:00Z'));
+            await agent.cleanupInactiveConversations();
+
+            // Assert - Should NOT be deleted (>30, not >=30)
+            expect(agent.getHistory('boundary-chat')).toBeDefined();
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('no inactive conversations found'));
+        });
+
+        it('should handle cleanup with no conversations', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+
+            // Act
+            await agent.cleanupInactiveConversations();
+
+            // Assert
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('no inactive conversations found'));
+        });
+
+        it('should handle multiple chats (old and new)', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+
+            // Create old chat
+            jest.setSystemTime(new Date('2025-12-01T00:00:00Z'));
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Old answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+            await agent.ask('Old Q', 'old-chat');
+
+            // Create new chat
+            jest.setSystemTime(new Date('2026-01-20T00:00:00Z'));
+            mockCompleteLLM.mockResolvedValue({
+                content: 'New answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+            await agent.ask('New Q', 'new-chat');
+
+            // Act - Set current time to Feb 1 (old = 62 days, new = 12 days)
+            jest.setSystemTime(new Date('2026-02-01T00:00:00Z'));
+            await agent.cleanupInactiveConversations();
+
+            // Assert
+            expect(agent.getHistory('old-chat')).toBeUndefined(); // 62 days old - deleted
+            expect(agent.getHistory('new-chat')).toBeDefined(); // 12 days old - kept
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('removed 1 inactive conversation'));
+        });
+
+        it('should handle cleanup errors gracefully', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+
+            await agent.ask('Question', 'test-chat');
+
+            // Force an error by mocking Map.entries to throw
+            const originalEntries = agent['conversationHistory'].entries;
+            jest.spyOn(agent['conversationHistory'], 'entries').mockImplementation(() => {
+                throw new Error('Map corrupted');
+            });
+
+            // Act
+            await agent.cleanupInactiveConversations();
+
+            // Assert
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining('Map corrupted'));
+
+            // Cleanup
+            agent['conversationHistory'].entries = originalEntries;
+        });
+
+        it('should update lastActivityAt on each ask', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            jest.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+
+            // First ask
+            await agent.ask('Q1', 'test-chat');
+            const metadata1 = agent['conversationHistory'].get('test-chat');
+            expect(metadata1?.lastActivityAt).toBe('2026-01-01T00:00:00.000Z');
+
+            // Second ask (10 days later)
+            jest.setSystemTime(new Date('2026-01-11T00:00:00Z'));
+            await agent.ask('Q2', 'test-chat');
+            const metadata2 = agent['conversationHistory'].get('test-chat');
+            expect(metadata2?.lastActivityAt).toBe('2026-01-11T00:00:00.000Z');
+
+            // createdAt should stay the same
+            expect(metadata2?.createdAt).toBe(metadata1?.createdAt);
+
+            // Cleanup at 32 days from original = only 21 days from last activity
+            jest.setSystemTime(new Date('2026-02-02T00:00:00Z'));
+            await agent.cleanupInactiveConversations();
+
+            // Should NOT be deleted (21 days since last activity)
+            expect(agent.getHistory('test-chat')).toBeDefined();
+        });
+
+        it('should log each deleted conversation with details', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            jest.setSystemTime(new Date('2025-12-01T00:00:00Z'));
+
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Answer',
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            });
+
+            await agent.ask('Q1', 'chat-1');
+            await agent.ask('Q2', 'chat-2');
+
+            // Act - 35 days later
+            jest.setSystemTime(new Date('2026-01-05T00:00:00Z'));
+            await agent.cleanupInactiveConversations();
+
+            // Assert
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Auto-closed inactive chat chat-1'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('35 days old'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('last active: 2025-12-01'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('removed 2 inactive conversation'));
         });
     });
 });
