@@ -885,4 +885,142 @@ describe('Extension Commands', () => {
             expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
         });
     });
+
+    describe('coe.researchWithAgent command', () => {
+        it('should register the COE: Research with Agent command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            // Verify that registerCommand was called with 'coe.researchWithAgent' command
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.researchWithAgent',
+                expect.any(Function)
+            );
+        });
+
+        it('should show info message when Research Agent is disabled in settings', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            // Mock workspace.getConfiguration to return disabled setting
+            const mockGetConfiguration = jest.fn(() => ({
+                get: jest.fn((key: string, defaultValue?: any) => {
+                    if (key === 'enableResearchAgent') return false;
+                    return defaultValue;
+                }),
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            await activate(mockContext);
+
+            // Find the handler for the 'coe.researchWithAgent' command
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const researchCommandCall = registerCommandCalls.find(
+                call => call[0] === 'coe.researchWithAgent'
+            );
+            expect(researchCommandCall).toBeDefined();
+
+            const researchHandler = researchCommandCall![1];
+
+            // Execute the handler
+            await researchHandler();
+
+            // Verify that showInformationMessage was called with disabled message
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Research Agent is disabled')
+            );
+
+            // Verify that showInputBox was NOT called
+            expect(vscode.window.showInputBox).not.toHaveBeenCalled();
+        });
+
+        it('should abort silently when no query is provided', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            // Mock workspace.getConfiguration to return enabled setting
+            const mockGetConfiguration = jest.fn(() => ({
+                get: jest.fn((key: string, defaultValue?: any) => {
+                    if (key === 'enableResearchAgent') return true;
+                    return defaultValue;
+                }),
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            // Mock showInputBox to return undefined (user cancelled)
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue(undefined);
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const researchCommandCall = registerCommandCalls.find(
+                call => call[0] === 'coe.researchWithAgent'
+            );
+
+            const researchHandler = researchCommandCall![1];
+
+            // Execute the handler
+            await researchHandler();
+
+            // Verify that workspace.openTextDocument was NOT called
+            expect(vscode.workspace.openTextDocument).not.toHaveBeenCalled();
+
+            // Verify that showErrorMessage was NOT called (silent abort)
+            expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+        });
+
+        it('should abort silently when empty query is provided', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            // Mock workspace.getConfiguration to return enabled setting
+            const mockGetConfiguration = jest.fn(() => ({
+                get: jest.fn((key: string, defaultValue?: any) => {
+                    if (key === 'enableResearchAgent') return true;
+                    return defaultValue;
+                }),
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            // Mock showInputBox to return empty string
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('   ');
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const researchCommandCall = registerCommandCalls.find(
+                call => call[0] === 'coe.researchWithAgent'
+            );
+
+            const researchHandler = researchCommandCall![1];
+
+            // Execute the handler
+            await researchHandler();
+
+            // Verify that workspace.openTextDocument was NOT called
+            expect(vscode.workspace.openTextDocument).not.toHaveBeenCalled();
+        });
+    });
 });
