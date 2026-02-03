@@ -328,28 +328,28 @@ describe('LLM Service', () => {
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to parse SSE line'));
         });
 
-        it.skip('should abort on inactivity timeout', async () => {
-            // Reinit with très short timeout for testing
+        it('should abort on inactivity timeout', async () => {
+            // Reinit with short timeout for testing (1.2 seconds, just over the 1s check interval)
             await reinitWithConfig({
                 endpoint: 'http://localhost:1234/v1',
                 model: 'test-model',
-                timeoutSeconds: 1, // 1 second timeout
+                timeoutSeconds: 1.2, // 1200ms inactivity timeout
                 maxTokens: 2048,
                 startupTimeoutSeconds: 10
             });
 
             let readCount = 0;
             const mockReader = {
-                read: jest.fn().mockImplementation(() => {
+                read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
                         readCount++;
                         // First chunk arrives immediately
-                        return Promise.resolve({
+                        return {
                             done: false,
                             value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hi"}}]}\n')
-                        });
+                        };
                     }
-                    // Subsequent reads hang forever (simulating no more chunks)
+                    // Subsequent reads hang forever
                     return new Promise(() => { });
                 }),
                 cancel: jest.fn().mockResolvedValue(undefined)
@@ -360,8 +360,10 @@ describe('LLM Service', () => {
                 body: { getReader: () => mockReader }
             });
 
-            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM request timed out');
+            // With real timers, interval checks every 1s, so this will abort after ~2.2s total
+            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming inactivity timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM inactivity timeout'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: inactivity'));
         }, 3000);
 
         it('should handle streaming network errors', async () => {
@@ -392,14 +394,14 @@ describe('LLM Service', () => {
             expect(createTicket).toHaveBeenCalled();
         });
 
-        it.skip('should abort on startup timeout', async () => {
-            // Reinit with very short startup timeout
+        it('should abort on startup timeout', async () => {
+            // Reinit with short startup timeout (0.5 seconds = 500ms)
             await reinitWithConfig({
                 endpoint: 'http://localhost:1234/v1',
                 model: 'test-model',
                 timeoutSeconds: 60,
                 maxTokens: 2048,
-                startupTimeoutSeconds: 1 // 1 second startup timeout
+                startupTimeoutSeconds: 0.5 // 500ms startup timeout
             });
 
             const mockReader = {
@@ -415,29 +417,31 @@ describe('LLM Service', () => {
                 body: { getReader: () => mockReader }
             });
 
-            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM request timed out');
+            // With real timers, this will abort after ~500ms of no startup chunks
+            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming startup timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM startup timeout'));
-        }, 3000);
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: startup'));
+        }, 2000);
 
-        it.skip('should abort on inactivity timeout after first chunk', async () => {
-            // Reinit with very short inactivity timeout
+        it('should abort on inactivity timeout after first chunk', async () => {
+            // Reinit with short inactivity timeout (1.2 seconds, just over the 1s check interval)
             await reinitWithConfig({
                 endpoint: 'http://localhost:1234/v1',
                 model: 'test-model',
-                timeoutSeconds: 1, // 1 second inactivity timeout
+                timeoutSeconds: 1.2, // 1200ms inactivity timeout
                 maxTokens: 2048,
                 startupTimeoutSeconds: 10
             });
 
             let readCount = 0;
             const mockReader = {
-                read: jest.fn().mockImplementation(() => {
+                read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
                         readCount++;
-                        return Promise.resolve({
+                        return {
                             done: false,
                             value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hello"}}]}\n')
-                        });
+                        };
                     }
                     // Second read hangs forever
                     return new Promise(() => { });
@@ -450,8 +454,48 @@ describe('LLM Service', () => {
                 body: { getReader: () => mockReader }
             });
 
-            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM request timed out');
+            // With real timers, interval checks every 1s, so this will abort after ~2.2s total
+            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming inactivity timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM inactivity timeout'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: inactivity'));
+        }, 3000);
+
+        it('should not double-abort if startup and inactivity timeouts overlap', async () => {
+            // Reinit with overlapping short timeouts
+            await reinitWithConfig({
+                endpoint: 'http://localhost:1234/v1',
+                model: 'test-model',
+                timeoutSeconds: 1.2, // 1200ms inactivity timeout
+                maxTokens: 2048,
+                startupTimeoutSeconds: 0.5 // 500ms startup timeout
+            });
+
+            let readCount = 0;
+            const mockReader = {
+                read: jest.fn().mockImplementation(async () => {
+                    if (readCount === 0) {
+                        readCount++;
+                        return {
+                            done: false,
+                            value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Test"}}]}\n')
+                        };
+                    }
+                    return new Promise(() => { });
+                }),
+                cancel: jest.fn().mockResolvedValue(undefined)
+            };
+
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                body: { getReader: () => mockReader }
+            });
+
+            // With real timers, startup (500ms) will fire first
+            // Guard ensures only one abort reason is logged
+            await expect(streamLLM('Test', () => { })).rejects.toThrow();
+            
+            // Verify exactly one abort reason was set (guard prevented double-abort)
+            expect(logInfo).toHaveBeenCalledWith(expect.stringMatching(/Streaming aborted: (startup|inactivity)/));
         }, 3000);
     });
 
