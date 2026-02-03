@@ -1,0 +1,126 @@
+// ./orchestrator.Test.ts
+import { OrchestratorService } from '../../src/services/orchestrator';
+import { createTicket } from '../../src/services/ticketDb';
+import { logWarn, logError } from '../../src/logger';
+
+jest.mock('../../src/services/ticketDb', () => ({
+  ...jest.requireActual('../../src/services/ticketDb'),
+  createTicket: jest.fn(),
+}));
+
+jest.mock('../../src/logger', () => ({
+  ...jest.requireActual('../../src/logger'),
+  logWarn: jest.fn(),
+  logError: jest.fn(),
+}));
+
+interface Task {
+  id: string;
+  title: string;
+  lastPickedAt: string | null;
+  blockedAt: string | null;
+  status: string;
+}
+
+interface OrchestratorServiceExtended extends OrchestratorService {
+  taskQueue: Task[];
+  pickedTasks: Task[];
+  taskTimeoutSeconds: number;
+  checkForBlockedTasks: () => Promise<void>;
+}
+
+/** @aiContributed-2026-02-03 */
+describe('OrchestratorService - checkForBlockedTasks', () => {
+  let orchestrator: OrchestratorServiceExtended;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService() as OrchestratorServiceExtended;
+    orchestrator.taskQueue = [];
+    orchestrator.pickedTasks = [];
+    orchestrator.taskTimeoutSeconds = 300; // 5 minutes
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should block tasks that exceed the timeout and create a ticket', async () => {
+    const now = Date.now();
+    const task: Task = {
+      id: '1',
+      title: 'Test Task',
+      lastPickedAt: new Date(now - 400000).toISOString(), // Picked 400 seconds ago
+      blockedAt: null,
+      status: 'in-progress',
+    };
+    orchestrator.pickedTasks = [task];
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).not.toBeNull();
+    expect(task.status).toBe('blocked');
+    expect(orchestrator.pickedTasks).toHaveLength(0);
+    expect(createTicket).toHaveBeenCalledWith({
+      title: `BLOCKED: ${task.title}`,
+      status: 'blocked',
+      description: `Task idle for 400s (timeout: 300s)`,
+    });
+    expect(logWarn).toHaveBeenCalledWith(`Created blocked ticket for task: ${task.id}`);
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should not block tasks that are within the timeout', async () => {
+    const now = Date.now();
+    const task: Task = {
+      id: '2',
+      title: 'Test Task 2',
+      lastPickedAt: new Date(now - 200000).toISOString(), // Picked 200 seconds ago
+      blockedAt: null,
+      status: 'in-progress',
+    };
+    orchestrator.pickedTasks = [task];
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).toBeNull();
+    expect(task.status).toBe('in-progress');
+    expect(orchestrator.pickedTasks).toHaveLength(1);
+    expect(createTicket).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should skip tasks without lastPickedAt', async () => {
+    const task: Task = {
+      id: '3',
+      title: 'Test Task 3',
+      lastPickedAt: null,
+      blockedAt: null,
+      status: 'pending',
+    };
+    orchestrator.taskQueue = [task];
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).toBeNull();
+    expect(task.status).toBe('pending');
+    expect(createTicket).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should handle errors when creating a ticket', async () => {
+    const now = Date.now();
+    const task: Task = {
+      id: '4',
+      title: 'Test Task 4',
+      lastPickedAt: new Date(now - 400000).toISOString(), // Picked 400 seconds ago
+      blockedAt: null,
+      status: 'in-progress',
+    };
+    orchestrator.pickedTasks = [task];
+    (createTicket as jest.Mock).mockRejectedValueOnce(new Error('Database error'));
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).not.toBeNull();
+    expect(task.status).toBe('blocked');
+    expect(orchestrator.pickedTasks).toHaveLength(0);
+    expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to create blocked ticket'));
+  });
+});

@@ -6,6 +6,7 @@ import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
+import { ConversationsTreeDataProvider } from './ui/conversationsTreeProvider';
 import { agentStatusTracker } from './ui/agentStatusTracker';
 import { createChatId } from './agents/answerAgent';
 import { ResearchAgent } from './agents/researchAgent';
@@ -181,16 +182,19 @@ export async function activate(context: vscode.ExtensionContext) {
     // Setup auto-planning listener for ai_to_human tickets
     await setupAutoPlanning();
 
-    // Initialize TreeView providers for sidebar (Agents and Tickets tabs)
+    // Initialize TreeView providers for sidebar (Agents, Tickets, and Conversations tabs)
     // AgentsTreeDataProvider = static hardcoded agent list
     const agentsProvider = new AgentsTreeDataProvider();
     // TicketsTreeDataProvider = queries TicketDb for open tickets
     const ticketsProvider = new TicketsTreeDataProvider();
+    // ConversationsTreeDataProvider = displays active Answer Agent conversations (placeholder for now)
+    const conversationsProvider = new ConversationsTreeDataProvider();
 
     // Register tree providers with VS Code (connects provider class to view ID from package.json)
     // registerTreeDataProvider = tells VS Code to use our provider for the specified view
     const agentsTreeView = vscode.window.registerTreeDataProvider('coe-agents', agentsProvider);
     const ticketsTreeView = vscode.window.registerTreeDataProvider('coe-tickets', ticketsProvider);
+    const conversationsTreeView = vscode.window.registerTreeDataProvider('coe-conversations', conversationsProvider);
 
     // Register manual refresh commands (accessible via Command Palette)
     const refreshAgentsCommand = vscode.commands.registerCommand('coe.refreshAgents', () => {
@@ -201,6 +205,11 @@ export async function activate(context: vscode.ExtensionContext) {
     const refreshTicketsCommand = vscode.commands.registerCommand('coe.refreshTickets', () => {
         logInfo('Manual refresh: Tickets');
         ticketsProvider.refresh();
+    });
+
+    const refreshConversationsCommand = vscode.commands.registerCommand('coe.refreshConversations', () => {
+        logInfo('Manual refresh: Conversations');
+        conversationsProvider.refresh();
     });
 
     const planTaskCommand = vscode.commands.registerCommand('coe.planTask', async () => {
@@ -656,8 +665,10 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(statusBarItem);
     context.subscriptions.push(agentsTreeView);
     context.subscriptions.push(ticketsTreeView);
+    context.subscriptions.push(conversationsTreeView);
     context.subscriptions.push(refreshAgentsCommand);
     context.subscriptions.push(refreshTicketsCommand);
+    context.subscriptions.push(refreshConversationsCommand);
     context.subscriptions.push(planTaskCommand);
     context.subscriptions.push(verifyTaskCommand);
     context.subscriptions.push(verifyLastTicketCommand);

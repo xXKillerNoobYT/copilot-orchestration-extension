@@ -12,6 +12,7 @@ describe('AnswerAgent - clearHistory', () => {
   let answerAgent: AnswerAgent;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     answerAgent = new AnswerAgent();
   });
 

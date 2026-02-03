@@ -29,6 +29,10 @@
                 "title": "COE: Refresh Tickets"
             },
             {
+                "command": "coe.refreshConversations",
+                "title": "COE: Refresh Conversations"
+            },
+            {
                 "command": "coe.planTask",
                 "title": "COE: Plan Task"
             },
@@ -59,6 +63,14 @@
             {
                 "command": "coe.researchWithAgent",
                 "title": "COE: Research with Agent"
+            },
+            {
+                "command": "coe.askAnswerAgent",
+                "title": "COE: Ask Answer Agent"
+            },
+            {
+                "command": "coe.askAnswerAgentContinue",
+                "title": "COE: Continue Answer Agent Chat"
             }
         ],
         "configuration": {
@@ -111,6 +123,11 @@
                     "id": "coe-tickets",
                     "name": "Tickets",
                     "icon": "$(checklist)"
+                },
+                {
+                    "id": "coe-conversations",
+                    "name": "Conversations",
+                    "icon": "$(comment-discussion)"
                 }
             ]
         },
