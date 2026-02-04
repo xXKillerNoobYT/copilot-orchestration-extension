@@ -85,4 +85,37 @@ describe('logWarn', () => {
     );
     consoleWarnSpy.mockRestore();
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should log only if logLevel is "warn" or "error"', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const message = 'Conditional log test';
+
+    // Simulate logLevel being "warn"
+    const globalWithLogLevel = global as typeof global & { logLevel: string };
+    globalWithLogLevel.logLevel = 'warn';
+
+    logWarn(message);
+
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('[WARN]')
+    );
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[WARN]')
+    );
+
+    // Simulate logLevel being "info"
+    globalWithLogLevel.logLevel = 'info';
+
+    logWarn(message);
+
+    expect(mockOutputChannel.appendLine).not.toHaveBeenCalledWith(
+      expect.stringContaining('[WARN]')
+    );
+    expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('[WARN]')
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
 });

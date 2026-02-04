@@ -1,6 +1,6 @@
 // ./orchestrator.Test.ts
 import { OrchestratorService } from '../../src/services/orchestrator';
-import { Logger } from '../../src/logger';
+import { logInfo, logError } from '../../src/logger';
 import { llmStatusBar } from '../../src/ui/llmStatusBar';
 import { AnswerAgent } from '../../src/services/answerAgent';
 
@@ -53,8 +53,8 @@ describe('OrchestratorService', () => {
 
         expect(llmStatusBar.start).toHaveBeenCalled();
         expect(llmStatusBar.end).toHaveBeenCalled();
-        expect(Logger.logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Starting conversation'));
-        expect(Logger.logInfo).toHaveBeenCalledWith('[Answer] Response generated');
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Starting conversation'));
+        expect(logInfo).toHaveBeenCalledWith('[Answer] Response generated');
         expect(result).toBe(expectedAnswer);
     });
 
@@ -83,7 +83,7 @@ describe('OrchestratorService', () => {
 
         expect(llmStatusBar.start).toHaveBeenCalled();
         expect(llmStatusBar.end).toHaveBeenCalled();
-        expect(Logger.logError).toHaveBeenCalledWith(expect.stringContaining(`[Answer] Failed to answer question: ${errorMessage}`));
+        expect(logError).toHaveBeenCalledWith(expect.stringContaining(`[Answer] Failed to answer question: ${errorMessage}`));
         expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
     });
 
@@ -93,7 +93,7 @@ describe('OrchestratorService', () => {
 
         expect(llmStatusBar.start).toHaveBeenCalled();
         expect(llmStatusBar.end).toHaveBeenCalled();
-        expect(Logger.logError).toHaveBeenCalledWith(expect.stringContaining('[Answer] Failed to answer question'));
+        expect(logError).toHaveBeenCalledWith(expect.stringContaining('[Answer] Failed to answer question'));
         expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
     });
 
@@ -106,7 +106,18 @@ describe('OrchestratorService', () => {
 
         const result = await orchestrator.answerQuestion(longQuestion);
 
-        expect(Logger.logInfo).toHaveBeenCalledWith(expect.stringContaining(longQuestion.substring(0, 50)));
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining(longQuestion.substring(0, 50)));
         expect(result).toBe(expectedAnswer);
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should call llmStatusBar.end even if an error is thrown', async () => {
+        const question = 'What is the capital of France?';
+        mockAnswerAgent.ask.mockRejectedValue(new Error('Unexpected error'));
+
+        await orchestrator.answerQuestion(question);
+
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(llmStatusBar.end).toHaveBeenCalled();
     });
 });

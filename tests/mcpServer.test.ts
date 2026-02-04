@@ -145,7 +145,7 @@ describe('MCP Server', () => {
                 id: null,
                 error: {
                     code: -32700,
-                    message: 'Parse error'
+                    message: expect.stringContaining('Parse error')
                 }
             });
         });
@@ -201,7 +201,7 @@ describe('MCP Server', () => {
                 id: 3,
                 error: {
                     code: -32600,
-                    message: 'Invalid JSON-RPC version'
+                    message: 'Invalid Request: jsonrpc must be "2.0"'
                 }
             });
         });

@@ -82,4 +82,29 @@ describe('OrchestratorService - routeQuestionToAnswer', () => {
     expect(logError).toHaveBeenCalledWith('Answer agent failed: Timeout error');
     expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle empty string as question input', async () => {
+    const mockResponse = { content: 'Answer from LLM' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestratorService.routeQuestionToAnswer('');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: ');
+    expect(completeLLM).toHaveBeenCalledWith('', { systemPrompt: ANSWER_SYSTEM_PROMPT });
+    expect(logInfo).toHaveBeenCalledWith('Answer agent response received');
+    expect(result).toBe('Answer from LLM');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should log error and return fallback message if completeLLM throws a network error', async () => {
+    const mockError = new Error('Network error');
+    (completeLLM as jest.Mock).mockRejectedValue(mockError);
+
+    const result = await orchestratorService.routeQuestionToAnswer('What is AI?');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: What is AI?');
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: Network error');
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+  });
 });

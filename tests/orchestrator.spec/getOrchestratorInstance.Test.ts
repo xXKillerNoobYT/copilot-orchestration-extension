@@ -36,4 +36,13 @@ describe('getOrchestratorInstance', () => {
     const instance2 = getOrchestratorInstance();
     expect(instance1).toBe(instance2);
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should log a warning if initializeOrchestrator is called multiple times', async () => {
+    const logWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    await initializeOrchestrator(mockContext);
+    await initializeOrchestrator(mockContext);
+    expect(logWarnSpy).toHaveBeenCalledWith('Orchestrator already initialized');
+    logWarnSpy.mockRestore();
+  });
 });

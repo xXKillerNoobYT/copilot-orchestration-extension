@@ -7,29 +7,8 @@ import { routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } fr
 import { handleGetNextTask, validateGetNextTaskParams } from './tools/getNextTask';
 import { handleReportTaskDone, validateReportTaskDoneParams } from './tools/reportTaskDone';
 import { handleAskQuestion, validateAskQuestionParams } from './tools/askQuestion';
-
-/**
- * JSON-RPC 2.0 request structure
- */
-interface JsonRpcRequest {
-    jsonrpc: string;
-    method: string;
-    params?: any;
-    id?: string | number | null;
-}
-
-/**
- * JSON-RPC 2.0 response structure
- */
-interface JsonRpcResponse {
-    jsonrpc: string;
-    id: string | number | null;
-    result?: any;
-    error?: {
-        code: number;
-        message: string;
-    };
-}
+import { logRegisteredTools } from './integration';
+import { JsonRpcRequest, JsonRpcResponse, parseJsonRpcMessage } from './jsonrpc';
 
 /**
  * MCP Server class - handles JSON-RPC 2.0 requests over stdio
@@ -42,6 +21,9 @@ export class MCPServer extends EventEmitter {
     private inputStream: NodeJS.ReadableStream;
     private outputStream: NodeJS.WritableStream;
     private isStarted: boolean = false;
+    private shutdownHandlersRegistered: boolean = false;
+    private readonly handleSigint: () => void;
+    private readonly handleSigterm: () => void;
 
     /**
      * Constructor allows dependency injection for testing
@@ -55,6 +37,14 @@ export class MCPServer extends EventEmitter {
         super();
         this.inputStream = inputStream;
         this.outputStream = outputStream;
+        this.handleSigint = () => {
+            logInfo('MCP server received SIGINT, shutting down...');
+            this.stop();
+        };
+        this.handleSigterm = () => {
+            logInfo('MCP server received SIGTERM, shutting down...');
+            this.stop();
+        };
     }
 
     /**
@@ -78,6 +68,12 @@ export class MCPServer extends EventEmitter {
         // Listen for incoming data
         this.inputStream.on('data', this.handleRequest.bind(this));
 
+        // Log registered tools
+        logRegisteredTools();
+
+        // Register graceful shutdown handlers
+        this.registerShutdownHandlers();
+
         this.isStarted = true;
         logInfo('MCP server started successfully');
     }
@@ -94,6 +90,7 @@ export class MCPServer extends EventEmitter {
 
         logInfo('MCP server stopping...');
         this.inputStream.removeAllListeners('data');
+        this.unregisterShutdownHandlers();
 
         if (this.inputStream === process.stdin) {
             this.inputStream.pause();
@@ -104,40 +101,68 @@ export class MCPServer extends EventEmitter {
     }
 
     /**
+     * Register process shutdown handlers
+     *
+     * **Simple explanation**: If the app is closing, we clean up the server safely.
+     */
+    private registerShutdownHandlers(): void {
+        if (this.shutdownHandlersRegistered) {
+            return;
+        }
+
+        process.on('SIGINT', this.handleSigint);
+        process.on('SIGTERM', this.handleSigterm);
+        this.shutdownHandlersRegistered = true;
+    }
+
+    /**
+     * Unregister process shutdown handlers
+     */
+    private unregisterShutdownHandlers(): void {
+        if (!this.shutdownHandlersRegistered) {
+            return;
+        }
+
+        process.off('SIGINT', this.handleSigint);
+        process.off('SIGTERM', this.handleSigterm);
+        this.shutdownHandlersRegistered = false;
+    }
+
+    /**
      * Handle incoming JSON-RPC request
      * 
      * **Simple explanation**: This runs when Copilot sends us a message - like receiving a text message
      */
     private handleRequest(data: Buffer): void {
-        try {
-            const request: JsonRpcRequest = JSON.parse(data.toString());
+        const parseResult = parseJsonRpcMessage(data.toString());
 
+        // Emit parse/validation errors first
+        parseResult.errors.forEach((errorResponse) => {
+            this.sendJsonRpcResponse(errorResponse);
+        });
+
+        if (parseResult.requests.length === 0) {
+            return;
+        }
+
+        // Handle each request (batch or single)
+        parseResult.requests.forEach((request) => {
             logInfo(`MCP received request: method=${request.method}, id=${request.id}`);
-
-            // Validate JSON-RPC version
-            if (request.jsonrpc !== '2.0') {
-                this.sendError(request.id || null, -32600, 'Invalid JSON-RPC version');
-                return;
-            }
 
             // Route to the appropriate tool handler
             if (request.method === 'getNextTask') {
-                this.handleGetNextTask(request);
+                void this.handleGetNextTask(request);
             } else if (request.method === 'reportTaskDone') {
-                this.handleReportTaskDone(request);
+                void this.handleReportTaskDone(request);
             } else if (request.method === 'askQuestion') {
-                this.handleAskQuestion(request);
+                void this.handleAskQuestion(request);
             } else if (request.method === 'callCOEAgent') {
-                this.handleCallCOEAgent(request);
+                void this.handleCallCOEAgent(request);
             } else {
                 // Method not found error (JSON-RPC error code -32601)
-                this.sendError(request.id || null, -32601, `Method not found: ${request.method}`);
+                this.sendError(request.id ?? null, -32601, `Method not found: ${request.method}`);
             }
-        } catch (error) {
-            // Invalid JSON error (JSON-RPC error code -32700)
-            logError(`MCP server error parsing JSON: ${error}`);
-            this.sendError(null, -32700, 'Parse error');
-        }
+        });
     }
 
     /**
@@ -312,12 +337,15 @@ export class MCPServer extends EventEmitter {
      * **Simple explanation**: Send the answer back to Copilot (like replying to a text message)
      */
     private sendResponse(id: string | number | null, result: any): void {
+        if (id === undefined) {
+            return;
+        }
         const response: JsonRpcResponse = {
             jsonrpc: '2.0',
             id,
             result
         };
-        this.outputStream.write(JSON.stringify(response) + '\n');
+        this.sendJsonRpcResponse(response);
         logInfo(`MCP sent response: id=${id}`);
     }
 
@@ -327,6 +355,9 @@ export class MCPServer extends EventEmitter {
      * **Simple explanation**: Send an error message back when something goes wrong
      */
     private sendError(id: string | number | null, code: number, message: string): void {
+        if (id === undefined) {
+            return;
+        }
         const errorResponse: JsonRpcResponse = {
             jsonrpc: '2.0',
             id,
@@ -335,7 +366,16 @@ export class MCPServer extends EventEmitter {
                 message
             }
         };
-        this.outputStream.write(JSON.stringify(errorResponse) + '\n');
+        this.sendJsonRpcResponse(errorResponse);
         logWarn(`MCP sent error: id=${id}, code=${code}, message=${message}`);
+    }
+
+    /**
+     * Write a JSON-RPC response to the output stream
+     *
+     * **Simple explanation**: Low-level helper that sends a JSON-RPC response line.
+     */
+    private sendJsonRpcResponse(response: JsonRpcResponse): void {
+        this.outputStream.write(JSON.stringify(response) + '\n');
     }
 }

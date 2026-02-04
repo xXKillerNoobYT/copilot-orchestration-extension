@@ -66,6 +66,13 @@ describe('updateStatusBar', () => {
   });
 
   /** @aiContributed-2026-02-03 */
+    it('should not update the status bar if text is empty', async () => {
+    await updateStatusBar('');
+    expect(statusBarItem.text).toBe('');
+    expect(statusBarItem.tooltip).toBe('');
+  });
+
+  /** @aiContributed-2026-02-03 */
     it('should log debug messages for updates', async () => {
     await updateStatusBar('Done', 'All tasks completed');
     expect(Logger.debug).toHaveBeenCalledWith('Status bar updated: Done');

@@ -41,6 +41,8 @@ describe('createTicket', () => {
             status: 'open',
             type: 'ai_to_human',
             description: 'This is a test ticket',
+            conversationHistory: JSON.stringify([{ role: 'user', content: 'Hello', createdAt: '2026-02-01T10:30:00Z' }]),
+            thread: [{ role: 'user', content: 'Hello', createdAt: '2026-02-01T10:30:00Z' }],
         };
 
         const ticket = await createTicket(ticketData);
@@ -50,6 +52,8 @@ describe('createTicket', () => {
             status: 'open',
             type: 'ai_to_human',
             description: 'This is a test ticket',
+            conversationHistory: JSON.stringify([{ role: 'user', content: 'Hello', createdAt: '2026-02-01T10:30:00Z' }]),
+            thread: [{ role: 'user', content: 'Hello', createdAt: '2026-02-01T10:30:00Z' }],
         });
         expect(ticket.id).toMatch(/^TICKET-\d+$/);
         expect(ticket.createdAt).toBeDefined();
@@ -85,6 +89,8 @@ describe('createTicket', () => {
             status: 'open',
             type: undefined,
             description: undefined,
+            conversationHistory: undefined,
+            thread: undefined,
         });
         expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Created ticket:'));
     });
@@ -122,5 +128,25 @@ describe('createTicket', () => {
 
         await expect(createTicket(ticketData)).rejects.toThrow('Mocked Date.now() failure');
         expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to create ticket'));
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle tickets with complex thread structures', async () => {
+        const ticketData = {
+            title: 'Complex Thread Ticket',
+            status: 'open',
+            thread: [
+                { role: 'user', content: 'Message 1', createdAt: '2026-02-01T10:30:00Z' },
+                { role: 'assistant', content: 'Message 2', createdAt: '2026-02-01T10:35:00Z' },
+            ],
+        };
+
+        const ticket = await createTicket(ticketData);
+
+        expect(ticket.thread).toEqual([
+            { role: 'user', content: 'Message 1', createdAt: '2026-02-01T10:30:00Z' },
+            { role: 'assistant', content: 'Message 2', createdAt: '2026-02-01T10:35:00Z' },
+        ]);
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Created ticket:'));
     });
 });

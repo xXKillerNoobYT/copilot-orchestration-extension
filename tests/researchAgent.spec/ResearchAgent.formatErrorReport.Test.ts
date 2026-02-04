@@ -93,6 +93,19 @@ Please try again later or check the COE logs for more details.
             expect(result).toContain('Failed to generate research report: ');
         });
 
+        /** @aiContributed-2026-02-03 */
+        it('should handle special characters in query and errorMessage', () => {
+            const query = 'Special!@#$%^&*()';
+            const errorMessage = 'Error!@#$%^&*()';
+            const mockDate = new Date('2023-01-01T12:00:00Z');
+            jest.spyOn(global, 'Date').mockImplementation(() => mockDate as unknown as string);
+
+            const result = researchAgent['formatErrorReport'](query, errorMessage);
+
+            expect(result).toContain('**Query:** Special!@#$%^&*()');
+            expect(result).toContain('Failed to generate research report: Error!@#$%^&*()');
+        });
+
         afterEach(() => {
             jest.restoreAllMocks();
         });

@@ -132,4 +132,27 @@ describe('logError', () => {
 
     consoleErrorSpy.mockRestore();
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle an Error object with no message gracefully', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const error = new Error();
+
+    logError(error);
+
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('[ERROR]')
+    );
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('')
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ERROR]')
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('')
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
 });

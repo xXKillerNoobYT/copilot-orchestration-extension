@@ -36,7 +36,7 @@ describe('OrchestratorService - getAnswerAgent', () => {
         const answerAgent = orchestratorService.getAnswerAgent();
         expect(answerAgent).toBeDefined();
         expect(answerAgent).toBeInstanceOf(AnswerAgent);
-        expect(Logger.debug).not.toHaveBeenCalled(); // Assuming no debug log in the current implementation
+        expect(Logger.debug).not.toHaveBeenCalled();
     });
 
     /** @aiContributed-2026-02-03 */
@@ -44,13 +44,20 @@ describe('OrchestratorService - getAnswerAgent', () => {
         const firstInstance = orchestratorService.getAnswerAgent();
         const secondInstance = orchestratorService.getAnswerAgent();
         expect(secondInstance).toBe(firstInstance);
-        expect(Logger.debug).not.toHaveBeenCalled(); // Assuming no debug log in the current implementation
+        expect(Logger.debug).not.toHaveBeenCalled();
     });
 
     /** @aiContributed-2026-02-03 */
     it('should not create a new AnswerAgent instance if one already exists', () => {
         orchestratorService.getAnswerAgent();
         orchestratorService.getAnswerAgent();
+        expect(AnswerAgent).toHaveBeenCalledTimes(1);
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should initialize AnswerAgent only once even with multiple calls', () => {
+        const instances = Array.from({ length: 5 }, () => orchestratorService.getAnswerAgent());
+        expect(instances.every(instance => instance === instances[0])).toBe(true);
         expect(AnswerAgent).toHaveBeenCalledTimes(1);
     });
 });

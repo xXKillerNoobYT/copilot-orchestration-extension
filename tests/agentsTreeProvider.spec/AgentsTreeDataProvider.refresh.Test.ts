@@ -51,5 +51,11 @@ describe('AgentsTreeDataProvider', () => {
         it('should not throw any errors when called', () => {
             expect(() => dataProvider.refresh()).not.toThrow();
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should log an info message when refresh is called', () => {
+            dataProvider.refresh();
+            expect(Logger.info).toHaveBeenCalledWith('AgentsTreeDataProvider refresh triggered');
+        });
     });
 });

@@ -18,6 +18,7 @@ describe('MCPServer', () => {
     mockInputStream = {
       resume: jest.fn(),
       on: jest.fn(),
+      removeAllListeners: jest.fn(),
     } as unknown as NodeJS.ReadableStream;
 
     mockOutputStream = {} as NodeJS.WritableStream;
@@ -26,6 +27,9 @@ describe('MCPServer', () => {
   });
 
   afterEach(() => {
+    if ((server as MCPServer & { isStarted: boolean }).isStarted) {
+      server.stop();
+    }
     jest.clearAllMocks();
   });
 
@@ -60,6 +64,19 @@ describe('MCPServer', () => {
       stdinServer.start();
 
       expect(process.stdin.resume).toHaveBeenCalled();
+
+      stdinServer.stop();
+    });
+
+    it('should register shutdown handlers on start', () => {
+      const onSpy = jest.spyOn(process, 'on');
+
+      server.start();
+
+      expect(onSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+      expect(onSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
+
+      onSpy.mockRestore();
     });
 
     /** @aiContributed-2026-02-03 */

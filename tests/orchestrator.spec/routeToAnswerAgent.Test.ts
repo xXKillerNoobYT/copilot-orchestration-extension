@@ -114,4 +114,32 @@ describe('routeToAnswerAgent', () => {
         expect(createTicket).not.toHaveBeenCalled();
         expect(result).toBe(mockResponse.content);
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle responses with mixed case action keywords and create a ticket', async () => {
+        const question = 'Can you implement this feature?';
+        const mockResponse = { content: 'You should Implement a new feature for this.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(createTicket).toHaveBeenCalledWith({
+            title: expect.stringContaining('ANSWER NEEDS ACTION'),
+            status: 'blocked',
+            description: mockResponse.content,
+        });
+        expect(result).toBe(mockResponse.content);
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle responses without action keywords and not create a ticket', async () => {
+        const question = 'What is the difference between var and let?';
+        const mockResponse = { content: 'var is function-scoped, while let is block-scoped.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(createTicket).not.toHaveBeenCalled();
+        expect(result).toBe(mockResponse.content);
+    });
 });

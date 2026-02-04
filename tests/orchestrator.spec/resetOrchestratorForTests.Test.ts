@@ -70,4 +70,14 @@ describe('resetOrchestratorForTests', () => {
         expect(orchestrator['context']).toBeNull();
         expect(orchestrator['answerAgent']).toBeNull();
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should reset conversationThreadLengths map', () => {
+        const orchestrator = getOrchestratorInstance();
+        orchestrator['conversationThreadLengths'].set('ticket-1', 5);
+
+        resetOrchestratorForTests();
+
+        expect(orchestrator['conversationThreadLengths'].size).toBe(0);
+    });
 });

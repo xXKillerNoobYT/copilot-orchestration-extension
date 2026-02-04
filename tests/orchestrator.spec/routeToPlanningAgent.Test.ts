@@ -120,4 +120,36 @@ describe('routeToPlanningAgent', () => {
         expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
         expect(result).toBe(shortPlan);
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle UI updates for active and failed states', async () => {
+        const mockResponse = { content: 'Plan generated successfully.' };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', 'Plan generated successfully.');
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle UI updates for empty responses', async () => {
+        const mockResponse = { content: '' };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'Empty response');
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle UI updates for errors', async () => {
+        (streamLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+
+        await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'LLM error');
+    });
 });

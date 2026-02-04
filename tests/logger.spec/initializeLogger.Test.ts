@@ -98,4 +98,18 @@ describe('initializeLogger', () => {
         expect(vscode.window.createOutputChannel).toHaveBeenCalledTimes(1);
         expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should log the initialization message with the correct timestamp', () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const mockDate = new Date('2023-01-01T00:00:00.000Z');
+        jest.useFakeTimers().setSystemTime(mockDate);
+
+        initializeLogger(mockContext);
+
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
+
+        jest.useRealTimers();
+    });
 });

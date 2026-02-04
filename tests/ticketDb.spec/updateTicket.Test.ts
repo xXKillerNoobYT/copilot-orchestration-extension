@@ -132,4 +132,48 @@ describe('updateTicket', () => {
         );
         expect(Logger.error).toHaveBeenCalled();
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle thread updates correctly', async () => {
+        const ticket = await createTicket({
+            title: 'Thread Update Test',
+            status: 'open',
+            thread: [{ role: 'user', content: 'Initial message', createdAt: '2026-02-01T10:30:00Z' }],
+        });
+
+        const updatedThread = [
+            ...ticket.thread!,
+            { role: 'assistant', content: 'Response message', createdAt: '2026-02-01T11:00:00Z' },
+        ];
+
+        const updatedTicket = await updateTicket(ticket.id, { thread: updatedThread });
+
+        expect(updatedTicket).toEqual({
+            ...ticket,
+            thread: updatedThread,
+            updatedAt: expect.any(String),
+        });
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle conversationHistory updates correctly', async () => {
+        const ticket = await createTicket({
+            title: 'Conversation History Test',
+            status: 'open',
+            conversationHistory: JSON.stringify([{ message: 'Initial history' }]),
+        });
+
+        const updatedHistory = JSON.stringify([
+            { message: 'Initial history' },
+            { message: 'Added history' },
+        ]);
+
+        const updatedTicket = await updateTicket(ticket.id, { conversationHistory: updatedHistory });
+
+        expect(updatedTicket).toEqual({
+            ...ticket,
+            conversationHistory: updatedHistory,
+            updatedAt: expect.any(String),
+        });
+    });
 });

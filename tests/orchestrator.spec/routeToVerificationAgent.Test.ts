@@ -148,4 +148,31 @@ describe('routeToVerificationAgent', () => {
         expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('PASS'));
         expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('A'.repeat(200)));
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle missing explanation in LLM response and default to generic message', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: 'PASS',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({ passed: true, explanation: 'All criteria met.' });
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('PASS'));
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle invalid LLM response and log a warning', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: '',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({
+            passed: false,
+            explanation: 'Ambiguous response from verification - defaulting to FAIL.',
+        });
+        expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('Ambiguous response'));
+    });
 });

@@ -2,7 +2,7 @@
 import { OrchestratorService } from '../../src/services/orchestrator';
 import * as vscode from 'vscode';
 import { logInfo, logWarn, logError } from '../../src/logger';
-import { createTicket } from '../../src/services/ticketDb';
+import { createTicket, updateTicket } from '../../src/services/ticketDb';
 
 jest.mock('../../src/logger', () => ({
     ...jest.requireActual('../../src/logger'),
@@ -14,6 +14,7 @@ jest.mock('../../src/logger', () => ({
 jest.mock('../../src/services/ticketDb', () => ({
     ...jest.requireActual('../../src/services/ticketDb'),
     createTicket: jest.fn(),
+    updateTicket: jest.fn(),
 }));
 
 /** @aiContributed-2026-02-03 */
@@ -38,7 +39,7 @@ describe('getNextTask', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should return the next task and update its status', async () => {
+    it('should return the next task and update its status in the database', async () => {
     const mockTask = {
       id: 'TICKET-001',
       ticketId: 'TICKET-001',
@@ -60,7 +61,11 @@ describe('getNextTask', () => {
       status: 'picked',
       lastPickedAt: expect.any(String),
     });
-    expect(logInfo).toHaveBeenCalledWith(`Task picked: ${mockTask.id} - ${mockTask.title}`);
+    expect(updateTicket).toHaveBeenCalledWith(mockTask.id, {
+      status: 'in-progress',
+      updatedAt: expect.any(String),
+    });
+    expect(logInfo).toHaveBeenCalledWith(`Task picked atomically: ${mockTask.id} - ${mockTask.title}`);
   });
 
   /** @aiContributed-2026-02-03 */
@@ -82,7 +87,7 @@ describe('getNextTask', () => {
       status: 'blocked',
       description: expect.stringContaining('Task idle for 31s'),
     });
-    expect(logWarn).toHaveBeenCalledWith(`Created blocked ticket for task: ${mockTask.id}`);
+    expect(logWarn).toHaveBeenCalledWith(`Created P1 blocked ticket for task: ${mockTask.id}`);
   });
 
   /** @aiContributed-2026-02-03 */
@@ -134,6 +139,31 @@ describe('getNextTask', () => {
       status: 'picked',
       lastPickedAt: expect.any(String),
     });
-    expect(logInfo).toHaveBeenCalledWith(`Task picked: ${mockTask.id} - ${mockTask.title}`);
+    expect(updateTicket).toHaveBeenCalledWith(mockTask.id, {
+      status: 'in-progress',
+      updatedAt: expect.any(String),
+    });
+    expect(logInfo).toHaveBeenCalledWith(`Task picked atomically: ${mockTask.id} - ${mockTask.title}`);
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should return null and leave the task in the queue if database update fails', async () => {
+    const mockTask = {
+      id: 'TICKET-005',
+      ticketId: 'TICKET-005',
+      title: 'DB Update Fail Task',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    orchestrator['taskQueue'] = [mockTask];
+    (updateTicket as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+    const task = await orchestrator.getNextTask();
+
+    expect(task).toBeNull();
+    expect(orchestrator['taskQueue']).toContainEqual(mockTask);
+    expect(logWarn).toHaveBeenCalledWith(
+      `Failed to atomically pick task ${mockTask.id}: Database error. Leaving in queue for retry.`
+    );
   });
 });

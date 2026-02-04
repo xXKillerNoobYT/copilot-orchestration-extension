@@ -3,7 +3,7 @@
 **Last Updated**: February 3, 2026  
 **Status**: In Progress - Stage 1  
 **Current Stage**: Stage 1 - Foundation & Core Infrastructure  
-**Overall Progress**: 4/352 tasks complete (1.1%)
+**Overall Progress**: 8/352 tasks complete (2.3%)
 
 ---
 
@@ -47,14 +47,14 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓░░░░░░░░░░░░░░░░░░░] 1.1% (4/352 tasks)
+[▓░░░░░░░░░░░░░░░░░░░] 2.3% (8/352 tasks)
 ```
 
 ### Stage Completion
 
 | Stage | Status | Tasks | Complete | Progress | Gate Status |
 |-------|--------|-------|----------|----------|-------------|
-| **Stage 1: Foundation** | 🔄 In Progress | 26 | 4/26 | 15.4% | 🔒 Locked |
+| **Stage 1: Foundation** | 🔄 In Progress | 26 | 8/26 | 30.8% | 🔒 Locked |
 | **Stage 2: Ticket System** | ⏳ Queued | 38 | 0/38 | 0% | 🔒 Locked |
 | **Stage 3: LLM Integration** | ⏳ Queued | 28 | 0/28 | 0% | 🔒 Locked |
 | **Stage 4: Agent Teams** | ⏳ Queued | 71 | 0/71 | 0% | 🔒 Locked |
@@ -62,31 +62,31 @@ This is your **complete master guide to program completion** breaking down the e
 | **Stage 6: VS Code UI** | ⏳ Queued | 49 | 0/49 | 0% | 🔒 Locked |
 | **Stage 7: Testing & Advanced** | ⏳ Queued | 94 | 0/94 | 0% | 🔒 Locked |
 
-### 🎉 Recently Completed (Last 3 Only)
+### 🎉 Recently Completed (Last 3 Task's Only)
 
-1. ✅ **MT-001.4**: Implement askQuestion MCP tool (completed Feb 3, 2026)
-  - Added askQuestion tool with timeout and ticket creation
+1. ✅ **MT-002.1**: Create error code enum (completed Feb 3, 2026)
+  - Added `src/errors/errorCodes.ts` with catalog-aligned enum
+  - Tests added in `tests/errors/errorCodes.spec.ts`
+  - Documentation updated with actual enum
+
+2. ✅ **MT-001.7**: Add MCP server graceful shutdown (completed Feb 3, 2026)
+  - Added SIGINT/SIGTERM handlers in `src/mcpServer/server.ts`
+  - Tests updated to verify handler registration/unregistration
+  - Documentation updated in Server Lifecycle section
+
+3. ✅ **MT-001.6**: Implement JSON-RPC 2.0 message handling (completed Feb 3, 2026)
+  - Added JSON-RPC parser/validator in `src/mcpServer/jsonrpc.ts`
   - 7 comprehensive tests (all passing)
-  - Documentation updated with implementation summary
-
-2. ✅ **MT-001.3**: Implement reportTaskDone MCP tool (completed Feb 3, 2026)
-  - Added reportTaskDone tool with validation and verification triggers
-  - 11 comprehensive tests (all passing)
-  - Documentation updated with implementation summary
-
-3. ✅ **MT-001.2**: Implement getNextTask MCP tool (completed Feb 3, 2026)
-  - Created modular tool with parameter validation
-  - 23 comprehensive tests (all passing)
-  - Backward compatible with existing code
+  - MCP server now handles batch/invalid requests consistently
 
 
 
 ### ⭐ Next Up: Easy Wins
 Start with these beginner-friendly tasks (all dependencies met):
 
-1. ✅ **MT-001.5**: Register all tools with MCP server (25 min)
-2. ✅ **MT-002.1**: Create error code enum (15 min)
-3. ✅ **MT-003.1**: Create config schema file (25 min)
+1. ✅ **MT-003.1**: Create config schema file (25 min)
+2. ✅ **MT-004.1**: Create cache directory structure (20 min)
+3. ✅ **MT-002.2**: Implement validation error handlers (20 min)
 
 ### ⏰ Estimated Time Remaining
 - **Minimum**: ~88 hours (if all tasks at 15 min)
@@ -160,45 +160,45 @@ _(Track your improvement over time)_
   - **Verification**: ✅ `npm test -- askQuestion.spec.ts` passes
   - **Dependencies**: MT-001.1 ✅
 
-- [] **MT-001.5**: Register all tools with MCP server (25 min) [actual: __ min] [Priority: P0] [depends: MT-001.2, MT-001.3, MT-001.4] 🔒
-  - **Files**: Update `src/mcpServer/integration.ts`
-  - **Tests**: Update `tests/integration.spec/initializeMCPServer.web.spec.ts` to expect 3+ tools
-  - **Behavior**: Server exposes getNextTask, reportTaskDone, askQuestion via JSON-RPC
-  - **Documentation**: Update [05-MCP-API-Reference.md](05-MCP-API-Reference.md) § Transport & Protocol
-  - **Quality**: Tools callable via stdio, proper JSON-RPC 2.0 format
-  - **Verification**: `npm test tests/integration.spec/initializeMCPServer.web.spec.ts` passes
-  - **Dependencies**: MT-001.2, MT-001.3, MT-001.4
+- [x] **MT-001.5**: Register all tools with MCP server (25 min) [actual: 35 min] [Priority: P0] [depends: MT-001.2, MT-001.3, MT-001.4] ✅
+  - **Files**: Created `src/mcpServer/integration.ts`, updated `src/mcpServer/server.ts`
+  - **Tests**: Added `tests/integration.spec/initializeMCPServer.web.spec.ts` (2 tests)
+  - **Behavior**: Server logs registered tools and exposes getNextTask, reportTaskDone, askQuestion
+  - **Documentation**: Updated [05-MCP-API-Reference.md](05-MCP-API-Reference.md) § Transport & Protocol
+  - **Quality**: Centralized registry, verified tool list
+  - **Verification**: ✅ `npm test tests/integration.spec/initializeMCPServer.web.spec.ts` passes
+  - **Dependencies**: MT-001.2 ✅, MT-001.3 ✅, MT-001.4 ✅
 
-- [ ] **MT-001.6**: Implement JSON-RPC 2.0 message handling (45 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
-  - **Files**: Create `src/mcpServer/jsonrpc.ts`
-  - **Tests**: Test request/response format, error responses, batch requests
-  - **Behavior**: Parses JSON-RPC requests, routes to tools, formats responses
-  - **Documentation**: Add JSON-RPC examples to [05-MCP-API-Reference.md](05-MCP-API-Reference.md)
-  - **Quality**: Handle malformed JSON gracefully, proper error codes
-  - **Verification**: Send test JSON-RPC request, verify response format
-  - **Dependencies**: MT-001.1
+- [x] **MT-001.6**: Implement JSON-RPC 2.0 message handling (45 min) [actual: 55 min] [Priority: P0] [depends: MT-001.1] ✅
+  - **Files**: Created `src/mcpServer/jsonrpc.ts`, updated `src/mcpServer/server.ts`
+  - **Tests**: Added `tests/mcpServer/jsonrpc.spec.ts` (7 tests, all passing)
+  - **Behavior**: Parses JSON-RPC requests (single/batch), validates structure, formats error responses
+  - **Documentation**: Updated [05-MCP-API-Reference.md](05-MCP-API-Reference.md) with JSON-RPC handling details
+  - **Quality**: Handles malformed JSON, invalid requests, empty batch with proper codes
+  - **Verification**: ✅ `npm test -- jsonrpc.spec.ts` passes, MCP server tests passing
+  - **Dependencies**: MT-001.1 ✅
 
-- [ ] **MT-001.7**: Add MCP server graceful shutdown (15 min) [actual: __ min] [Priority: P1] [depends: MT-001.1] 🔒
-  - **Files**: Update `src/mcpServer/server.ts` with shutdown handler
-  - **Tests**: Test cleanup on process exit
-  - **Behavior**: Closes connections, saves state, logs shutdown on SIGTERM/SIGINT
-  - **Documentation**: Update [05-MCP-API-Reference.md](05-MCP-API-Reference.md) § Server Lifecycle
-  - **Quality**: No hanging processes, no data loss
-  - **Verification**: Start server, send SIGTERM, verify clean exit
-  - **Dependencies**: MT-001.1
+- [x] **MT-001.7**: Add MCP server graceful shutdown (15 min) [actual: 35 min] [Priority: P1] [depends: MT-001.1] ✅
+  - **Files**: Updated `src/mcpServer/server.ts` with SIGINT/SIGTERM handlers
+  - **Tests**: Updated MCPServer start/stop tests to cover handler registration
+  - **Behavior**: Stops input listeners, unregisters handlers, logs shutdown on SIGTERM/SIGINT
+  - **Documentation**: Updated [05-MCP-API-Reference.md](05-MCP-API-Reference.md) § Server Lifecycle
+  - **Quality**: No hanging process listeners, safe repeated shutdown
+  - **Verification**: ✅ `npm test -- mcpServer.test.ts` passes
+  - **Dependencies**: MT-001.1 ✅
 
 #### MT-002: Error Registry & Handling [Area: Error Handling] (5 tasks)
 **Source**: [10-MCP-Error-Codes-Registry.md](10-MCP-Error-Codes-Registry.md)  
 **Priority**: P0  
 **Dependencies**: None
 
-- [ ] **MT-002.1**: Create error code enum (15 min) [actual: __ min] [Priority: P0] ✅
-  - **Files**: Create `src/errors/errorCodes.ts`
-  - **Tests**: Test enum values defined correctly
-  - **Behavior**: Exports enum with all error codes from spec (E001-E999)
-  - **Documentation**: Update [10-MCP-Error-Codes-Registry.md](10-MCP-Error-Codes-Registry.md) with actual enum
+- [x] **MT-002.1**: Create error code enum (15 min) [actual: 20 min] [Priority: P0] ✅
+  - **Files**: Created `src/errors/errorCodes.ts`
+  - **Tests**: Added `tests/errors/errorCodes.spec.ts` (3 tests)
+  - **Behavior**: Exports enum with all catalog error codes from spec
+  - **Documentation**: Updated [10-MCP-Error-Codes-Registry.md](10-MCP-Error-Codes-Registry.md) with actual enum
   - **Quality**: TypeScript enum with string values
-  - **Verification**: Import enum in test file, verify values accessible
+  - **Verification**: ✅ `npm test -- errorCodes.spec.ts` passes
   - **Dependencies**: None
 
 - [ ] **MT-002.2**: Implement validation error handlers (20 min) [actual: __ min] [Priority: P0] [depends: MT-002.1] 🔒

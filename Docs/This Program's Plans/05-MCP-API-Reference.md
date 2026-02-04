@@ -22,6 +22,50 @@ This document provides complete API specifications for all MCP (Model Context Pr
 - **Encoding**: UTF-8
 - **Message Format**: Newline-delimited JSON
 
+### Tool Registration
+
+Tool registration is centralized in:
+
+- **`src/mcpServer/integration.ts`**
+
+The registry provides:
+- A single source of truth for MCP tool names
+- Startup logging of available tools
+- Integration tests to verify required tools are registered
+
+Current registered tools:
+`getNextTask`, `reportTaskDone`, `askQuestion`
+
+### JSON-RPC Message Handling
+
+JSON-RPC parsing and validation lives in:
+
+- **`src/mcpServer/jsonrpc.ts`**
+
+Responsibilities:
+- Parse raw JSON (single or batch)
+- Validate JSON-RPC 2.0 structure
+- Emit standard errors (`-32700` parse error, `-32600` invalid request)
+- Provide helper for creating error responses
+
+**Example: Single Request**
+```json
+{"jsonrpc":"2.0","method":"getNextTask","id":1}
+```
+
+**Example: Batch Request**
+```json
+[
+  {"jsonrpc":"2.0","method":"getNextTask","id":1},
+  {"jsonrpc":"2.0","method":"askQuestion","params":{"question":"What now?"},"id":2}
+]
+```
+
+**Example: Invalid Request Error**
+```json
+{"jsonrpc":"2.0","id":1,"error":{"code":-32600,"message":"Invalid Request: method must be a string"}}
+```
+
 ### Server Lifecycle
 
 #### File Structure
@@ -30,15 +74,27 @@ The MCP server is organized into a modular structure:
 
 - **`src/mcpServer/server.ts`**: Contains the `MCPServer` class responsible for:
   - JSON-RPC 2.0 message parsing and routing
-  - Method handlers for `getNextTask` and `callCOEAgent`
+  - Method handlers for `getNextTask`, `reportTaskDone`, `askQuestion`, and `callCOEAgent`
   - Request validation and error handling
   - Response/error formatting
+  - Graceful shutdown handlers (SIGINT/SIGTERM)
   
 - **`src/mcpServer/index.ts`**: Provides the singleton pattern and exports:
   - `initializeMCPServer()`: Creates and starts the server instance
   - `getMCPServerInstance()`: Returns the server instance (for testing)
   - `resetMCPServerForTests()`: Stops and clears the server instance
   - Standalone mode support with graceful shutdown handlers
+
+#### Graceful Shutdown
+
+The MCP server now registers process handlers for:
+- **SIGINT** (Ctrl+C)
+- **SIGTERM** (process termination)
+
+On shutdown it:
+1. Stops listening to stdin
+2. Unregisters signal handlers
+3. Logs shutdown messages for debugging
 
 #### Initialization in Extension
 

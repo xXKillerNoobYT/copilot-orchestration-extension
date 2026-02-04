@@ -34,41 +34,78 @@ describe('AgentsTreeDataProvider', () => {
             const mockStatus = 'Active';
             const mockTooltip = 'Agent is active';
             const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
+            const mockIsEnabled = true;
 
             const mockTreeItem = {
                 description: '',
                 tooltip: '',
                 iconPath: null,
+                contextValue: '',
             };
             (vscode.TreeItem as jest.Mock).mockImplementation(() => mockTreeItem);
 
-            const result = (provider as unknown as { createAgentItem: (name: string, status: string, tooltip: string, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+            const result = provider['createAgentItem'](
                 mockName,
                 mockStatus,
                 mockTooltip,
-                mockIcon
+                mockIcon,
+                mockIsEnabled
             );
 
             expect(vscode.TreeItem).toHaveBeenCalledWith(mockName, vscode.TreeItemCollapsibleState.None);
             expect(result.description).toBe(mockStatus);
             expect(result.tooltip).toBe(mockTooltip);
             expect(result.iconPath).toBe(mockIcon);
+            expect(result.contextValue).toBe('coe-agent-enabled');
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should set contextValue to "coe-agent-disabled" when isEnabled is false', () => {
+            const mockName = 'Agent 2';
+            const mockStatus = 'Inactive';
+            const mockTooltip = 'Agent is inactive';
+            const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
+            const mockIsEnabled = false;
+
+            const mockTreeItem = {
+                description: '',
+                tooltip: '',
+                iconPath: null,
+                contextValue: '',
+            };
+            (vscode.TreeItem as jest.Mock).mockImplementation(() => mockTreeItem);
+
+            const result = provider['createAgentItem'](
+                mockName,
+                mockStatus,
+                mockTooltip,
+                mockIcon,
+                mockIsEnabled
+            );
+
+            expect(vscode.TreeItem).toHaveBeenCalledWith(mockName, vscode.TreeItemCollapsibleState.None);
+            expect(result.description).toBe(mockStatus);
+            expect(result.tooltip).toBe(mockTooltip);
+            expect(result.iconPath).toBe(mockIcon);
+            expect(result.contextValue).toBe('coe-agent-disabled');
         });
 
         /** @aiContributed-2026-02-03 */
         it('should handle null or undefined inputs gracefully', () => {
             const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
 
-            const result = (provider as unknown as { createAgentItem: (name: string | null, status: string | undefined, tooltip: string | null, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+            const result = provider['createAgentItem'](
                 null,
                 undefined,
                 null,
-                mockIcon
+                mockIcon,
+                true
             );
 
             expect(result.description).toBeUndefined();
             expect(result.tooltip).toBeNull();
             expect(result.iconPath).toBe(mockIcon);
+            expect(result.contextValue).toBe('coe-agent-enabled');
         });
 
         /** @aiContributed-2026-02-03 */
@@ -77,12 +114,14 @@ describe('AgentsTreeDataProvider', () => {
             const mockStatus = 'Active';
             const mockTooltip = 'Agent is active';
             const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
+            const mockIsEnabled = true;
 
-            (provider as unknown as { createAgentItem: (name: string, status: string, tooltip: string, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+            provider['createAgentItem'](
                 mockName,
                 mockStatus,
                 mockTooltip,
-                mockIcon
+                mockIcon,
+                mockIsEnabled
             );
 
             expect(Logger.debug).toHaveBeenCalled();
@@ -93,25 +132,29 @@ describe('AgentsTreeDataProvider', () => {
             const mockName = 'Agent 2';
             const mockStatus = 'Inactive';
             const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
+            const mockIsEnabled = false;
 
             const mockTreeItem = {
                 description: '',
                 tooltip: '',
                 iconPath: null,
+                contextValue: '',
             };
             (vscode.TreeItem as jest.Mock).mockImplementation(() => mockTreeItem);
 
-            const result = (provider as unknown as { createAgentItem: (name: string, status: string, tooltip: string, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+            const result = provider['createAgentItem'](
                 mockName,
                 mockStatus,
                 '',
-                mockIcon
+                mockIcon,
+                mockIsEnabled
             );
 
             expect(vscode.TreeItem).toHaveBeenCalledWith(mockName, vscode.TreeItemCollapsibleState.None);
             expect(result.description).toBe(mockStatus);
             expect(result.tooltip).toBe('');
             expect(result.iconPath).toBe(mockIcon);
+            expect(result.contextValue).toBe('coe-agent-disabled');
         });
     });
 });

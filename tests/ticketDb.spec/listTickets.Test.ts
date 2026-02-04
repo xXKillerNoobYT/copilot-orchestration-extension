@@ -90,6 +90,13 @@ describe('listTickets', () => {
             type: 'ai_to_human',
             description: 'This is a detailed ticket',
             conversationHistory: JSON.stringify([{ message: 'Hello' }]),
+            thread: [
+                {
+                    role: 'user',
+                    content: 'Test message',
+                    createdAt: '2026-02-01T10:30:00Z',
+                },
+            ],
         };
 
         const createdTicket = await createTicket(ticket);
@@ -103,6 +110,25 @@ describe('listTickets', () => {
             type: ticket.type,
             description: ticket.description,
             conversationHistory: ticket.conversationHistory,
+            thread: ticket.thread,
         });
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle tickets with invalid thread JSON gracefully', async () => {
+        const ticket = {
+            title: 'Invalid Thread Ticket',
+            status: 'open',
+            thread: '[Invalid JSON]',
+        };
+
+        const createdTicket = await createTicket(ticket);
+        const tickets = await listTickets();
+
+        expect(tickets).toHaveLength(1);
+        expect(tickets[0].thread).toBeUndefined();
+        expect(Logger.warn).toHaveBeenCalledWith(
+            `Failed to parse thread for ticket ${createdTicket.id}: SyntaxError: Unexpected token I in JSON at position 0`
+        );
     });
 });

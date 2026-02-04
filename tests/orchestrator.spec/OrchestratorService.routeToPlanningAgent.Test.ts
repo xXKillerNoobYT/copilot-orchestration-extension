@@ -22,7 +22,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should handle the happy path and return the full plan', async () => {
+  it('should handle the happy path and return the full plan', async () => {
     const question = 'What is the plan?';
     const mockResponse = { content: 'This is the plan.' };
     (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
@@ -46,7 +46,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should handle a long response from the planning agent', async () => {
+  it('should handle a long response from the planning agent', async () => {
     const question = 'What is the plan?';
     const longContent = 'A'.repeat(1500);
     const mockResponse = { content: longContent };
@@ -61,7 +61,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should handle an empty response from the planning agent', async () => {
+  it('should handle an empty response from the planning agent', async () => {
     const question = 'What is the plan?';
     const mockResponse = { content: '' };
     (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
@@ -75,7 +75,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should handle errors thrown by the planning agent', async () => {
+  it('should handle errors thrown by the planning agent', async () => {
     const question = 'What is the plan?';
     const errorMessage = 'Network error';
     (streamLLM as jest.Mock).mockRejectedValue(new Error(errorMessage));
@@ -90,7 +90,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should handle undefined question input gracefully', async () => {
+  it('should handle undefined question input gracefully', async () => {
     await orchestrator.routeToPlanningAgent(undefined as unknown as string);
 
     expect(logInfo).toHaveBeenCalledWith('Routing request to Planning agent: undefined');
@@ -102,5 +102,22 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
       expect.any(Function),
       { systemPrompt: expect.any(String) }
     );
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should log each chunk received from the planning agent', async () => {
+    const question = 'What is the plan?';
+    const mockResponse = { content: 'Final plan.' };
+    (streamLLM as jest.Mock).mockImplementation(async (_q, onChunk) => {
+      onChunk('Chunk 1');
+      onChunk('Chunk 2');
+      return mockResponse;
+    });
+
+    const result = await orchestrator.routeToPlanningAgent(question);
+
+    expect(logInfo).toHaveBeenCalledWith('LLM: Chunk 1');
+    expect(logInfo).toHaveBeenCalledWith('LLM: Chunk 2');
+    expect(result).toBe(mockResponse.content);
   });
 });

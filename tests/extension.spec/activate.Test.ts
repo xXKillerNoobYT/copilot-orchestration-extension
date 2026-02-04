@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { activate } from '../../src/extension';
 import { initializeLogger, logInfo, logError, logWarn } from '../../src/logger';
-import { initializeTicketDb, listTickets, updateTicket } from '../../src/services/ticketDb';
+import { initializeTicketDb, listTickets, updateTicket, onTicketChange } from '../../src/services/ticketDb';
 import { initializeOrchestrator, getOrchestratorInstance } from '../../src/services/orchestrator';
 import { initializeLLMService } from '../../src/services/llmService';
 import { initializeMCPServer } from '../../src/mcpServer';
@@ -168,5 +168,27 @@ describe('activate', () => {
     expect(mockOrchestrator.routeToPlanningAgent).toHaveBeenCalledWith('Test Ticket');
     expect(updateTicket).toHaveBeenCalledWith('1', { description: 'Generated Plan' });
     expect(logInfo).toHaveBeenCalledWith('[Auto-Plan] DONE - Plan stored in 1');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle Answer Agent initialization errors gracefully', async () => {
+    (initializeAnswerAgent as jest.Mock).mockImplementation(() => {
+      throw new Error('Answer Agent initialization failed');
+    });
+
+    await activate(context);
+
+    expect(logError).toHaveBeenCalledWith('Answer Agent initialization failed');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle MCP server initialization errors gracefully', async () => {
+    (initializeMCPServer as jest.Mock).mockImplementation(() => {
+      throw new Error('MCP Server initialization failed');
+    });
+
+    await activate(context);
+
+    expect(logError).toHaveBeenCalledWith('MCP Server initialization failed');
   });
 });

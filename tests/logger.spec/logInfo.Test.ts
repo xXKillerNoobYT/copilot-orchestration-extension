@@ -78,4 +78,43 @@ describe('logInfo', () => {
         consoleLogSpy.mockRestore();
         jest.useRealTimers();
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle special characters in the message', () => {
+        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+        const mockDate = new Date('2023-01-01T00:00:00.000Z');
+        jest.useFakeTimers().setSystemTime(mockDate);
+
+        logInfo('Special chars: !@#$%^&*()_+');
+
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z Special chars: !@#$%^&*()_+'
+        );
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z Special chars: !@#$%^&*()_+'
+        );
+
+        consoleLogSpy.mockRestore();
+        jest.useRealTimers();
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle long messages without truncation', () => {
+        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+        const mockDate = new Date('2023-01-01T00:00:00.000Z');
+        jest.useFakeTimers().setSystemTime(mockDate);
+
+        const longMessage = 'a'.repeat(1000);
+        logInfo(longMessage);
+
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+            `[INFO] 2023-01-01T00:00:00.000Z ${longMessage}`
+        );
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+            `[INFO] 2023-01-01T00:00:00.000Z ${longMessage}`
+        );
+
+        consoleLogSpy.mockRestore();
+        jest.useRealTimers();
+    });
 });

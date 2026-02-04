@@ -48,5 +48,15 @@ describe('OrchestratorService', () => {
             // Assert
             expect(Logger.debug).not.toHaveBeenCalled();
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should ensure taskQueue and pickedTasks are arrays after reset', () => {
+            // Act
+            orchestrator.resetForTests();
+
+            // Assert
+            expect(Array.isArray(orchestrator['taskQueue'])).toBe(true);
+            expect(Array.isArray(orchestrator['pickedTasks'])).toBe(true);
+        });
     });
 });

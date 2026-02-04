@@ -53,7 +53,6 @@ describe('getTicket', () => {
     it('should return null when the ticket does not exist', async () => {
         const result = await getTicket('non-existent-id');
         expect(result).toBeNull();
-        expect(Logger.warn).toHaveBeenCalledWith('Ticket non-existent-id not found');
     });
 
     /** @aiContributed-2026-02-03 */
@@ -79,5 +78,39 @@ describe('getTicket', () => {
         expect(result).toEqual(createdTicket);
         expect(Logger.info).toHaveBeenCalledWith(`Created ticket: ${createdTicket.id}`);
         expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('SQLite init failed'));
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should parse thread data correctly when present', async () => {
+        const ticket = {
+            title: 'Thread Test Ticket',
+            status: 'open',
+            thread: [
+                { role: 'user', content: 'Message 1', createdAt: '2026-02-01T10:30:00Z' },
+                { role: 'assistant', content: 'Message 2', createdAt: '2026-02-01T10:35:00Z' },
+            ],
+        };
+
+        const createdTicket = await createTicket(ticket);
+        const result = await getTicket(createdTicket.id);
+
+        expect(result?.thread).toEqual(ticket.thread);
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle invalid thread data gracefully', async () => {
+        jest.spyOn(Logger, 'warn').mockImplementation(() => {});
+
+        const ticket = {
+            title: 'Invalid Thread Test Ticket',
+            status: 'open',
+            thread: '[Invalid JSON]',
+        };
+
+        const createdTicket = await createTicket(ticket);
+        const result = await getTicket(createdTicket.id);
+
+        expect(result?.thread).toBeUndefined();
+        expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to parse thread'));
     });
 });

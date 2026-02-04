@@ -10,6 +10,15 @@ jest.mock('../../src/ui/agentStatusTracker', () => ({
   },
 }));
 
+jest.mock('vscode', () => ({
+  ...jest.requireActual('vscode'),
+  workspace: {
+    getConfiguration: jest.fn().mockReturnValue({
+      get: jest.fn((key: string, defaultValue: boolean) => defaultValue),
+    }),
+  },
+}));
+
 /** @aiContributed-2026-02-03 */
 describe('AgentsTreeDataProvider', () => {
   let dataProvider: AgentsTreeDataProvider;
@@ -34,32 +43,38 @@ describe('AgentsTreeDataProvider', () => {
         Orchestrator: { status: 'Waiting', currentTask: '', lastResult: 'Step 1 completed', timestamp: 1672531200000 },
         Answer: { status: 'Failed', currentTask: '', lastResult: '', timestamp: 1672531200000 },
         Verification: { status: 'Idle', currentTask: '', lastResult: '', timestamp: 1672531200000 },
+        Research: { status: 'Idle', currentTask: '', lastResult: '', timestamp: 1672531200000 },
       };
 
       (agentStatusTracker.getAgentStatus as jest.Mock).mockImplementation((name: string) => mockStatuses[name]);
 
       const result = dataProvider.getChildren();
 
-      expect(result).toHaveLength(4);
-      expect(result[0].label).toBe('Planning');
-      expect(result[0].description).toContain('Active, Task: Planning requirements...');
-      expect(result[0].tooltip).toContain('Planning: Active');
-      expect(result[0].iconPath.id).toBe('loading~spin');
+      expect(result).toHaveLength(6); // 1 toggle item + 5 agents
+      expect(result[1].label).toBe('Planning');
+      expect(result[1].description).toContain('Active, Task: Planning requirements...');
+      expect(result[1].tooltip).toContain('Planning: Active');
+      expect(result[1].iconPath.id).toBe('loading~spin');
 
-      expect(result[1].label).toBe('Orchestrator');
-      expect(result[1].description).toContain('Waiting, Last: Step 1 completed');
-      expect(result[1].tooltip).toContain('Orchestrator: Waiting');
-      expect(result[1].iconPath.id).toBe('check');
+      expect(result[2].label).toBe('Orchestrator');
+      expect(result[2].description).toContain('Waiting, Last: Step 1 completed');
+      expect(result[2].tooltip).toContain('Orchestrator: Waiting');
+      expect(result[2].iconPath.id).toBe('check');
 
-      expect(result[2].label).toBe('Answer');
-      expect(result[2].description).toContain('Failed');
-      expect(result[2].tooltip).toContain('Answer: Failed');
-      expect(result[2].iconPath.id).toBe('error');
+      expect(result[3].label).toBe('Answer');
+      expect(result[3].description).toContain('Failed');
+      expect(result[3].tooltip).toContain('Answer: Failed');
+      expect(result[3].iconPath.id).toBe('error');
 
-      expect(result[3].label).toBe('Verification');
-      expect(result[3].description).toContain('Idle');
-      expect(result[3].tooltip).toContain('Verification: Idle');
-      expect(result[3].iconPath.id).toBe('circle-outline');
+      expect(result[4].label).toBe('Verification');
+      expect(result[4].description).toContain('Idle');
+      expect(result[4].tooltip).toContain('Verification: Idle');
+      expect(result[4].iconPath.id).toBe('circle-outline');
+
+      expect(result[5].label).toBe('Research');
+      expect(result[5].description).toContain('Idle');
+      expect(result[5].tooltip).toContain('Research: Idle');
+      expect(result[5].iconPath.id).toBe('circle-outline');
     });
 
     /** @aiContributed-2026-02-03 */
@@ -68,8 +83,8 @@ describe('AgentsTreeDataProvider', () => {
 
       const result = dataProvider.getChildren();
 
-      expect(result).toHaveLength(4);
-      result.forEach((item) => {
+      expect(result).toHaveLength(6); // 1 toggle item + 5 agents
+      result.slice(1).forEach((item) => {
         expect(item.description).toBe('Idle');
         expect(item.iconPath.id).toBe('circle-outline');
       });
@@ -89,7 +104,7 @@ describe('AgentsTreeDataProvider', () => {
 
       const result = dataProvider.getChildren();
 
-      expect(result[0].description).toContain(`Task: ${longTask.substring(0, 50)}...`);
+      expect(result[1].description).toContain(`Task: ${longTask.substring(0, 50)}...`);
     });
 
     /** @aiContributed-2026-02-03 */
@@ -105,7 +120,7 @@ describe('AgentsTreeDataProvider', () => {
 
       const result = dataProvider.getChildren();
 
-      expect(result[0].tooltip).toContain('Updated: 12:00:00 AM');
+      expect(result[1].tooltip).toContain('Updated: 12:00:00 AM');
     });
 
     /** @aiContributed-2026-02-03 */
@@ -121,7 +136,20 @@ describe('AgentsTreeDataProvider', () => {
 
       const result = dataProvider.getChildren();
 
-      expect(result[0].description).toContain('Waiting, Task: Current task in progress');
+      expect(result[1].description).toContain('Waiting, Task: Current task in progress');
+    });
+
+    /** @aiContributed-2026-02-03 */
+        it('should show "Disabled" status for agents disabled in settings', () => {
+      (vscode.workspace.getConfiguration().get as jest.Mock).mockImplementation((key: string) => {
+        if (key === 'enablePlanningAgent') return false;
+        return true;
+      });
+
+      const result = dataProvider.getChildren();
+
+      expect(result[1].description).toBe('Disabled');
+      expect(result[1].iconPath.id).toBe('circle-slash');
     });
   });
 });

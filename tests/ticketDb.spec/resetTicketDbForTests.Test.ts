@@ -19,10 +19,13 @@ describe('resetTicketDbForTests', () => {
       resetForTests: jest.fn(),
     };
     jest.resetModules();
-    jest.doMock('./ticketDb', () => ({
-      dbInstance: mockDbInstance,
-      resetTicketDbForTests: jest.requireActual('../../src/services/ticketDb').resetTicketDbForTests,
-    }));
+    jest.doMock('./ticketDb', () => {
+      const actual = jest.requireActual('../../src/services/ticketDb');
+      return {
+        ...actual,
+        dbInstance: mockDbInstance,
+      };
+    });
   });
 
   afterEach(() => {
@@ -48,10 +51,13 @@ describe('resetTicketDbForTests', () => {
 
   /** @aiContributed-2026-02-03 */
     it('should handle the case where dbInstance is null', async () => {
-    jest.doMock('./ticketDb', () => ({
-      dbInstance: null,
-      resetTicketDbForTests: jest.requireActual('../../src/services/ticketDb').resetTicketDbForTests,
-    }));
+    jest.doMock('./ticketDb', () => {
+      const actual = jest.requireActual('../../src/services/ticketDb');
+      return {
+        ...actual,
+        dbInstance: null,
+      };
+    });
     const { resetTicketDbForTests } = await import('../../src/services/ticketDb');
     expect(() => resetTicketDbForTests()).not.toThrow();
     expect(Logger.info).not.toHaveBeenCalled();
@@ -59,10 +65,13 @@ describe('resetTicketDbForTests', () => {
 
   /** @aiContributed-2026-02-03 */
     it('should not call resetForTests if dbInstance is null', async () => {
-    jest.doMock('./ticketDb', () => ({
-      dbInstance: null,
-      resetTicketDbForTests: jest.requireActual('../../src/services/ticketDb').resetTicketDbForTests,
-    }));
+    jest.doMock('./ticketDb', () => {
+      const actual = jest.requireActual('../../src/services/ticketDb');
+      return {
+        ...actual,
+        dbInstance: null,
+      };
+    });
     const { resetTicketDbForTests } = await import('../../src/services/ticketDb');
     resetTicketDbForTests();
 

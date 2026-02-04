@@ -119,4 +119,22 @@ describe('answerQuestion', () => {
     expect(llmStatusBar.start).toHaveBeenCalled();
     expect(llmStatusBar.end).toHaveBeenCalled();
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should log and handle undefined chatId gracefully', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    const expectedAnswer = 'TypeScript is a strongly typed superset of JavaScript.';
+    mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+    const result = await answerQuestion(question, undefined, false);
+
+    expect(result).toBe(expectedAnswer);
+    expect(mockAnswerAgent.ask).toHaveBeenCalledWith(question, undefined);
+    expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Starting conversation'));
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
 });

@@ -20,7 +20,7 @@ describe('initializeLLMService', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should initialize with default config if config file does not exist', async () => {
+    it('should initialize with default config if config file does not exist', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
 
     await initializeLLMService(mockContext);
@@ -29,12 +29,12 @@ describe('initializeLLMService', () => {
       'Config file not found at /mock/extension/path/.coe/config.json. Using defaults.'
     );
     expect(logInfo).toHaveBeenCalledWith(
-      'LLM service initialized: http://192.168.1.205:1234/v1 (model: ministral-3-14b-reasoning)'
+      'LLM service initialized: http://127.0.0.1:1234/v1 (model: ministral-3-14b-reasoning)'
     );
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should initialize with merged config if config file exists', async () => {
+    it('should initialize with merged config if config file exists', async () => {
     const mockConfig = {
       llm: {
         endpoint: 'http://mock.endpoint',
@@ -54,7 +54,7 @@ describe('initializeLLMService', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should use default values if config file is invalid', async () => {
+    it('should use default values if config file is invalid', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as jest.Mock).mockImplementation(() => {
       throw new Error('Invalid JSON');
@@ -66,12 +66,12 @@ describe('initializeLLMService', () => {
       'Failed to read config file: Invalid JSON. Using defaults.'
     );
     expect(logInfo).toHaveBeenCalledWith(
-      'LLM service initialized: http://192.168.1.205:1234/v1 (model: ministral-3-14b-reasoning)'
+      'LLM service initialized: http://127.0.0.1:1234/v1 (model: ministral-3-14b-reasoning)'
     );
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should validate and correct invalid timeoutSeconds', async () => {
+    it('should validate and correct invalid timeoutSeconds', async () => {
     const mockConfig = {
       llm: {
         timeoutSeconds: -10,
@@ -88,7 +88,7 @@ describe('initializeLLMService', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should validate and correct invalid maxTokens', async () => {
+    it('should validate and correct invalid maxTokens', async () => {
     const mockConfig = {
       llm: {
         maxTokens: 0,
@@ -105,7 +105,7 @@ describe('initializeLLMService', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should validate and correct invalid startupTimeoutSeconds', async () => {
+    it('should validate and correct invalid startupTimeoutSeconds', async () => {
     const mockConfig = {
       llm: {
         startupTimeoutSeconds: -5,
@@ -122,7 +122,7 @@ describe('initializeLLMService', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should throw an error if fetch is not supported', async () => {
+    it('should throw an error if fetch is not supported', async () => {
     const originalFetch = global.fetch;
     // @ts-expect-error Node.js fetch is being deleted for testing purposes
     delete global.fetch;
@@ -139,7 +139,7 @@ describe('initializeLLMService', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should log a warning if config file is missing required fields', async () => {
+    it('should log a warning if config file is missing required fields', async () => {
     const mockConfig = {
       llm: {
         endpoint: 'http://mock.endpoint',
@@ -158,6 +158,23 @@ describe('initializeLLMService', () => {
     );
     expect(logWarn).toHaveBeenCalledWith(
       'Invalid startupTimeoutSeconds: undefined, using default: 300'
+    );
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle missing .coe directory gracefully', async () => {
+    (fs.existsSync as jest.Mock).mockImplementation((path) => {
+      if (path.includes('.coe')) return false;
+      return true;
+    });
+
+    await initializeLLMService(mockContext);
+
+    expect(logWarn).toHaveBeenCalledWith(
+      'Config file not found at /mock/extension/path/.coe/config.json. Using defaults.'
+    );
+    expect(logInfo).toHaveBeenCalledWith(
+      'LLM service initialized: http://127.0.0.1:1234/v1 (model: ministral-3-14b-reasoning)'
     );
   });
 });

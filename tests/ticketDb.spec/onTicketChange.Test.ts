@@ -2,6 +2,7 @@
 import { onTicketChange, resetTicketDbForTests, initializeTicketDb } from '../../src/services/ticketDb';
 import * as vscode from 'vscode';
 import { Logger } from '../../utils/logger';
+import { EventEmitter } from 'events';
 
 jest.mock('../../utils/logger', () => ({
   ...jest.requireActual('../../utils/logger'),
@@ -32,19 +33,19 @@ describe('onTicketChange', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should register a listener for ticket changes', () => {
+  it('should register a listener for ticket changes', () => {
     onTicketChange(mockListener);
     expect(mockListener).not.toHaveBeenCalled();
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should throw an error if the database is not initialized', () => {
+  it('should throw an error if the database is not initialized', () => {
     resetTicketDbForTests();
     expect(() => onTicketChange(mockListener)).toThrowError('TicketDb not initialized');
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should call the listener when a change event is emitted', async () => {
+  it('should call the listener when a change event is emitted', async () => {
     onTicketChange(mockListener);
     const { createTicket } = await import('../../src/services/ticketDb');
     await createTicket({ title: 'Test Ticket', status: 'open' });
@@ -52,20 +53,44 @@ describe('onTicketChange', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should not call the listener if it is not registered', async () => {
+  it('should not call the listener if it is not registered', async () => {
     const { createTicket } = await import('../../src/services/ticketDb');
     await createTicket({ title: 'Test Ticket', status: 'open' });
     expect(mockListener).not.toHaveBeenCalled();
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should log an error if the listener throws an exception', async () => {
+  it('should log an error if the listener throws an exception', async () => {
     const errorListener = jest.fn(() => {
       throw new Error('Listener error');
     });
     onTicketChange(errorListener);
     const { createTicket } = await import('../../src/services/ticketDb');
-    await expect(createTicket({ title: 'Test Ticket', status: 'open' })).rejects.toThrow('Listener error');
-    expect(Logger.error).toHaveBeenCalled();
+    await createTicket({ title: 'Test Ticket', status: 'open' });
+    expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Listener error'));
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should allow multiple listeners to be registered and called', async () => {
+    const secondListener = jest.fn();
+    onTicketChange(mockListener);
+    onTicketChange(secondListener);
+    const { createTicket } = await import('../../src/services/ticketDb');
+    await createTicket({ title: 'Test Ticket', status: 'open' });
+    expect(mockListener).toHaveBeenCalled();
+    expect(secondListener).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should not call removed listeners', async () => {
+    const { createTicket } = await import('../../src/services/ticketDb');
+    const removeListener = jest.fn();
+    onTicketChange(mockListener);
+    onTicketChange(removeListener);
+    const emitter = EventEmitter.prototype;
+    emitter.removeListener('change', removeListener);
+    await createTicket({ title: 'Test Ticket', status: 'open' });
+    expect(mockListener).toHaveBeenCalled();
+    expect(removeListener).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 // ./llmService.Test.ts
 import { completeLLM } from '../../src/services/llmService';
 import { llmStatusBar } from '../../src/ui/llmStatusBar';
-import { logWarn, logError } from '../../src/logger';
+import { logWarn, logError, logInfo } from '../../src/logger';
 import { createTicket } from '../../src/services/ticketDb';
 
 jest.mock('../../src/ui/llmStatusBar', () => ({
@@ -16,6 +16,7 @@ jest.mock('../../src/logger', () => ({
   ...jest.requireActual('../../src/logger'),
   logWarn: jest.fn(),
   logError: jest.fn(),
+  logInfo: jest.fn(),
 }));
 
 jest.mock('../../src/services/ticketDb', () => ({
@@ -54,7 +55,7 @@ describe('completeLLM', () => {
 
     expect(llmStatusBar.start).toHaveBeenCalled();
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://192.168.1.205:1234/v1/chat/completions',
+      expect.stringContaining('/chat/completions'),
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -197,5 +198,28 @@ describe('completeLLM', () => {
       usage: { total_tokens: 3000 },
     });
     expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should log info for successful requests', async () => {
+    const mockResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'Info log response' } }],
+        usage: { total_tokens: 150 },
+      }),
+    };
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const prompt = 'Log info test';
+    const options = {};
+
+    const result = await completeLLM(prompt, options);
+
+    expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('LLM request:'));
+    expect(result).toEqual({
+      content: 'Info log response',
+      usage: { total_tokens: 150 },
+    });
   });
 });

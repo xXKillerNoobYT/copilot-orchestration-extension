@@ -2,6 +2,8 @@
 import { OrchestratorService } from '../../src/services/orchestrator';
 import { createTicket } from '../../src/services/ticketDb';
 import { logWarn, logError } from '../../src/logger';
+import * as vscode from 'vscode';
+import { llmStatusBar } from '../../src/ui/llmStatusBar';
 
 jest.mock('../../src/services/ticketDb', () => ({
   ...jest.requireActual('../../src/services/ticketDb'),
@@ -12,6 +14,20 @@ jest.mock('../../src/logger', () => ({
   ...jest.requireActual('../../src/logger'),
   logWarn: jest.fn(),
   logError: jest.fn(),
+}));
+
+jest.mock('vscode', () => ({
+  ...jest.requireActual('vscode'),
+  window: {
+    showWarningMessage: jest.fn(),
+  },
+}));
+
+jest.mock('../../src/ui/llmStatusBar', () => ({
+    ...jest.requireActual('../../src/ui/llmStatusBar'),
+    llmStatusBar: {
+    start: jest.fn(),
+  },
 }));
 
 interface Task {
@@ -38,6 +54,7 @@ describe('OrchestratorService - checkForBlockedTasks', () => {
     orchestrator.taskQueue = [];
     orchestrator.pickedTasks = [];
     orchestrator.taskTimeoutSeconds = 300; // 5 minutes
+    jest.clearAllMocks();
   });
 
   /** @aiContributed-2026-02-03 */
@@ -62,7 +79,12 @@ describe('OrchestratorService - checkForBlockedTasks', () => {
       status: 'blocked',
       description: `Task idle for 400s (timeout: 300s)`,
     });
-    expect(logWarn).toHaveBeenCalledWith(`Created blocked ticket for task: ${task.id}`);
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+      `⚠️ P1 BLOCKED: ${task.title} (idle 400s)`,
+      'Review'
+    );
+    expect(logWarn).toHaveBeenCalledWith(`Created P1 blocked ticket for task: ${task.id}`);
   });
 
   /** @aiContributed-2026-02-03 */
@@ -83,6 +105,8 @@ describe('OrchestratorService - checkForBlockedTasks', () => {
     expect(task.status).toBe('in-progress');
     expect(orchestrator.pickedTasks).toHaveLength(1);
     expect(createTicket).not.toHaveBeenCalled();
+    expect(llmStatusBar.start).not.toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
   });
 
   /** @aiContributed-2026-02-03 */
@@ -101,6 +125,8 @@ describe('OrchestratorService - checkForBlockedTasks', () => {
     expect(task.blockedAt).toBeNull();
     expect(task.status).toBe('pending');
     expect(createTicket).not.toHaveBeenCalled();
+    expect(llmStatusBar.start).not.toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
   });
 
   /** @aiContributed-2026-02-03 */

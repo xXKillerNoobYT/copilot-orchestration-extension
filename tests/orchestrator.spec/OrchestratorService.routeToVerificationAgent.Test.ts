@@ -120,4 +120,29 @@ describe('OrchestratorService - routeToVerificationAgent', () => {
         expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('A'.repeat(200) + '...'));
         expect(result).toEqual({ passed: true, explanation: 'A'.repeat(300) });
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle a failed verification and create a ticket', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: 'FAIL: Criteria not met.' });
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Active', '');
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(completeLLM).toHaveBeenCalledWith(`Task: ${taskDescription}\nCode diff: ${codeDiff}`, {
+            systemPrompt: expect.any(String),
+            temperature: 0.3
+        });
+        expect(logInfo).toHaveBeenCalledWith('Verification: FAIL - Criteria not met.');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Waiting', 'FAIL - Criteria not met.');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ⚠ Needs Review');
+        expect(createTicket).toHaveBeenCalledWith({
+            title: `VERIFICATION FAILED: ${taskDescription}`,
+            status: 'blocked',
+            description: `Explanation: Criteria not met.\n\nCode diff:\n${codeDiff}`
+        });
+        expect(result).toEqual({ passed: false, explanation: 'Criteria not met.' });
+    });
 });

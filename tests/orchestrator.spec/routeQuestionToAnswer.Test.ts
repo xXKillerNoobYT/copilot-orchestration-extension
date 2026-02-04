@@ -103,4 +103,36 @@ describe('routeQuestionToAnswer', () => {
     expect(logWarn).toHaveBeenCalledWith('[Answer] Answer agent returned an empty response.');
     expect(result).toBe('Could not generate an answer.');
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should not create a ticket if the response does not contain action keywords', async () => {
+    const mockResponse = { content: 'This is a general answer.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(createTicket).not.toHaveBeenCalled();
+    expect(result).toBe('This is a general answer.');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle a response with mixed-case action keywords', async () => {
+    const mockResponse = { content: 'Please Create a Ticket for this issue.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(createTicket).toHaveBeenCalledWith({
+      title: expect.stringContaining('ANSWER NEEDS ACTION'),
+      status: 'blocked',
+      description: 'Please Create a Ticket for this issue.',
+    });
+    expect(result).toBe('Please Create a Ticket for this issue.');
+  });
 });
