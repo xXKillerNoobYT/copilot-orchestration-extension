@@ -674,6 +674,40 @@ Query the Answer Team for context-aware answers from plan and codebase.
 ### Method
 `askQuestion`
 
+### Current Implementation (MT-001.4) ✅
+
+**File**: `src/mcpServer/tools/askQuestion.ts` (Completed Feb 3, 2026)
+
+**Actual Parameters:**
+```typescript
+interface AskQuestionParams {
+  question: string;
+  chatId?: string;
+}
+```
+
+**Actual Response Structure:**
+```typescript
+interface AskQuestionResponse {
+  success: boolean;
+  answer?: string;
+  ticketId?: string;
+  error?: {
+    code: string;    // ANSWER_TIMEOUT | INTERNAL_ERROR
+    message: string;
+  };
+}
+```
+
+**Timeout Behavior:**
+- 45-second timeout using Promise.race
+- On timeout, creates a ticket and returns `ANSWER_TIMEOUT`
+
+**Test Coverage:**
+- ✅ 7 tests in `tests/mcpServer/tools/askQuestion.spec.ts`
+
+**Note**: The detailed schema below represents the planned full version.
+
 ### Request Parameters
 ```typescript
 interface AskQuestionRequest {

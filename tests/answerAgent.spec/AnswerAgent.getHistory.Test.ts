@@ -76,4 +76,14 @@ describe('AnswerAgent.getHistory', () => {
 
         expect(result).toBeUndefined();
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle chatId with undefined messages gracefully', () => {
+        const chatId = 'chat5';
+        (answerAgent as unknown as { conversationHistory: Map<string, { messages?: undefined }> }).conversationHistory.set(chatId, { messages: undefined });
+
+        const result = answerAgent.getHistory(chatId);
+
+        expect(result).toBeUndefined();
+    });
 });

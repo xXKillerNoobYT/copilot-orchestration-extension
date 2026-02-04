@@ -3,7 +3,7 @@
 **Last Updated**: February 3, 2026  
 **Status**: In Progress - Stage 1  
 **Current Stage**: Stage 1 - Foundation & Core Infrastructure  
-**Overall Progress**: 3/352 tasks complete (0.9%)
+**Overall Progress**: 4/352 tasks complete (1.1%)
 
 ---
 
@@ -47,14 +47,14 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓░░░░░░░░░░░░░░░░░░░] 0.9% (3/352 tasks)
+[▓░░░░░░░░░░░░░░░░░░░] 1.1% (4/352 tasks)
 ```
 
 ### Stage Completion
 
 | Stage | Status | Tasks | Complete | Progress | Gate Status |
 |-------|--------|-------|----------|----------|-------------|
-| **Stage 1: Foundation** | 🔄 In Progress | 26 | 3/26 | 11.5% | 🔒 Locked |
+| **Stage 1: Foundation** | 🔄 In Progress | 26 | 4/26 | 15.4% | 🔒 Locked |
 | **Stage 2: Ticket System** | ⏳ Queued | 38 | 0/38 | 0% | 🔒 Locked |
 | **Stage 3: LLM Integration** | ⏳ Queued | 28 | 0/28 | 0% | 🔒 Locked |
 | **Stage 4: Agent Teams** | ⏳ Queued | 71 | 0/71 | 0% | 🔒 Locked |
@@ -64,26 +64,27 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### 🎉 Recently Completed (Last 3 Only)
 
-1. ✅ **MT-001.3**: Implement reportTaskDone MCP tool (completed Feb 3, 2026)
+1. ✅ **MT-001.4**: Implement askQuestion MCP tool (completed Feb 3, 2026)
+  - Added askQuestion tool with timeout and ticket creation
+  - 7 comprehensive tests (all passing)
+  - Documentation updated with implementation summary
+
+2. ✅ **MT-001.3**: Implement reportTaskDone MCP tool (completed Feb 3, 2026)
   - Added reportTaskDone tool with validation and verification triggers
   - 11 comprehensive tests (all passing)
   - Documentation updated with implementation summary
 
-2. ✅ **MT-001.2**: Implement getNextTask MCP tool (completed Feb 3, 2026)
+3. ✅ **MT-001.2**: Implement getNextTask MCP tool (completed Feb 3, 2026)
   - Created modular tool with parameter validation
   - 23 comprehensive tests (all passing)
   - Backward compatible with existing code
-
-3. ✅ **MT-001.1**: Initialize MCP server structure (completed Feb 3, 2026)
-  - Created modular file structure (server.ts + index.ts)
-  - All 21 tests passing
 
 
 
 ### ⭐ Next Up: Easy Wins
 Start with these beginner-friendly tasks (all dependencies met):
 
-1. ✅ **MT-001.4**: Implement askQuestion MCP tool (40 min)
+1. ✅ **MT-001.5**: Register all tools with MCP server (25 min)
 2. ✅ **MT-002.1**: Create error code enum (15 min)
 3. ✅ **MT-003.1**: Create config schema file (25 min)
 
@@ -150,14 +151,14 @@ _(Track your improvement over time)_
   - **Verification**: ✅ `npm test -- reportTaskDone.spec.ts` passes
   - **Dependencies**: MT-001.1 ✅
 
-- [ ] **MT-001.4**: Implement askQuestion MCP tool (40 min) [actual: __ min] [Priority: P1] [depends: MT-001.1] 🔒
-  - **Files**: Create `src/mcpServer/tools/askQuestion.ts`
-  - **Tests**: Test routing to Answer Team, timeout handling
-  - **Behavior**: Routes question to Answer Team, waits max 45s, creates ticket if timeout
-  - **Documentation**: Update [06-MCP-askQuestion-Payloads.md](06-MCP-askQuestion-Payloads.md) with payload examples
-  - **Quality**: Clear error messages for timeout, proper async/await
-  - **Verification**: Test with sample question, verify Answer Team receives it
-  - **Dependencies**: MT-001.1
+- [x] **MT-001.4**: Implement askQuestion MCP tool (40 min) [actual: 55 min] [Priority: P1] [depends: MT-001.1] ✅
+  - **Files**: Created `src/mcpServer/tools/askQuestion.ts`, updated `src/mcpServer/server.ts`
+  - **Tests**: 7 tests in `tests/mcpServer/tools/askQuestion.spec.ts` (all passing)
+  - **Behavior**: Routes question to Answer Agent, waits max 45s, creates ticket if timeout
+  - **Documentation**: Updated [06-MCP-askQuestion-Payloads.md](06-MCP-askQuestion-Payloads.md) and [05-MCP-API-Reference.md](05-MCP-API-Reference.md)
+  - **Quality**: Clear timeout errors, parameter validation, cleans up timers
+  - **Verification**: ✅ `npm test -- askQuestion.spec.ts` passes
+  - **Dependencies**: MT-001.1 ✅
 
 - [] **MT-001.5**: Register all tools with MCP server (25 min) [actual: __ min] [Priority: P0] [depends: MT-001.2, MT-001.3, MT-001.4] 🔒
   - **Files**: Update `src/mcpServer/integration.ts`

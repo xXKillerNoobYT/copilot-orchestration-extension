@@ -96,4 +96,21 @@ describe('AnswerAgent.deserializeHistory', () => {
     });
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history for chat chat2'));
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle metadata with unexpected structure gracefully', () => {
+    const serialized = {
+      chat1: JSON.stringify({ id: 'chat1', messages: ['Hello'] }),
+      chat2: JSON.stringify({ unexpectedKey: 'unexpectedValue' }),
+    };
+
+    answerAgent.deserializeHistory(serialized);
+
+    expect((answerAgent as { conversationHistory: ConversationHistory }).conversationHistory.size).toBe(1);
+    expect((answerAgent as { conversationHistory: ConversationHistory }).conversationHistory.get('chat1')).toEqual({
+      id: 'chat1',
+      messages: ['Hello'],
+    });
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history for chat chat2'));
+  });
 });

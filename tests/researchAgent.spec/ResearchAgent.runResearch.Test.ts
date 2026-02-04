@@ -96,5 +96,31 @@ describe('ResearchAgent', () => {
             expect(logError).toHaveBeenCalledWith(expect.stringContaining(`Research failed: ${unexpectedError}`));
             expect(result).toContain(unexpectedError);
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should log the correct delay duration', async () => {
+            const query = 'Test query';
+            const mockResponse = { content: 'Generated content' };
+            (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+            await researchAgent.runResearch(query);
+
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Simulating research delay (600s)...'));
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should return a formatted error report if formatReport throws an error', async () => {
+            const query = 'Test query';
+            const mockResponse = { content: 'Generated content' };
+            (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+            jest.spyOn(researchAgent, 'formatReport' as keyof ResearchAgent).mockImplementation(() => {
+                throw new Error('Formatting error');
+            });
+
+            const result = await researchAgent.runResearch(query);
+
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining('Research failed: Formatting error'));
+            expect(result).toContain('Formatting error');
+        });
     });
 });

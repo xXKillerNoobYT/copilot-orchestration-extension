@@ -12,6 +12,45 @@ The `askQuestion` MCP tool is the primary mechanism for the Coding AI (GitHub Co
 
 ---
 
+## Current Implementation (MT-001.4) ✅
+
+**File**: `src/mcpServer/tools/askQuestion.ts` (Completed Feb 3, 2026)
+
+The current implementation supports a simplified payload while keeping the full schema above as the long-term goal.
+
+**Actual Parameters:**
+```typescript
+interface AskQuestionParams {
+  question: string;
+  chatId?: string;
+}
+```
+
+**Actual Response Structure:**
+```typescript
+interface AskQuestionResponse {
+  success: boolean;
+  answer?: string;
+  ticketId?: string; // Created on timeout
+  error?: {
+    code: string;    // ANSWER_TIMEOUT | INTERNAL_ERROR
+    message: string;
+  };
+}
+```
+
+**Timeout Behavior:**
+- If the Answer Agent takes longer than **45 seconds**, a ticket is created automatically.
+- The response includes `ticketId` and an `ANSWER_TIMEOUT` error.
+
+**Test Coverage:**
+- ✅ 7 tests in `tests/mcpServer/tools/askQuestion.spec.ts`
+- Covers validation, success, timeout ticket creation, and failure paths
+
+**Note**: The payload examples below represent the full target schema. The current implementation will be expanded in later stages.
+
+---
+
 ## Recommended Payload Schema
 
 All `askQuestion` calls should follow this structure:

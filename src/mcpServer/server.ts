@@ -6,6 +6,7 @@ import { logInfo, logError, logWarn } from '../logger';
 import { routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } from '../services/orchestrator';
 import { handleGetNextTask, validateGetNextTaskParams } from './tools/getNextTask';
 import { handleReportTaskDone, validateReportTaskDoneParams } from './tools/reportTaskDone';
+import { handleAskQuestion, validateAskQuestionParams } from './tools/askQuestion';
 
 /**
  * JSON-RPC 2.0 request structure
@@ -124,6 +125,8 @@ export class MCPServer extends EventEmitter {
                 this.handleGetNextTask(request);
             } else if (request.method === 'reportTaskDone') {
                 this.handleReportTaskDone(request);
+            } else if (request.method === 'askQuestion') {
+                this.handleAskQuestion(request);
             } else if (request.method === 'callCOEAgent') {
                 this.handleCallCOEAgent(request);
             } else {
@@ -186,6 +189,29 @@ export class MCPServer extends EventEmitter {
             this.sendResponse(request.id || null, response);
         } else {
             const errorMessage = response.error?.message || 'Failed to report task status';
+            this.sendError(request.id || null, -32603, errorMessage);
+        }
+    }
+
+    /**
+     * Handle askQuestion tool call
+     *
+     * **Simple explanation**: Ask the Answer Agent a question, with a 45s timeout.
+     */
+    private async handleAskQuestion(request: JsonRpcRequest): Promise<void> {
+        const params = request.params;
+        const validation = validateAskQuestionParams(params);
+        if (!validation.isValid) {
+            this.sendError(request.id || null, -32602, `Invalid parameters: ${validation.error}`);
+            return;
+        }
+
+        const response = await handleAskQuestion(params);
+
+        if (response.success) {
+            this.sendResponse(request.id || null, response);
+        } else {
+            const errorMessage = response.error?.message || 'Failed to get answer';
             this.sendError(request.id || null, -32603, errorMessage);
         }
     }
