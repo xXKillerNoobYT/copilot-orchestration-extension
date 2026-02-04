@@ -81,6 +81,14 @@
                 "title": "COE: Continue Answer Agent Chat"
             },
             {
+                "command": "coe.startNewConversation",
+                "title": "COE: Start New Conversation"
+            },
+            {
+                "command": "coe.openConversation",
+                "title": "COE: Open Conversation"
+            },
+            {
                 "command": "coe.replyConversation",
                 "title": "Reply to Conversation"
             },

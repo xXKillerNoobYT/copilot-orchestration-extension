@@ -1,6 +1,6 @@
 import { ANSWER_SYSTEM_PROMPT } from '../services/orchestrator';
 import { logInfo, logError, logWarn } from '../logger';
-import { completeLLM } from '../services/llmService';
+import { completeLLM, streamLLM } from '../services/llmService';
 import { updateTicket } from '../services/ticketDb';
 
 /**
@@ -53,9 +53,14 @@ export class AnswerAgent {
      * Ask a question and get an answer, maintaining conversation history
      * @param question The question to ask
      * @param chatId Optional chat ID for conversation grouping. If not provided, a new one is generated.
+     * @param options Optional: { onStream: callback for streaming chunks }
      * @returns The answer from the LLM
      */
-    async ask(question: string, chatId?: string): Promise<string> {
+    async ask(
+        question: string,
+        chatId?: string,
+        options?: { onStream?: (chunk: string) => void }
+    ): Promise<string> {
         // Use provided chatId or generate a new one
         const sessionId = chatId || createChatId();
         logInfo(
@@ -79,12 +84,22 @@ export class AnswerAgent {
                 `[Answer Agent] Chat ${sessionId} with ${existingHistory.length} previous messages`
             );
 
-            // Call LLM with message history using new multi-turn mode
-            const response = await completeLLM('', {
-                messages: messages
-            });
+            // Call LLM with message history - support streaming if callback provided
+            let answer: string;
+            if (options?.onStream) {
+                // Use streaming mode
+                const response = await streamLLM('', options.onStream, {
+                    messages: messages
+                });
+                answer = response.content;
+            } else {
+                // Use non-streaming mode
+                const response = await completeLLM('', {
+                    messages: messages
+                });
+                answer = response.content;
+            }
 
-            const answer = response.content;
             const lastActivityAt = new Date().toISOString();
 
             // Append user question and assistant response to history
@@ -270,3 +285,109 @@ export class AnswerAgent {
 }
 
 export default AnswerAgent;
+/* ============================================================================
+ * SINGLETON INSTANCE & WRAPPER FUNCTIONS
+ * These wrap AnswerAgent for use throughout the extension
+ * ============================================================================ */
+
+let agentInstance: AnswerAgent | null = null;
+
+/**
+ * Initialize the Answer Agent singleton
+ * Called once from extension.ts on activation
+ */
+export function initializeAnswerAgent(): void {
+    if (!agentInstance) {
+        agentInstance = new AnswerAgent();
+        logInfo('[Answer Agent] Singleton initialized');
+    }
+}
+
+/**
+ * Get the Answer Agent singleton instance
+ * Throws if not initialized
+ */
+function getAnswerAgent(): AnswerAgent {
+    if (!agentInstance) {
+        throw new Error('AnswerAgent not initialized. Call initializeAnswerAgent() first.');
+    }
+    return agentInstance;
+}
+
+/**
+ * Ask a question with optional streaming support
+ * Used by webview, MCP server, and orchestrator
+ * 
+ * @param question The user's question
+ * @param chatId Optional conversation ID. If not provided, generates a new one
+ * @param options Optional: { onStream: callback for streaming chunks }
+ */
+export async function answerQuestion(
+    question: string,
+    chatId?: string,
+    options?: { onStream?: (chunk: string) => void }
+): Promise<string> {
+    const agent = getAnswerAgent();
+    return agent.ask(question, chatId, options);
+}
+
+/**
+ * Get conversation history for a chatId
+ * Used by webview to load and display existing messages
+ * 
+ * @param chatId The conversation ID
+ * @returns Array of messages (empty array if not found)
+ */
+export function getConversationHistory(chatId: string): Message[] {
+    const agent = getAnswerAgent();
+    const metadata = agent.getActiveConversations().find(c => c.chatId === chatId);
+    return metadata?.messages || [];
+}
+
+/**
+ * Clear a conversation's history
+ * Used for "delete conversation" functionality
+ * 
+ * @param chatId The conversation ID to clear
+ */
+export function clearConversation(chatId: string): void {
+    const agent = getAnswerAgent();
+    agent.clearHistory(chatId);
+}
+
+/**
+ * Get all active conversations
+ * Used by tree provider to populate conversation list
+ * 
+ * @returns Array of conversation metadata
+ */
+export function getActiveConversations(): ConversationMetadata[] {
+    const agent = getAnswerAgent();
+    return agent.getActiveConversations();
+}
+
+/**
+ * Restore Answer Agent state from persisted data
+ * Called on extension activation to restore conversation history
+ */
+export function restoreAnswerAgentHistory(serialized: { [chatId: string]: string }): void {
+    const agent = getAnswerAgent();
+    agent.deserializeHistory(serialized);
+}
+
+/**
+ * Persist Answer Agent state for later restore
+ * Called on extension deactivation
+ */
+export function persistAnswerAgentHistory(): { [chatId: string]: string } {
+    const agent = getAnswerAgent();
+    return agent.serializeHistory();
+}
+
+/**
+ * Reset Answer Agent for testing
+ * NOT FOR PRODUCTION USE
+ */
+export function resetAnswerAgentForTests(): void {
+    agentInstance = null;
+}

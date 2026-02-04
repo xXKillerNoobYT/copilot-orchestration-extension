@@ -41,11 +41,12 @@ export interface LLMResponse {
 
 /**
  * Default configuration values
+ * Note: These are fallbacks. Production config should be in .coe/config.json
  */
 const DEFAULT_CONFIG: LLMConfig = {
-    endpoint: 'http://192.168.1.205:1234/v1',
+    endpoint: 'http://127.0.0.1:1234/v1',
     model: 'ministral-3-14b-reasoning',
-    timeoutSeconds: 60,
+    timeoutSeconds: 900,
     maxTokens: 2048,
     startupTimeoutSeconds: 300
 };
@@ -373,12 +374,22 @@ export async function streamLLM(
     const config = llmServiceInstance.getConfig();
     llmStatusBar.start();
 
-    // Build messages array (same as completeLLM)
-    const messages: any[] = [];
-    if (options?.systemPrompt) {
-        messages.push({ role: 'system', content: options.systemPrompt });
+    // Build messages array - support two modes for backward compatibility
+    // Mode 1: If messages array provided in options, use it directly (for multi-turn history)
+    // Mode 2: Otherwise, build from prompt + optional systemPrompt (legacy behavior)
+    let messages: any[];
+
+    if (options?.messages && options.messages.length > 0) {
+        // Multi-turn mode: use provided messages array directly (for conversation history)
+        messages = options.messages;
+    } else {
+        // Legacy mode: build from prompt and optional system prompt
+        messages = [];
+        if (options?.systemPrompt) {
+            messages.push({ role: 'system', content: options.systemPrompt });
+        }
+        messages.push({ role: 'user', content: prompt });
     }
-    messages.push({ role: 'user', content: prompt });
 
     // Apply defensive token trimming before sending to LLM
     const trimmedMessages = trimMessagesToTokenLimit(messages, config.maxTokens);

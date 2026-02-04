@@ -53,6 +53,21 @@ jest.mock('../src/mcpServer/mcpServer', () => ({
     startMCPServer: jest.fn(),
 }));
 
+jest.mock('../src/agents/answerAgent', () => ({
+    initializeAnswerAgent: jest.fn(),
+    createChatId: jest.fn(() => 'test-chat-id'),
+    persistAnswerAgentHistory: jest.fn(() => ({})),
+    restoreAnswerAgentHistory: jest.fn(),
+    getAnswerQuestion: jest.fn(),
+    getActiveConversations: jest.fn(),
+}));
+
+jest.mock('../src/ui/conversationWebview', () => ({
+    ConversationWebviewPanel: {
+        disposeAll: jest.fn(),
+    },
+}));
+
 jest.mock('../src/ui/agentsTreeProvider', () => ({
     AgentsTreeDataProvider: jest.fn(() => ({
         refresh: jest.fn(),
@@ -1697,25 +1712,10 @@ describe('Answer Agent Persistence', () => {
 
     it('should warn and continue if persistence fails on deactivate', async () => {
         const mockTicketDb = require('../src/services/ticketDb');
-        const mockOrchestrator = require('../src/services/orchestrator');
+        const mockAnswerAgent = require('../src/agents/answerAgent');
         const mockLogger = require('../src/logger');
 
-        const answerAgent = {
-            cleanupInactiveConversations: jest.fn(async () => { }),
-            deserializeHistory: jest.fn(),
-            serializeHistory: jest.fn(() => ({}))
-        };
-
-        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
-            routeToPlanningAgent: jest.fn(async () => 'Mocked plan response'),
-            routeToVerificationAgent: jest.fn(async () => ({
-                passed: true,
-                explanation: 'All criteria met'
-            })),
-            getAnswerAgent: jest.fn(() => answerAgent)
-        });
-
-        answerAgent.serializeHistory.mockReturnValue({
+        mockAnswerAgent.persistAnswerAgentHistory.mockReturnValue({
             'TICKET-200': JSON.stringify({
                 chatId: 'TICKET-200',
                 createdAt: '2026-02-01T00:00:00.000Z',

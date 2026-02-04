@@ -2,9 +2,10 @@
     "version": "0.1.0",
     "llm": {
         "endpoint": "http://192.168.1.205:1234/v1",
-        "model": "ministral-3-14b-reasoning",
-        "timeoutSeconds": 900, 
-        "maxTokens": 2048
+        "model": "mistralai/ministral-3-14b-reasoning",
+        "timeoutSeconds": 900,
+        "startupTimeoutSeconds": 300,
+        "maxTokens": 4000
     },
     "tickets": {
         "enabled": true,

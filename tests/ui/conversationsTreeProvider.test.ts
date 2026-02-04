@@ -81,9 +81,10 @@ describe('ConversationsTreeDataProvider', () => {
             mockListTickets.mockResolvedValueOnce([]);
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toBe('No active conversations');
-            expect(result[0].collapsibleState).toBe(vscode.TreeItemCollapsibleState.None);
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].label).toBe('No active conversations');
+            expect(result[1].collapsibleState).toBe(vscode.TreeItemCollapsibleState.None);
         });
 
         it('should create TreeItem for a valid conversation ticket', async () => {
@@ -106,15 +107,16 @@ describe('ConversationsTreeDataProvider', () => {
 
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toBe('User: How do I use COE?');
-            expect(result[0].description).toBe('Last active: 2 minutes ago | 2 messages');
-            expect(result[0].tooltip).toBe('Click to continue chat');
-            expect(result[0].iconPath).toBeInstanceOf(vscode.ThemeIcon);
-            expect(result[0].contextValue).toBe('coe-conversation');
-            expect(result[0].command).toBeDefined();
-            expect(result[0].command?.command).toBe('coe.openTicket');
-            expect(result[0].command?.arguments).toEqual(['TICKET-1']);
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].label).toBe('User: How do I use COE?');
+            expect(result[1].description).toBe('Last active: 2 minutes ago | 2 messages');
+            expect(result[1].tooltip).toBe('Click to open conversation in webview');
+            expect(result[1].iconPath).toBeInstanceOf(vscode.ThemeIcon);
+            expect(result[1].contextValue).toBe('coe-conversation');
+            expect(result[1].command).toBeDefined();
+            expect(result[1].command?.command).toBe('coe.openConversation');
+            expect(result[1].command?.arguments).toEqual(['TICKET-1']);
 
             jest.useRealTimers();
         });
@@ -136,8 +138,9 @@ describe('ConversationsTreeDataProvider', () => {
             expect(logWarn).toHaveBeenCalledWith(
                 expect.stringContaining('Skipping ticket TICKET-BAD')
             );
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toBe('No active conversations');
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].label).toBe('No active conversations');
         });
 
         it('should fall back to message count when timestamps are missing', async () => {
@@ -158,8 +161,9 @@ describe('ConversationsTreeDataProvider', () => {
 
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].description).toBe('3 messages');
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].description).toBe('3 messages');
         });
 
         it('should ignore tickets with empty conversation arrays', async () => {
@@ -176,8 +180,9 @@ describe('ConversationsTreeDataProvider', () => {
 
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toBe('No active conversations');
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].label).toBe('No active conversations');
         });
 
         it('should include answer_agent tickets even when type is set', async () => {
@@ -197,8 +202,9 @@ describe('ConversationsTreeDataProvider', () => {
 
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toContain('User:');
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].label).toContain('User:');
         });
 
         it('should show empty answer_agent tickets as new chats', async () => {
@@ -216,9 +222,10 @@ describe('ConversationsTreeDataProvider', () => {
 
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toBe('New chat (TICKET-EMPTY-ANSWER)');
-            expect(result[0].description).toContain('0 messages');
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].label).toBe('New chat (TICKET-EMPTY-ANSWER)');
+            expect(result[1].description).toContain('0 messages');
         });
 
         it('should skip unexpected conversation formats', async () => {
@@ -238,8 +245,9 @@ describe('ConversationsTreeDataProvider', () => {
             expect(logWarn).toHaveBeenCalledWith(
                 expect.stringContaining('unexpected conversation format')
             );
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toBe('No active conversations');
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].label).toBe('No active conversations');
         });
 
         it('should handle database errors gracefully', async () => {
@@ -305,8 +313,9 @@ describe('ConversationsTreeDataProvider', () => {
 
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].contextValue).toBe('coe-conversation');
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].contextValue).toBe('coe-conversation');
         });
 
         it('should include command with chatId for context menu handlers', async () => {
@@ -324,10 +333,11 @@ describe('ConversationsTreeDataProvider', () => {
 
             const result = await provider.getChildren();
 
-            expect(result).toHaveLength(1);
-            expect(result[0].command).toBeDefined();
-            expect(result[0].command?.command).toBe('coe.openTicket');
-            expect(result[0].command?.arguments).toEqual(['TICKET-CMD']);
+            expect(result).toHaveLength(2);
+            expect(result[0].label).toBe('➕ New Conversation');
+            expect(result[1].command).toBeDefined();
+            expect(result[1].command?.command).toBe('coe.openConversation');
+            expect(result[1].command?.arguments).toEqual(['TICKET-CMD']);
         });
     });
 });

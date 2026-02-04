@@ -1,0 +1,28 @@
+{
+    "version": "0.1.0",
+    "llm": {
+        "_comment": "LLM (Language Model) configuration for AI agent responses",
+        "endpoint": "http://192.168.1.205:1234/v1",
+        "_endpoint_note": "LM Studio server URL (change IP to your LM Studio machine, or use 127.0.0.1 for localhost)",
+        "model": "ministral-3-14b-reasoning",
+        "_model_note": "Model name loaded in LM Studio (must match exactly)",
+        "timeoutSeconds": 900,
+        "_timeoutSeconds_note": "Max seconds to wait for LLM response (900 = 15 minutes)",
+        "startupTimeoutSeconds": 300,
+        "_startupTimeoutSeconds_note": "Max seconds to wait for streaming to start (300 = 5 minutes)",
+        "maxTokens": 2048,
+        "_maxTokens_note": "Maximum tokens in LLM response (higher = longer responses, slower)"
+    },
+    "tickets": {
+        "_comment": "Ticket/task tracking database configuration",
+        "enabled": true,
+        "_enabled_note": "Enable/disable ticket system",
+        "dbPath": "./.coe/tickets.db",
+        "_dbPath_note": "SQLite database file path (relative to extension root)"
+    },
+    "debug": {
+        "_comment": "Debug and logging configuration",
+        "logLevel": "info",
+        "_logLevel_note": "Log verbosity: 'info' | 'warn' | 'error' (use 'info' to see all LLM activity)"
+    }
+}

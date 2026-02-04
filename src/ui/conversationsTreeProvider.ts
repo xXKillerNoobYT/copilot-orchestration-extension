@@ -94,6 +94,10 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
 
             // Build TreeItems
             const items: vscode.TreeItem[] = [];
+            
+            // Add "New Conversation" button at the top
+            items.push(this.createNewConversationItem());
+
             for (const entry of conversationEntries.values()) {
                 const item = this.createConversationItemFromHistory(entry.ticket, entry.history);
                 if (item) {
@@ -101,16 +105,19 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
                 }
             }
 
-            // Sort by most recent activity (newest first)
+            // Sort conversations by most recent activity (newest first)
+            // Keep "New Conversation" at index 0
+            const newConvItem = items.shift()!;
             items.sort((a, b) => {
                 const aTimestamp = this.getItemTimestamp(a);
                 const bTimestamp = this.getItemTimestamp(b);
                 return bTimestamp - aTimestamp;
             });
+            items.unshift(newConvItem);
 
-            // If no valid conversations, show placeholder
-            if (items.length === 0) {
-                return [this.createEmptyItem()];
+            // If no valid conversations (only "New Conversation" item exists), show that
+            if (items.length === 1) {
+                items.push(this.createEmptyItem());
             }
 
             return items;
@@ -160,21 +167,35 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
         const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None) as ConversationTreeItem;
         item.description = this.getConversationDescription(relativeTime, messageCount);
         item.iconPath = new vscode.ThemeIcon('comment-discussion');
-        item.tooltip = 'Click to continue chat';
+        item.tooltip = 'Click to open conversation in webview';
 
         // Set contextValue for right-click menu (enables context menu items)
         item.contextValue = 'coe-conversation';
 
-        // Store ticket.id for command handlers (used by context menu commands)
+        // Open in webview instead of markdown editor
         item.command = {
-            command: 'coe.openTicket',
-            title: 'Continue Chat',
-            arguments: [ticket.id]
+            command: 'coe.openConversation',
+            title: 'Open Conversation',
+            arguments: [ticket.id]  // Pass ticket ID (which is chatId)
         };
 
         // Store timestamp for sorting (not shown to users)
         item.timestamp = lastActivityTimestamp;
 
+        return item;
+    }
+
+    /**
+     * Creates the "New Conversation" button shown at top of list.
+     */
+    private createNewConversationItem(): vscode.TreeItem {
+        const item = new vscode.TreeItem('➕ New Conversation', vscode.TreeItemCollapsibleState.None);
+        item.iconPath = new vscode.ThemeIcon('add');
+        item.tooltip = 'Start a new conversation with the Answer Agent';
+        item.command = {
+            command: 'coe.startNewConversation',
+            title: 'Start New Conversation'
+        };
         return item;
     }
 

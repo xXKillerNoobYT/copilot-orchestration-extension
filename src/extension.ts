@@ -7,8 +7,14 @@ import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
 import { ConversationsTreeDataProvider } from './ui/conversationsTreeProvider';
+import { ConversationWebviewPanel } from './ui/conversationWebview';
 import { agentStatusTracker } from './ui/agentStatusTracker';
 import { ResearchAgent } from './agents/researchAgent';
+import {
+    initializeAnswerAgent,
+    createChatId,
+    persistAnswerAgentHistory,
+} from './agents/answerAgent';
 
 // Module-level status bar item - can be updated from orchestrator
 let statusBarItem: vscode.StatusBarItem | null = null;
@@ -180,10 +186,14 @@ export async function activate(context: vscode.ExtensionContext) {
         logWarn(`Failed to load Answer Agent history on activate: ${message}`);
     }
 
-    await orchestrator.getAnswerAgent().cleanupInactiveConversations();
+    // Initialize Answer Agent singleton
+    initializeAnswerAgent();
 
     // Initialize LLM service (requires Node 18+)
     await initializeLLMService(context);
+
+    // Cleanup inactive conversations
+    // (Answer Agent now has this built-in)
 
     // Start MCP server after Orchestrator is ready
     startMCPServer();
@@ -956,6 +966,59 @@ export async function activate(context: vscode.ExtensionContext) {
     // Expected: Tickets tab shows "Error loading tickets" item with error icon
 
 
+    /**
+     * Command: coe.startNewConversation
+     * Opens a new conversation webview with empty chat
+     */
+    const startNewConversationCommand = vscode.commands.registerCommand('coe.startNewConversation', async () => {
+        logInfo('User triggered: Start New Conversation');
+        try {
+            const newChatId = createChatId();
+            
+            // Create empty ticket for this conversation
+            const ticket = await createTicket({
+                title: 'New Conversation',
+                status: 'open',
+                type: 'answer_agent',
+                description: 'New conversation'
+            });
+
+            // Open webview with this chatId
+            await ConversationWebviewPanel.createOrShow(newChatId, context, []);
+            logInfo(`Created new conversation: ${newChatId}`);
+        } catch (err) {
+            logError(`Failed to start new conversation: ${err}`);
+            vscode.window.showErrorMessage(`Failed to start conversation: ${err}`);
+        }
+    });
+
+    /**
+     * Command: coe.openConversation
+     * Opens an existing conversation in webview
+     */
+    const openConversationCommand = vscode.commands.registerCommand(
+        'coe.openConversation',
+        async (chatId: string) => {
+            logInfo(`User triggered: Open Conversation ${chatId}`);
+            try {
+                // Get conversation history from answer agent
+                const ticket = await getTicket(chatId);
+                if (!ticket) {
+                    vscode.window.showWarningMessage(`Conversation ${chatId} not found`);
+                    logWarn(`Conversation ticket ${chatId} not found`);
+                    return;
+                }
+
+                // Open webview panel
+                await ConversationWebviewPanel.createOrShow(chatId, context);
+                logInfo(`Opened conversation webview: ${chatId}`);
+            } catch (err) {
+                logError(`Failed to open conversation: ${err}`);
+                vscode.window.showErrorMessage(`Failed to open conversation: ${err}`);
+            }
+        }
+    );
+
     // Keep your existing command and status bar code here
     const helloCommand = vscode.commands.registerCommand('coe.sayHello', () => {
         vscode.window.showInformationMessage('Hello from COE!');
@@ -1067,6 +1130,8 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(verifyLastTicketCommand);
     context.subscriptions.push(askAnswerAgentCommand);
     context.subscriptions.push(askAnswerAgentContinueCommand);
+    context.subscriptions.push(startNewConversationCommand);
+    context.subscriptions.push(openConversationCommand);
     context.subscriptions.push(replyConversationCommand);
     context.subscriptions.push(openTicketCommand);
     context.subscriptions.push(processTicketCommand);
@@ -1087,9 +1152,12 @@ export async function activate(context: vscode.ExtensionContext) {
  */
 export async function deactivate(): Promise<void> {
     try {
-        const orchestrator = getOrchestratorInstance();
-        const answerAgent = orchestrator.getAnswerAgent();
-        const serializedHistory = answerAgent.serializeHistory();
+        // Dispose all open webview panels
+        ConversationWebviewPanel.disposeAll();
+        logInfo('Disposed all conversation webview panels');
+
+        // Persist Answer Agent conversation history
+        const serializedHistory = persistAnswerAgentHistory();
         const tickets = await listTickets();
         let savedCount = 0;
 
