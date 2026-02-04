@@ -73,4 +73,26 @@ describe('AnswerAgent.cleanupInactiveConversations', () => {
 
     expect(logError).toHaveBeenCalledWith('[Answer Agent] Auto-close cleanup failed: Test error');
   });
+
+  /** @aiContributed-2026-02-03 */
+  it('should not remove conversations if all are below the inactivity threshold', async () => {
+    const now = 1672531200000; // Mocked timestamp
+    jest.spyOn(global.Date, 'now').mockImplementation(() => now);
+
+    const chatId1 = 'chat1';
+    const chatId2 = 'chat2';
+
+    (answerAgent as unknown as { conversationHistory: Map<string, { lastActivityAt: string }> }).conversationHistory.set(chatId1, {
+      lastActivityAt: new Date(now - 5 * MS_PER_DAY).toISOString(),
+    });
+    (answerAgent as unknown as { conversationHistory: Map<string, { lastActivityAt: string }> }).conversationHistory.set(chatId2, {
+      lastActivityAt: new Date(now - 20 * MS_PER_DAY).toISOString(),
+    });
+
+    await answerAgent.cleanupInactiveConversations();
+
+    expect((answerAgent as unknown as { conversationHistory: Map<string, { lastActivityAt: string }> }).conversationHistory.has(chatId1)).toBe(true);
+    expect((answerAgent as unknown as { conversationHistory: Map<string, { lastActivityAt: string }> }).conversationHistory.has(chatId2)).toBe(true);
+    expect(logInfo).toHaveBeenCalledWith('[Answer Agent] Auto-close cleanup: no inactive conversations found');
+  });
 });

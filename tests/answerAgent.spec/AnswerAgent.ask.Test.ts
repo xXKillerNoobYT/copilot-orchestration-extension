@@ -1,11 +1,12 @@
 // ./answerAgent.Test.ts
 import { AnswerAgent } from '../../src/agents/answerAgent';
-import { completeLLM } from '../../src/services/llmService';
+import { completeLLM, streamLLM } from '../../src/services/llmService';
 import { logInfo, logError } from '../../src/logger';
 
 jest.mock('../../src/services/llmService', () => ({
   ...jest.requireActual('../../src/services/llmService'),
   completeLLM: jest.fn(),
+  streamLLM: jest.fn(),
 }));
 
 jest.mock('../../src/logger', () => ({
@@ -90,7 +91,7 @@ describe('AnswerAgent', () => {
           { role: 'user', content: `Question ${i}` },
           { role: 'assistant', content: `Answer ${i}` },
         ]);
-      (answerAgent as unknown as { conversationHistory: Map<string, { messages: Array<{ role: string; content: string }>; createdAt: string }> }).conversationHistory.set(chatId, {
+      (answerAgent as unknown as { conversationHistory: Map<string, { messages: { role: string; content: string }[]; createdAt: string }> }).conversationHistory.set(chatId, {
         messages: longHistory,
         createdAt: '2023-01-01T00:00:00.000Z',
       });
@@ -113,7 +114,7 @@ describe('AnswerAgent', () => {
 
       const result = await answerAgent.ask(question, chatId);
 
-      const updatedHistory = (answerAgent as unknown as { conversationHistory: Map<string, { messages: Array<{ role: string; content: string }> }> }).conversationHistory.get(chatId)?.messages;
+      const updatedHistory = (answerAgent as unknown as { conversationHistory: Map<string, { messages: { role: string; content: string }[] }> }).conversationHistory.get(chatId)?.messages;
 
       expect(result).toBe(mockResponse.content);
       expect(updatedHistory).toEqual([
@@ -136,6 +137,37 @@ describe('AnswerAgent', () => {
       expect(result).toBe(mockResponse.content);
       expect(logInfo).toHaveBeenCalledWith(
         expect.stringContaining(`[Answer Agent] Chat ${chatId} with 0 previous messages`)
+      );
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should use streamLLM when onStream option is provided', async () => {
+      const mockResponse = { content: 'Mocked streamed response' };
+      (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+      const question = 'What is the capital of France?';
+      const chatId = 'test-chat-id';
+      const onStream = jest.fn();
+
+      const result = await answerAgent.ask(question, chatId, { onStream });
+
+      expect(result).toBe(mockResponse.content);
+      expect(streamLLM).toHaveBeenCalledWith('', onStream, expect.any(Object));
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle errors thrown by streamLLM', async () => {
+      const mockError = new Error('Stream error');
+      (streamLLM as jest.Mock).mockRejectedValue(mockError);
+
+      const question = 'What is the capital of France?';
+      const chatId = 'test-chat-id';
+      const onStream = jest.fn();
+
+      await expect(answerAgent.ask(question, chatId, { onStream })).rejects.toThrow(mockError);
+
+      expect(logError).toHaveBeenCalledWith(
+        expect.stringContaining(`[Answer Agent] Error in chat ${chatId}`)
       );
     });
   });

@@ -437,6 +437,54 @@ Report task completion with rich status details, testing results, and follow-up 
 ### Method
 `reportTaskDone`
 
+### Current Implementation (MT-001.3) ✅
+
+**File**: `src/mcpServer/tools/reportTaskDone.ts` (Completed Feb 3, 2026)
+
+The current implementation provides core functionality:
+
+**Actual Parameters:**
+```typescript
+interface ReportTaskDoneParams {
+  taskId: string;
+  status: 'done' | 'failed' | 'blocked' | 'partial';
+  taskDescription?: string;
+  codeDiff?: string;   // Optional: triggers verification
+  notes?: string;
+}
+```
+
+**Actual Response Structure:**
+```typescript
+interface ReportTaskDoneResponse {
+  success: boolean;
+  taskId: string;
+  status: string;
+  message: string;
+  verification?: {
+    passed: boolean;
+    explanation: string;
+  };
+  error?: {
+    code: string;       // TASK_NOT_FOUND, INTERNAL_ERROR
+    message: string;
+  };
+}
+```
+
+**Features Implemented:**
+- ✅ Validates parameters (taskId/status)
+- ✅ Ensures task exists before update
+- ✅ Updates ticket status (done/blocked/in-progress)
+- ✅ Appends report notes to description
+- ✅ Triggers Verification Agent when codeDiff provided
+- ✅ Marks task blocked if verification fails
+
+**Test Coverage:**
+- ✅ 11 comprehensive tests in `tests/mcpServer/tools/reportTaskDone.spec.ts`
+
+**Note**: The full specification below represents the planned enhanced version. The current implementation provides core functionality and will be expanded in later stages.
+
 ### Request Parameters
 ```typescript
 interface ReportTaskDoneRequest {

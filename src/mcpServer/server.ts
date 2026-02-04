@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 import { logInfo, logError, logWarn } from '../logger';
 import { routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } from '../services/orchestrator';
 import { handleGetNextTask, validateGetNextTaskParams } from './tools/getNextTask';
+import { handleReportTaskDone, validateReportTaskDoneParams } from './tools/reportTaskDone';
 
 /**
  * JSON-RPC 2.0 request structure
@@ -121,6 +122,8 @@ export class MCPServer extends EventEmitter {
             // Route to the appropriate tool handler
             if (request.method === 'getNextTask') {
                 this.handleGetNextTask(request);
+            } else if (request.method === 'reportTaskDone') {
+                this.handleReportTaskDone(request);
             } else if (request.method === 'callCOEAgent') {
                 this.handleCallCOEAgent(request);
             } else {
@@ -161,6 +164,29 @@ export class MCPServer extends EventEmitter {
             // Tool returned an error
             const errorCode = response.error?.code === 'ORCHESTRATOR_NOT_INITIALIZED' ? -32603 : -32603;
             this.sendError(request.id || null, errorCode, response.error?.message || 'Failed to get next task');
+        }
+    }
+
+    /**
+     * Handle reportTaskDone tool call
+     * 
+     * **Simple explanation**: This marks a task as done (or failed/blocked) and updates the ticket.
+     */
+    private async handleReportTaskDone(request: JsonRpcRequest): Promise<void> {
+        const params = request.params;
+        const validation = validateReportTaskDoneParams(params);
+        if (!validation.isValid) {
+            this.sendError(request.id || null, -32602, `Invalid parameters: ${validation.error}`);
+            return;
+        }
+
+        const response = await handleReportTaskDone(params);
+
+        if (response.success) {
+            this.sendResponse(request.id || null, response);
+        } else {
+            const errorMessage = response.error?.message || 'Failed to report task status';
+            this.sendError(request.id || null, -32603, errorMessage);
         }
     }
 

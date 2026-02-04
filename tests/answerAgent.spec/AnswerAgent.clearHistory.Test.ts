@@ -58,5 +58,18 @@ describe('AnswerAgent', () => {
       expect(() => answerAgent.clearHistory(chatId)).not.toThrow();
       expect(logInfo).not.toHaveBeenCalled();
     });
+
+    /** @aiContributed-2026-02-03 */
+        it('should handle multiple deletions of the same chatId gracefully', () => {
+      const chatId = 'chat123';
+      (answerAgent as unknown as { conversationHistory: Map<string, object> }).conversationHistory.set(chatId, {});
+
+      answerAgent.clearHistory(chatId);
+      answerAgent.clearHistory(chatId);
+
+      expect((answerAgent as unknown as { conversationHistory: Map<string, object> }).conversationHistory.has(chatId)).toBe(false);
+      expect(logInfo).toHaveBeenCalledTimes(1);
+      expect(logInfo).toHaveBeenCalledWith(`[Answer Agent] Cleared history for chat ${chatId}`);
+    });
   });
 });
