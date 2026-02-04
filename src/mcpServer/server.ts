@@ -3,7 +3,8 @@
 
 import { EventEmitter } from 'events';
 import { logInfo, logError, logWarn } from '../logger';
-import { getNextTask, routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } from '../services/orchestrator';
+import { routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } from '../services/orchestrator';
+import { handleGetNextTask, validateGetNextTaskParams } from './tools/getNextTask';
 
 /**
  * JSON-RPC 2.0 request structure
@@ -139,12 +140,27 @@ export class MCPServer extends EventEmitter {
      * **Simple explanation**: This asks our task queue "what should I work on next?"
      */
     private async handleGetNextTask(request: JsonRpcRequest): Promise<void> {
-        try {
-            const task = await getNextTask();
-            this.sendResponse(request.id || null, task);
-        } catch (error) {
-            logError(`MCP server error calling getNextTask: ${error}`);
-            this.sendError(request.id || null, -32603, 'Internal error: failed to get next task');
+        // Validate parameters if provided
+        const params = request.params;
+        if (params) {
+            const validation = validateGetNextTaskParams(params);
+            if (!validation.isValid) {
+                this.sendError(request.id || null, -32602, `Invalid parameters: ${validation.error}`);
+                return;
+            }
+        }
+
+        // Call the tool handler
+        const response = await handleGetNextTask(params);
+
+        // Send appropriate response based on success
+        if (response.success) {
+            // Return just the task data for backward compatibility
+            this.sendResponse(request.id || null, response.task);
+        } else {
+            // Tool returned an error
+            const errorCode = response.error?.code === 'ORCHESTRATOR_NOT_INITIALIZED' ? -32603 : -32603;
+            this.sendError(request.id || null, errorCode, response.error?.message || 'Failed to get next task');
         }
     }
 

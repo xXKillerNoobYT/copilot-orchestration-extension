@@ -364,6 +364,69 @@ test('askQuestion: timeout after 30s → suggest ticket fallback', async () => {
 
 **Test Coverage Target**: Each critical tool has ≥3 error injection tests (error case + recovery)
 
+### Current Implementation (MT-001.2) ✅
+
+**File**: `src/mcpServer/tools/getNextTask.ts` (Completed Feb 3, 2026)
+
+The current implementation provides a simplified but functional version:
+
+**Actual Parameters:**
+```typescript
+interface GetNextTaskParams {
+  filter?: 'ready' | 'blocked' | 'all';  // Default: 'ready'
+  includeContext?: boolean;               // Default: true
+}
+```
+
+**Actual Response Structure:**
+```typescript
+interface GetNextTaskResponse {
+  success: boolean;
+  task: Task | null;        // Task from orchestrator
+  queueStatus?: {
+    isEmpty: boolean;
+    message?: string;
+  };
+  error?: {
+    code: string;           // INVALID_FILTER, ORCHESTRATOR_NOT_INITIALIZED, INTERNAL_ERROR
+    message: string;
+  };
+}
+```
+
+**JSON-RPC Response (backward compatible):**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "id": "TASK-001",
+    "ticketId": "TICKET-001",
+    "title": "Implement feature X",
+    "status": "pending",
+    "createdAt": "2026-02-03T12:00:00Z"
+  }
+}
+```
+
+**Features Implemented:**
+- ✅ Parameter validation with detailed error messages
+- ✅ Filter support (ready/blocked/all)
+- ✅ Context inclusion/exclusion
+- ✅ Empty queue handling
+- ✅ Orchestrator error handling
+- ✅ Backward compatible responses (returns just task data)
+
+**Test Coverage:**
+- ✅ 23 comprehensive tests (all passing)
+- ✅ Parameter validation (10 tests)
+- ✅ Task retrieval (4 tests)
+- ✅ Filter handling (3 tests)
+- ✅ Error handling (3 tests)
+ ✅ Edge cases (3 tests)
+
+**Note**: The full specification above represents the planned enhanced version. The current implementation provides core functionality and will be extended in future iterations to match the complete specification.
+
 ---
 
 ## Tool 2: reportTaskDone

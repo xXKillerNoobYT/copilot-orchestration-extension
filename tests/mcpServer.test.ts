@@ -232,7 +232,7 @@ describe('MCP Server', () => {
                 id: 4,
                 error: {
                     code: -32603,
-                    message: 'Internal error: failed to get next task'
+                    message: 'Failed to get next task: Orchestrator failed'
                 }
             });
         });

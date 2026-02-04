@@ -3,7 +3,7 @@
 **Last Updated**: February 3, 2026  
 **Status**: In Progress - Stage 1  
 **Current Stage**: Stage 1 - Foundation & Core Infrastructure  
-**Overall Progress**: 1/352 tasks complete (0.3%)
+**Overall Progress**: 2/352 tasks complete (0.6%)
 
 ---
 
@@ -47,14 +47,14 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓░░░░░░░░░░░░░░░░░░░] 0.3% (1/352 tasks)
+[▓░░░░░░░░░░░░░░░░░░░] 0.6% (2/352 tasks)
 ```
 
 ### Stage Completion
 
 | Stage | Status | Tasks | Complete | Progress | Gate Status |
 |-------|--------|-------|----------|----------|-------------|
-| **Stage 1: Foundation** | 🔄 In Progress | 26 | 1/26 | 3.8% | 🔒 Locked |
+| **Stage 1: Foundation** | 🔄 In Progress | 26 | 2/26 | 7.7% | 🔒 Locked |
 | **Stage 2: Ticket System** | ⏳ Queued | 38 | 0/38 | 0% | 🔒 Locked |
 | **Stage 3: LLM Integration** | ⏳ Queued | 28 | 0/28 | 0% | 🔒 Locked |
 | **Stage 4: Agent Teams** | ⏳ Queued | 71 | 0/71 | 0% | 🔒 Locked |
@@ -63,6 +63,12 @@ This is your **complete master guide to program completion** breaking down the e
 | **Stage 7: Testing & Advanced** | ⏳ Queued | 94 | 0/94 | 0% | 🔒 Locked |
 
 ### 🎉 Recently Completed
+
+1. ✅ **MT-001.2**: Implement getNextTask MCP tool (completed Feb 3, 2026)
+  - Created modular tool with parameter validation
+  - 23 comprehensive tests (all passing)
+  - Backward compatible with existing code
+  - Documentation updated with implementation details
 
 1. ✅ **MT-001.1**: Initialize MCP server structure (completed Feb 3, 2026)
    - Created modular file structure (server.ts + index.ts)
@@ -122,14 +128,14 @@ _(Track your improvement over time)_
   - **Verification**: ✅ `npm run compile` succeeds, all tests pass, can run `node out/mcpServer/index.js`
   - **Dependencies**: None
 
-- [ ] **MT-001.2**: Implement getNextTask MCP tool (35 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
-  - **Files**: Create `src/mcpServer/tools/getNextTask.ts`
-  - **Tests**: Unit test with mock task queue returning next ready task
-  - **Behavior**: MCP call `getNextTask({filter: 'ready'})` returns task object with full context
-  - **Documentation**: Update [05-MCP-API-Reference.md](05-MCP-API-Reference.md) § Tool 1 with request/response examples
-  - **Quality**: Handle edge cases (empty queue, all blocked tasks)
-  - **Verification**: `npm test src/mcpServer/tools/getNextTask.spec.ts` passes
-  - **Dependencies**: MT-001.1
+- [x] **MT-001.2**: Implement getNextTask MCP tool (35 min) [actual: 60 min] [Priority: P0] [depends: MT-001.1] ✅
+  - **Files**: Created `src/mcpServer/tools/getNextTask.ts`, updated `src/mcpServer/server.ts`
+  - **Tests**: 23 comprehensive tests in `tests/mcpServer/tools/getNextTask.spec.ts` (all passing)
+  - **Behavior**: MCP call getNextTask with filter/context params, handles edge cases
+  - **Documentation**: Updated [05-MCP-API-Reference.md](05-MCP-API-Reference.md) § Tool 1 with implementation details
+  - **Quality**: All edge cases handled (empty queue, blocked tasks, invalid params, orchestrator errors)
+  - **Verification**: ✅ All 23 tool tests pass, all 21 server tests pass, backward compatible
+  - **Dependencies**: MT-001.1 ✅
 
 - [ ] **MT-001.3**: Implement reportTaskDone MCP tool (30 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
   - **Files**: Create `src/mcpServer/tools/reportTaskDone.ts`
