@@ -1,5 +1,5 @@
 // ./mcpServer.Test.ts
-import { MCPServer } from '../../src/mcpServer/mcpServer';
+import { MCPServer } from '../../src/mcpServer/server';
 import { logWarn, logInfo } from '../../src/logger';
 
 jest.mock('../../src/logger', () => ({

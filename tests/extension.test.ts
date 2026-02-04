@@ -49,8 +49,8 @@ jest.mock('../src/services/llmService', () => ({
     initializeLLMService: jest.fn(),
 }));
 
-jest.mock('../src/mcpServer/mcpServer', () => ({
-    startMCPServer: jest.fn(),
+jest.mock('../src/mcpServer', () => ({
+    initializeMCPServer: jest.fn(),
 }));
 
 jest.mock('../src/agents/answerAgent', () => ({

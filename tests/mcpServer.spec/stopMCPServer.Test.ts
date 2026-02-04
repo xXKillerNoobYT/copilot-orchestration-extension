@@ -1,6 +1,6 @@
 // ./mcpServer.Test.ts
-import { stopMCPServer, getMCPServerInstance, startMCPServer } from '../../src/mcpServer/mcpServer';
-import { MCPServer } from '../../src/mcpServer/mcpServer';
+import { resetMCPServerForTests, getMCPServerInstance, initializeMCPServer } from '../../src/mcpServer';
+import { MCPServer } from '../../src/mcpServer/server';
 import { Logger } from '../../utils/logger';
 
 jest.mock('../../utils/logger', () => ({
@@ -21,12 +21,12 @@ describe('stopMCPServer', () => {
   /** @aiContributed-2026-02-03 */
     it('should stop the MCP server if it is running', () => {
     // Arrange
-    startMCPServer();
+    initializeMCPServer();
     const instance = getMCPServerInstance();
     const stopSpy = jest.spyOn(instance as MCPServer, 'stop');
 
     // Act
-    stopMCPServer();
+    resetMCPServerForTests();
 
     // Assert
     expect(stopSpy).toHaveBeenCalledTimes(1);
@@ -38,11 +38,11 @@ describe('stopMCPServer', () => {
   /** @aiContributed-2026-02-03 */
     it('should do nothing if the MCP server is not running', () => {
     // Arrange
-    stopMCPServer(); // Ensure no instance is running
+    resetMCPServerForTests(); // Ensure no instance is running
     const stopSpy = jest.spyOn(MCPServer.prototype, 'stop');
 
     // Act
-    stopMCPServer();
+    resetMCPServerForTests();
 
     // Assert
     expect(stopSpy).not.toHaveBeenCalled();

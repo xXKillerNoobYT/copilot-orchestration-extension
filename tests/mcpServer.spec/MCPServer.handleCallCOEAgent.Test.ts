@@ -1,5 +1,5 @@
 // ./mcpServer.Test.ts
-import { MCPServer } from '../../src/mcpServer/mcpServer';
+import { MCPServer } from '../../src/mcpServer/server';
 import { routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } from '../../src/services/orchestrator';
 import { logError, logInfo } from '../../src/logger';
 

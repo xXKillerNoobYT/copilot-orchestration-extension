@@ -1,6 +1,6 @@
 // ./mcpServer.Test.ts
-import { startMCPServer, getMCPServerInstance, stopMCPServer } from '../../src/mcpServer/mcpServer';
-import { MCPServer } from '../../src/mcpServer/mcpServer';
+import { initializeMCPServer, getMCPServerInstance, resetMCPServerForTests } from '../../src/mcpServer';
+import { MCPServer } from '../../src/mcpServer/server';
 import { logWarn, logInfo } from '../../src/logger';
 
 jest.mock('../../src/logger', () => ({
@@ -13,25 +13,27 @@ jest.mock('../../src/logger', () => ({
 /** @aiContributed-2026-02-03 */
 describe('startMCPServer', () => {
   afterEach(() => {
-    stopMCPServer();
+    resetMCPServerForTests();
     jest.clearAllMocks();
   });
 
   /** @aiContributed-2026-02-03 */
     it('should create and start a new MCPServer instance if none exists', () => {
-    startMCPServer();
+    initializeMCPServer();
     const instance = getMCPServerInstance();
 
     expect(instance).toBeInstanceOf(MCPServer);
     expect(logWarn).not.toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Initializing MCP server...');
     expect(logInfo).toHaveBeenCalledWith('MCP server starting...');
     expect(logInfo).toHaveBeenCalledWith('MCP server started successfully');
+    expect(logInfo).toHaveBeenCalledWith('MCP server initialized and started');
   });
 
   /** @aiContributed-2026-02-03 */
     it('should not create a new MCPServer instance if one already exists', () => {
-    startMCPServer();
-    startMCPServer();
+    initializeMCPServer();
+    initializeMCPServer();
 
     expect(logWarn).toHaveBeenCalledWith('MCP server already exists, not creating a new instance');
     expect(logInfo).toHaveBeenCalledTimes(2); // Only the first start logs info
@@ -39,7 +41,7 @@ describe('startMCPServer', () => {
 
   /** @aiContributed-2026-02-03 */
     it('should handle the case where the server is already started', () => {
-    startMCPServer();
+    initializeMCPServer();
     const instance = getMCPServerInstance();
 
     if (instance) {
@@ -51,8 +53,8 @@ describe('startMCPServer', () => {
 
   /** @aiContributed-2026-02-03 */
     it('should ensure the server instance is null after stopping', () => {
-    startMCPServer();
-    stopMCPServer();
+    initializeMCPServer();
+    resetMCPServerForTests();
     const instance = getMCPServerInstance();
 
     expect(instance).toBeNull();

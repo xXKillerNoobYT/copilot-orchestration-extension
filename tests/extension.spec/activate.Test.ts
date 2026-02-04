@@ -5,7 +5,7 @@ import { initializeLogger, logInfo, logError, logWarn } from '../../src/logger';
 import { initializeTicketDb, listTickets, updateTicket } from '../../src/services/ticketDb';
 import { initializeOrchestrator, getOrchestratorInstance } from '../../src/services/orchestrator';
 import { initializeLLMService } from '../../src/services/llmService';
-import { startMCPServer } from '../../src/mcpServer/mcpServer';
+import { initializeMCPServer } from '../../src/mcpServer';
 import { AgentsTreeDataProvider } from '../../src/ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from '../../src/ui/ticketsTreeProvider';
 import { ConversationsTreeDataProvider } from '../../src/ui/conversationsTreeProvider';
@@ -15,7 +15,7 @@ jest.mock('../../src/logger');
 jest.mock('../../src/services/ticketDb');
 jest.mock('../../src/services/orchestrator');
 jest.mock('../../src/services/llmService');
-jest.mock('../../src/mcpServer/mcpServer');
+jest.mock('../../src/mcpServer');
 jest.mock('../../src/ui/agentsTreeProvider');
 jest.mock('../../src/ui/ticketsTreeProvider');
 jest.mock('../../src/ui/conversationsTreeProvider');
@@ -44,7 +44,7 @@ describe('activate', () => {
     expect(initializeTicketDb).toHaveBeenCalledWith(context);
     expect(initializeOrchestrator).toHaveBeenCalledWith(context);
     expect(initializeLLMService).toHaveBeenCalledWith(context);
-    expect(startMCPServer).toHaveBeenCalled();
+    expect(initializeMCPServer).toHaveBeenCalled();
   });
 
   /** @aiContributed-2026-02-03 */

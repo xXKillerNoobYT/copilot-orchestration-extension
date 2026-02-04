@@ -1,4 +1,3 @@
-// ./answerAgent.Test.ts
 import { createChatId } from '../../src/agents/answerAgent';
 
 /** @aiContributed-2026-02-03 */
@@ -28,5 +27,15 @@ describe('createChatId', () => {
         const randomPart = chatId.split('-')[2];
         expect(randomPart).toBe('4td1z0x');
         mockMathRandom.mockRestore();
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should generate a chat ID with the correct format', () => {
+        const chatId = createChatId();
+        const parts = chatId.split('-');
+        expect(parts.length).toBe(3);
+        expect(parts[0]).toBe('chat');
+        expect(parts[1]).toMatch(/^[a-z0-9]+$/);
+        expect(parts[2]).toMatch(/^[a-z0-9]+$/);
     });
 });
