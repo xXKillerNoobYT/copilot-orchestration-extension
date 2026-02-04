@@ -31,7 +31,7 @@ interface ConversationMetadata {
 }
 
 interface ParsedConversation {
-    messages: ConversationMessage[];
+    messages?: ConversationMessage[]; // Made optional since it can be undefined
     createdAt?: string;
     lastActivityAt?: string;
 }
@@ -172,6 +172,12 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
     }
 
     private createConversationItemFromHistory(ticket: Ticket, history: ParsedConversation): vscode.TreeItem | null {
+        // Defensive check: ensure messages array exists
+        if (!history || !history.messages || !Array.isArray(history.messages)) {
+            logWarn(`[ConversationsTreeProvider] Skipping ticket ${ticket.id} - invalid messages array`);
+            return null;
+        }
+        
         const messageCount = history.messages.length;
         const lastActivityTimestamp = this.getConversationTimestamp(history, ticket);
         const relativeTime = this.formatRelativeTime(lastActivityTimestamp);
@@ -212,6 +218,11 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
      * Picks a readable label for a conversation TreeItem.
      */
     private getConversationLabel(ticket: Ticket, history: ParsedConversation): string {
+        // Defensive check: ensure messages array exists
+        if (!history.messages || !Array.isArray(history.messages)) {
+            return `Chat (${ticket.id})`;
+        }
+        
         const firstUserMessage = history.messages.find(message => message.role === 'user');
         const preview = firstUserMessage?.content?.trim();
 

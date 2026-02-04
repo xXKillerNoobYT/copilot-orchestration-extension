@@ -36,6 +36,16 @@ export async function updateStatusBar(text: string, tooltip?: string): Promise<v
 async function setupAutoPlanning(): Promise<void> {
     onTicketChange(async () => {
         try {
+            // Check if auto-processing is enabled
+            const config = vscode.workspace.getConfiguration('coe');
+            const autoProcessEnabled = config.get<boolean>('autoProcessTickets', false);
+
+            if (!autoProcessEnabled) {
+                // Manual mode: Skip auto-processing, tickets stay pending
+                logInfo('[Auto-Plan] Skipped - Manual mode enabled (autoProcessTickets = false)');
+                return;
+            }
+
             // Fetch all tickets, get last created
             const tickets = await listTickets();
             if (tickets.length === 0) return;
@@ -624,6 +634,74 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     /**
+     * Command: coe.processTicket
+     * Manually processes a ticket by calling the Planning Agent
+     * This allows manual processing even when Auto mode is disabled
+     * @param treeItem The TreeItem selected in context menu
+     */
+    const processTicketCommand = vscode.commands.registerCommand(
+        'coe.processTicket',
+        async (treeItem: vscode.TreeItem) => {
+            try {
+                const ticketId = extractTicketId(treeItem);
+
+                if (!ticketId) {
+                    logWarn('[ProcessTicket] No ticket ID found in TreeItem');
+                    vscode.window.showWarningMessage('No ticket selected');
+                    return;
+                }
+
+                logInfo(`[ProcessTicket] Processing ticket: ${ticketId}`);
+
+                // Fetch ticket details
+                const ticket = await getTicket(ticketId);
+
+                if (!ticket) {
+                    logWarn(`[ProcessTicket] Ticket ${ticketId} not found`);
+                    vscode.window.showWarningMessage(`Ticket ${ticketId} not found or was deleted`);
+                    return;
+                }
+
+                // Show progress indicator
+                await vscode.window.withProgress(
+                    {
+                        location: vscode.ProgressLocation.Notification,
+                        title: `Processing ticket ${ticketId}`,
+                        cancellable: false
+                    },
+                    async (progress) => {
+                        progress.report({ message: 'Calling Planning Agent...' });
+
+                        // Reset agent statuses when manually processing
+                        agentStatusTracker.resetAll();
+
+                        // Call planning agent with ticket title
+                        const orchestrator = getOrchestratorInstance();
+                        const plan = await orchestrator.routeToPlanningAgent(ticket.title);
+
+                        progress.report({ message: 'Storing plan...' });
+
+                        // Update ticket with plan in description
+                        await updateTicket(ticketId, {
+                            description: plan,
+                            status: 'in-progress' // Update status to show it's being worked on
+                        });
+
+                        logInfo(`[ProcessTicket] Plan stored in ${ticketId}`);
+                    }
+                );
+
+                // Success feedback
+                vscode.window.showInformationMessage(`✅ Ticket ${ticketId} processed successfully`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[ProcessTicket] Error: ${message}`);
+                vscode.window.showErrorMessage(`Failed to process ticket: ${message}`);
+            }
+        }
+    );
+
+    /**
      * Command: coe.addTicketComment
      * Context menu command to add user comment to ticket
      * @param treeItem The TreeItem selected in context menu
@@ -822,6 +900,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(askAnswerAgentCommand);
     context.subscriptions.push(askAnswerAgentContinueCommand);
     context.subscriptions.push(openTicketCommand);
+    context.subscriptions.push(processTicketCommand);
     context.subscriptions.push(viewTicketProgressCommand);
     context.subscriptions.push(updateTicketStatusCommand);
     context.subscriptions.push(addTicketCommentCommand);

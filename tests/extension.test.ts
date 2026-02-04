@@ -96,6 +96,7 @@ jest.mock('vscode', () => {
             showTextDocument: jest.fn().mockResolvedValue(undefined),
             showQuickPick: jest.fn(),
             showInputBox: jest.fn(),
+            withProgress: jest.fn((options, task) => task({ report: jest.fn() })),
         },
         workspace: {
             openTextDocument: jest.fn().mockResolvedValue({
@@ -107,6 +108,11 @@ jest.mock('vscode', () => {
                 get: jest.fn(),
                 update: jest.fn(),
             })),
+        },
+        ProgressLocation: {
+            Notification: 15,
+            Window: 10,
+            SourceControl: 1,
         },
         ViewColumn: {
             One: 1,
@@ -903,6 +909,200 @@ describe('Extension Commands', () => {
         });
     });
 
+    describe('coe.processTicket command', () => {
+        it('should register the COE: Process Ticket command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.processTicket',
+                expect.any(Function)
+            );
+        });
+
+        it('should process ticket by calling planning agent', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+            const mockOrchestrator = require('../src/services/orchestrator');
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            const mockRouteToPlanningAgent = jest.fn(async () => 'Generated plan for ticket');
+
+            const answerAgent = {
+                cleanupInactiveConversations: jest.fn(async () => { }),
+                deserializeHistory: jest.fn(),
+                serializeHistory: jest.fn(() => ({}))
+            };
+
+            mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+                routeToPlanningAgent: mockRouteToPlanningAgent,
+                routeToVerificationAgent: jest.fn(async () => ({
+                    passed: true,
+                    explanation: 'All criteria met'
+                })),
+                getAnswerAgent: jest.fn(() => answerAgent)
+            });
+
+            mockTicketDb.getTicket.mockResolvedValue({
+                id: 'TICKET-123',
+                title: 'Test ticket to process',
+                status: 'open',
+                type: 'ai_to_human',
+            });
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const processTicketCall = registerCommandCalls.find(
+                call => call[0] === 'coe.processTicket'
+            );
+            expect(processTicketCall).toBeDefined();
+
+            const processTicketHandler = processTicketCall![1];
+
+            jest.clearAllMocks();
+
+            const mockTreeItem = {
+                label: 'Test ticket',
+                description: 'open',
+                command: {
+                    command: 'coe.openTicket',
+                    title: 'Open Ticket',
+                    arguments: ['TICKET-123']
+                }
+            } as vscode.TreeItem;
+
+            await processTicketHandler(mockTreeItem);
+
+            // Verify planning agent was called with ticket title
+            expect(mockRouteToPlanningAgent).toHaveBeenCalledWith('Test ticket to process');
+
+            // Verify ticket was updated with plan and status
+            expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-123', {
+                description: 'Generated plan for ticket',
+                status: 'in-progress'
+            });
+
+            // Verify success message
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                '✅ Ticket TICKET-123 processed successfully'
+            );
+        });
+
+        it('should handle ticket not found error', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+            const mockOrchestrator = require('../src/services/orchestrator');
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            const answerAgent = {
+                cleanupInactiveConversations: jest.fn(async () => { }),
+                deserializeHistory: jest.fn(),
+                serializeHistory: jest.fn(() => ({}))
+            };
+
+            mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+                routeToPlanningAgent: jest.fn(),
+                routeToVerificationAgent: jest.fn(),
+                getAnswerAgent: jest.fn(() => answerAgent)
+            });
+
+            mockTicketDb.getTicket.mockResolvedValue(null);
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const processTicketCall = registerCommandCalls.find(
+                call => call[0] === 'coe.processTicket'
+            );
+            const processTicketHandler = processTicketCall![1];
+
+            jest.clearAllMocks();
+
+            const mockTreeItem = {
+                label: 'Missing ticket',
+                description: 'open',
+                command: {
+                    command: 'coe.openTicket',
+                    title: 'Open Ticket',
+                    arguments: ['TICKET-999']
+                }
+            } as vscode.TreeItem;
+
+            await processTicketHandler(mockTreeItem);
+
+            expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+                'Ticket TICKET-999 not found or was deleted'
+            );
+        });
+
+        it('should handle processing errors gracefully', async () => {
+            const mockTicketDb = require('../src/services/ticketDb');
+            const mockOrchestrator = require('../src/services/orchestrator');
+
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            const answerAgent = {
+                cleanupInactiveConversations: jest.fn(async () => { }),
+                deserializeHistory: jest.fn(),
+                serializeHistory: jest.fn(() => ({}))
+            };
+
+            mockTicketDb.getTicket.mockResolvedValue({
+                id: 'TICKET-456',
+                title: 'Error ticket',
+                status: 'open',
+            });
+
+            mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+                routeToPlanningAgent: jest.fn(async () => {
+                    throw new Error('LLM connection failed');
+                }),
+                routeToVerificationAgent: jest.fn(),
+                getAnswerAgent: jest.fn(() => answerAgent)
+            });
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const processTicketCall = registerCommandCalls.find(
+                call => call[0] === 'coe.processTicket'
+            );
+            const processTicketHandler = processTicketCall![1];
+
+            jest.clearAllMocks();
+
+            const mockTreeItem = {
+                label: 'Error ticket',
+                description: 'open',
+                command: {
+                    command: 'coe.openTicket',
+                    title: 'Open Ticket',
+                    arguments: ['TICKET-456']
+                }
+            } as vscode.TreeItem;
+
+            await processTicketHandler(mockTreeItem);
+
+            expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+                'Failed to process ticket: LLM connection failed'
+            );
+        });
+    });
+
     describe('coe.researchWithAgent command', () => {
         it('should register the COE: Research with Agent command', async () => {
             const mockContext = {
@@ -1097,6 +1297,17 @@ describe('Extension Helpers', () => {
             subscriptions: [],
         } as any;
 
+        // Mock settings to return true for autoProcessTickets (Auto mode)
+        const mockGetConfiguration = jest.fn(() => ({
+            get: jest.fn((key: string, defaultValue?: any) => {
+                if (key === 'autoProcessTickets') {
+                    return true; // Auto mode
+                }
+                return defaultValue;
+            }),
+        }));
+        (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
         const answerAgent = {
             cleanupInactiveConversations: jest.fn(async () => { })
         };
@@ -1129,6 +1340,62 @@ describe('Extension Helpers', () => {
         expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-101', {
             description: 'Auto-plan result'
         });
+    });
+
+    it('should skip auto-planning when autoProcessTickets is false (Manual mode)', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        // Mock settings to return false for autoProcessTickets (Manual mode)
+        const mockGetConfiguration = jest.fn(() => ({
+            get: jest.fn((key: string, defaultValue?: any) => {
+                if (key === 'autoProcessTickets') {
+                    return false; // Manual mode
+                }
+                return defaultValue;
+            }),
+        }));
+        (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+        const answerAgent = {
+            cleanupInactiveConversations: jest.fn(async () => { })
+        };
+
+        const mockRouteToPlanningAgent = jest.fn(async () => 'Auto-plan result');
+
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+            routeToPlanningAgent: mockRouteToPlanningAgent,
+            routeToVerificationAgent: jest.fn(async () => ({
+                passed: true,
+                explanation: 'All criteria met'
+            })),
+            getAnswerAgent: jest.fn(() => answerAgent)
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-102',
+                title: 'Should not auto-plan',
+                status: 'open',
+                type: 'ai_to_human',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        await activate(mockContext);
+
+        const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
+        await listener();
+
+        // Planning agent should NOT be called in Manual mode
+        expect(mockRouteToPlanningAgent).not.toHaveBeenCalled();
+        expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
     });
 
     it('should run Ask Answer Agent continue with active chat', async () => {

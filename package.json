@@ -87,6 +87,10 @@
             {
                 "command": "coe.toggleAutoProcessing",
                 "title": "COE: Toggle Auto Processing"
+            },
+            {
+                "command": "coe.processTicket",
+                "title": "Process This Ticket"
             }
         ],
         "configuration": {
@@ -138,14 +142,19 @@
                     "group": "agent@1"
                 },
                 {
+                    "command": "coe.processTicket",
+                    "when": "view == coe-tickets && viewItem == ticket",
+                    "group": "processing@1"
+                },
+                {
                     "command": "coe.viewTicketProgress",
                     "when": "view == coe-tickets && viewItem == ticket",
-                    "group": "navigation@1"
+                    "group": "navigation@2"
                 },
                 {
                     "command": "coe.updateTicketStatus",
                     "when": "view == coe-tickets && viewItem == ticket",
-                    "group": "status@2"
+                    "group": "status@3"
                 },
                 {
                     "command": "coe.addTicketComment",
