@@ -3,7 +3,7 @@ import { initializeLogger, logInfo, logError, logWarn } from './logger';
 import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange, getTicket } from './services/ticketDb';
 import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
 import { initializeLLMService } from './services/llmService';
-import { startMCPServer } from './mcpServer/mcpServer';
+import { initializeMCPServer } from './mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
 import { ConversationsTreeDataProvider } from './ui/conversationsTreeProvider';
@@ -196,7 +196,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // (Answer Agent now has this built-in)
 
     // Start MCP server after Orchestrator is ready
-    startMCPServer();
+    initializeMCPServer();
 
     // Setup auto-planning listener for ai_to_human tickets
     await setupAutoPlanning();

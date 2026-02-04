@@ -23,17 +23,76 @@ This document provides complete API specifications for all MCP (Model Context Pr
 - **Message Format**: Newline-delimited JSON
 
 ### Server Lifecycle
+
+#### File Structure
+
+The MCP server is organized into a modular structure:
+
+- **`src/mcpServer/server.ts`**: Contains the `MCPServer` class responsible for:
+  - JSON-RPC 2.0 message parsing and routing
+  - Method handlers for `getNextTask` and `callCOEAgent`
+  - Request validation and error handling
+  - Response/error formatting
+  
+- **`src/mcpServer/index.ts`**: Provides the singleton pattern and exports:
+  - `initializeMCPServer()`: Creates and starts the server instance
+  - `getMCPServerInstance()`: Returns the server instance (for testing)
+  - `resetMCPServerForTests()`: Stops and clears the server instance
+  - Standalone mode support with graceful shutdown handlers
+
+#### Initialization in Extension
+
 ```typescript
-// Server starts on extension activation
-const server = new MCPServer({
-  name: 'coe-orchestration',
-  version: '1.0.0',
-  transport: 'stdio'
+// Server starts on extension activation (src/extension.ts)
+import { initializeMCPServer } from './mcpServer';
+
+export function activate(context: vscode.ExtensionContext) {
+  // ... other initialization ...
+  
+  // Start MCP server after Orchestrator is ready
+  initializeMCPServer();
+  
+  // ... rest of activation ...
+}
+```
+
+#### Standalone Mode
+
+To run the MCP server as a standalone process:
+
+```bash
+npm run compile
+node out/mcpServer/index.js
+```
+
+The server will:
+- Start listening for JSON-RPC 2.0 requests on stdin
+- Output logs to stderr (so stdout is reserved for JSON-RPC responses)
+- Handle SIGINT (Ctrl+C) and SIGTERM signals for graceful shutdown
+- Log startup messages indicating standalone mode
+
+**Use cases for standalone mode:**
+- Testing the MCP protocol independently
+- Debugging server behavior without VS Code
+- Integration testing with external tools
+- Running the MCP server as a service
+
+**Note**: In standalone mode, orchestrator services must be initialized separately for full functionality.
+
+#### Graceful Shutdown
+
+```typescript
+// Automatic shutdown handlers in standalone mode
+process.on('SIGINT', () => {
+  logInfo('Received SIGINT, shutting down gracefully...');
+  resetMCPServerForTests();
+  process.exit(0);
 });
 
-// Graceful shutdown on extension deactivation
-vscode.workspace.onWillDispose(() => {
-  server.shutdown();
+process.on('SIGTERM', () => {
+  logInfo('Received SIGTERM, shutting down gracefully...');
+  resetMCPServerForTests();
+  process.exit(0);
 });
 ```
 

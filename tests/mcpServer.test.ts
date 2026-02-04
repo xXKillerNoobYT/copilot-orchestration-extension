@@ -9,7 +9,7 @@
  * - Server start/stop lifecycle
  */
 
-import { MCPServer } from '../src/mcpServer/mcpServer';
+import { MCPServer } from '../src/mcpServer/server';
 import * as orchestrator from '../src/services/orchestrator';
 import { Readable, Writable } from 'stream';
 import { EventEmitter } from 'events';

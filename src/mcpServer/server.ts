@@ -1,5 +1,5 @@
-// mcpServer.ts
-// MCP (Model Context Protocol) server using JSON-RPC 2.0 over stdio transport
+// server.ts
+// MCP Server class - JSON-RPC 2.0 over stdio transport
 
 import { EventEmitter } from 'events';
 import { logInfo, logError, logWarn } from '../logger';
@@ -31,10 +31,9 @@ interface JsonRpcResponse {
 /**
  * MCP Server class - handles JSON-RPC 2.0 requests over stdio
  * 
- * Beginner explanation:
- * - This server listens to "stdin" (standard input = text coming INTO our extension from Copilot)
- * - When Copilot sends a JSON-RPC request, we parse it and call the right tool
- * - We send back a JSON-RPC response via "stdout" (standard output = text going OUT to Copilot)
+ * **Simple explanation**: This is like a waiter at a restaurant. When Copilot (the customer)
+ * sends a request via stdin (like ordering food), we parse it, do the work, and send back
+ * a response via stdout (like bringing the food to the table).
  */
 export class MCPServer extends EventEmitter {
     private inputStream: NodeJS.ReadableStream;
@@ -57,6 +56,8 @@ export class MCPServer extends EventEmitter {
 
     /**
      * Start the MCP server - begins listening for JSON-RPC requests
+     * 
+     * **Simple explanation**: Like turning on a phone - now it can receive calls (JSON-RPC requests)
      */
     public start(): void {
         if (this.isStarted) {
@@ -80,6 +81,8 @@ export class MCPServer extends EventEmitter {
 
     /**
      * Stop the MCP server - cleans up listeners
+     * 
+     * **Simple explanation**: Like turning off a phone - stops listening for calls
      */
     public stop(): void {
         if (!this.isStarted) {
@@ -99,7 +102,8 @@ export class MCPServer extends EventEmitter {
 
     /**
      * Handle incoming JSON-RPC request
-     * Beginner explanation: This runs when Copilot sends us text via stdin
+     * 
+     * **Simple explanation**: This runs when Copilot sends us a message - like receiving a text message
      */
     private handleRequest(data: Buffer): void {
         try {
@@ -131,7 +135,8 @@ export class MCPServer extends EventEmitter {
 
     /**
      * Handle getNextTask tool call
-     * Beginner explanation: This calls our Orchestrator to get the next task from the queue
+     * 
+     * **Simple explanation**: This asks our task queue "what should I work on next?"
      */
     private async handleGetNextTask(request: JsonRpcRequest): Promise<void> {
         try {
@@ -147,8 +152,8 @@ export class MCPServer extends EventEmitter {
      * Handle callCOEAgent tool call
      * Routes command to appropriate COE agent (plan, verify, ask)
      * 
-     * Beginner explanation: When GitHub Copilot says "Ask COE to plan this",
-     * it sends us a message with command="plan" and we call the planning agent
+     * **Simple explanation**: Like a switchboard operator - when Copilot says "I need planning help",
+     * we connect them to the Planning Agent (the right department)
      * 
      * @param request JSON-RPC request with params: { command, args }
      */
@@ -235,7 +240,8 @@ export class MCPServer extends EventEmitter {
 
     /**
      * Send a successful JSON-RPC response
-     * Beginner explanation: Send result back to Copilot via stdout
+     * 
+     * **Simple explanation**: Send the answer back to Copilot (like replying to a text message)
      */
     private sendResponse(id: string | number | null, result: any): void {
         const response: JsonRpcResponse = {
@@ -249,7 +255,8 @@ export class MCPServer extends EventEmitter {
 
     /**
      * Send a JSON-RPC error response
-     * Beginner explanation: Send error back to Copilot when something goes wrong
+     * 
+     * **Simple explanation**: Send an error message back when something goes wrong
      */
     private sendError(id: string | number | null, code: number, message: string): void {
         const errorResponse: JsonRpcResponse = {
@@ -263,40 +270,4 @@ export class MCPServer extends EventEmitter {
         this.outputStream.write(JSON.stringify(errorResponse) + '\n');
         logWarn(`MCP sent error: id=${id}, code=${code}, message=${message}`);
     }
-}
-
-/**
- * Global MCP server instance
- */
-let mcpServerInstance: MCPServer | null = null;
-
-/**
- * Start the MCP server (called from extension.ts activate)
- * Beginner explanation: This is the function we call to turn on the MCP server
- */
-export function startMCPServer(): void {
-    if (mcpServerInstance) {
-        logWarn('MCP server already exists, not creating a new instance');
-        return;
-    }
-
-    mcpServerInstance = new MCPServer();
-    mcpServerInstance.start();
-}
-
-/**
- * Stop the MCP server (called from extension.ts deactivate)
- */
-export function stopMCPServer(): void {
-    if (mcpServerInstance) {
-        mcpServerInstance.stop();
-        mcpServerInstance = null;
-    }
-}
-
-/**
- * Get the current MCP server instance (for testing only)
- */
-export function getMCPServerInstance(): MCPServer | null {
-    return mcpServerInstance;
 }
