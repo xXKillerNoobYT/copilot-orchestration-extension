@@ -61,6 +61,10 @@
                 "title": "Add User Comment"
             },
             {
+                "command": "coe.clearConversationHistory",
+                "title": "Clear Conversation History"
+            },
+            {
                 "command": "coe.researchWithAgent",
                 "title": "COE: Research with Agent"
             },
@@ -100,6 +104,11 @@
                     "command": "coe.addTicketComment",
                     "when": "view == coe-tickets && viewItem == ticket",
                     "group": "comment@3"
+                },
+                {
+                    "command": "coe.clearConversationHistory",
+                    "when": "view == coe-conversations && viewItem == coe-conversation",
+                    "group": "conversation@1"
                 }
             ]
         },

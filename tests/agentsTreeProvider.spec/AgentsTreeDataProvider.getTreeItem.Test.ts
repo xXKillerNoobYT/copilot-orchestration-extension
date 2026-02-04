@@ -46,5 +46,13 @@ describe('AgentsTreeDataProvider', () => {
             expect(() => dataProvider.getTreeItem(invalidInput)).toThrow();
             expect(logErrorSpy).toHaveBeenCalled();
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle TreeItem with missing properties gracefully', () => {
+            const incompleteTreeItem = { label: 'Incomplete Item' } as vscode.TreeItem;
+            const logErrorSpy = jest.spyOn(Logger, 'error');
+            expect(() => dataProvider.getTreeItem(incompleteTreeItem)).toThrow();
+            expect(logErrorSpy).toHaveBeenCalled();
+        });
     });
 });

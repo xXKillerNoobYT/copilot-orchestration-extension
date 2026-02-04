@@ -40,6 +40,11 @@ describe('TicketsTreeDataProvider', () => {
         it('should fire the onDidChangeTreeData event', () => {
             dataProvider.refresh();
             expect(mockEventEmitter.fire).toHaveBeenCalledTimes(1);
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should log a debug message when refresh is called', () => {
+            dataProvider.refresh();
             expect(Logger.debug).toHaveBeenCalledWith('Refresh method called, onDidChangeTreeData event fired.');
         });
     });

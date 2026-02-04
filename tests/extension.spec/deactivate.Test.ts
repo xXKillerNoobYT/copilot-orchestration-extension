@@ -21,7 +21,7 @@ jest.mock('../../src/logger', () => ({
     logWarn: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-02 */
+/** @aiContributed-2026-02-03 */
 describe('deactivate', () => {
   let mockOrchestrator: { getAnswerAgent: jest.Mock };
   let mockAnswerAgent: { serializeHistory: jest.Mock };
@@ -42,8 +42,8 @@ describe('deactivate', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should log the number of saved conversation histories', async () => {
+  /** @aiContributed-2026-02-03 */
+    it('should log the number of saved conversation histories', async () => {
     mockAnswerAgent.serializeHistory.mockReturnValue({
       ticket1: 'history1',
       ticket2: 'history2',
@@ -59,8 +59,8 @@ describe('deactivate', () => {
     expect(logInfo).toHaveBeenCalledWith('Saved 2 conversation histories on deactivate');
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should handle tickets without conversation history', async () => {
+  /** @aiContributed-2026-02-03 */
+    it('should handle tickets without conversation history', async () => {
     mockAnswerAgent.serializeHistory.mockReturnValue({
       ticket1: 'history1',
     });
@@ -77,8 +77,8 @@ describe('deactivate', () => {
     expect(logInfo).toHaveBeenCalledWith('Saved 1 conversation histories on deactivate');
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should log a warning if updating a ticket fails', async () => {
+  /** @aiContributed-2026-02-03 */
+    it('should log a warning if updating a ticket fails', async () => {
     mockAnswerAgent.serializeHistory.mockReturnValue({
       ticket1: 'history1',
     });
@@ -92,8 +92,8 @@ describe('deactivate', () => {
     );
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should log a warning if listTickets throws an error', async () => {
+  /** @aiContributed-2026-02-03 */
+    it('should log a warning if listTickets throws an error', async () => {
     (listTickets as jest.Mock).mockRejectedValue(new Error('DB error'));
 
     await deactivate();
@@ -103,8 +103,8 @@ describe('deactivate', () => {
     );
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should handle an empty ticket list gracefully', async () => {
+  /** @aiContributed-2026-02-03 */
+    it('should handle an empty ticket list gracefully', async () => {
     mockAnswerAgent.serializeHistory.mockReturnValue({});
     (listTickets as jest.Mock).mockResolvedValue([]);
 
@@ -112,5 +112,19 @@ describe('deactivate', () => {
 
     expect(updateTicket).not.toHaveBeenCalled();
     expect(logInfo).toHaveBeenCalledWith('Saved 0 conversation histories on deactivate');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle errors during serialization gracefully', async () => {
+    mockAnswerAgent.serializeHistory.mockImplementation(() => {
+      throw new Error('Serialization error');
+    });
+    (listTickets as jest.Mock).mockResolvedValue([{ id: 'ticket1' }]);
+
+    await deactivate();
+
+    expect(logWarn).toHaveBeenCalledWith(
+      'Failed to persist Answer Agent history on deactivate: Serialization error'
+    );
   });
 });

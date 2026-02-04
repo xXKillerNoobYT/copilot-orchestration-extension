@@ -1,27 +1,37 @@
 // ./orchestrator.Test.ts
-import { getOrchestratorInstance, resetOrchestratorForTests } from '../../src/services/orchestrator';
+import { getOrchestratorInstance, resetOrchestratorForTests, initializeOrchestrator } from '../../src/services/orchestrator';
 import { OrchestratorService } from '../../src/services/orchestrator';
+import * as vscode from 'vscode';
+
+jest.mock('vscode', () => ({
+    ...jest.requireActual('vscode'),
+    ExtensionContext: jest.fn(),
+}));
 
 /** @aiContributed-2026-02-03 */
 describe('getOrchestratorInstance', () => {
+  let mockContext: vscode.ExtensionContext;
+
   beforeEach(() => {
     resetOrchestratorForTests();
+    mockContext = { extensionPath: '/mock/path' } as unknown as vscode.ExtensionContext;
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should return an instance of OrchestratorService', () => {
+    it('should return an instance of OrchestratorService after initialization', async () => {
+    await initializeOrchestrator(mockContext);
     const instance = getOrchestratorInstance();
     expect(instance).toBeInstanceOf(OrchestratorService);
   });
 
   /** @aiContributed-2026-02-03 */
     it('should throw an error if the orchestrator is not initialized', () => {
-    resetOrchestratorForTests();
     expect(() => getOrchestratorInstance()).toThrowError('Orchestrator not initialized');
   });
 
   /** @aiContributed-2026-02-03 */
-    it('should return the same instance on multiple calls', () => {
+    it('should return the same instance on multiple calls after initialization', async () => {
+    await initializeOrchestrator(mockContext);
     const instance1 = getOrchestratorInstance();
     const instance2 = getOrchestratorInstance();
     expect(instance1).toBe(instance2);

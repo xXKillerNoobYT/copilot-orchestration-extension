@@ -27,7 +27,7 @@ describe('MCPServer', () => {
             const id = '123';
             const result = { success: true };
 
-            (server as unknown as { sendResponse: (id: string, result: unknown) => void }).sendResponse(id, result);
+            (server as MCPServer).sendResponse(id, result);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',
@@ -44,7 +44,7 @@ describe('MCPServer', () => {
             const id = null;
             const result = { success: true };
 
-            (server as unknown as { sendResponse: (id: string | null, result: unknown) => void }).sendResponse(id, result);
+            (server as MCPServer).sendResponse(id, result);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',
@@ -61,7 +61,7 @@ describe('MCPServer', () => {
             const id = '456';
             const result = undefined;
 
-            (server as unknown as { sendResponse: (id: string, result: unknown) => void }).sendResponse(id, result);
+            (server as MCPServer).sendResponse(id, result);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',
@@ -81,7 +81,41 @@ describe('MCPServer', () => {
                 throw new Error('Write failed');
             });
 
-            expect(() => (server as unknown as { sendResponse: (id: string, result: unknown) => void }).sendResponse(id, result)).toThrow('Write failed');
+            expect(() => (server as MCPServer).sendResponse(id, result)).toThrow('Write failed');
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle numeric id correctly', () => {
+            const id = 101;
+            const result = { success: true };
+
+            (server as MCPServer).sendResponse(id, result);
+
+            const expectedResponse = JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                result,
+            }) + '\n';
+
+            expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
+            expect(logInfo).toHaveBeenCalledWith(`MCP sent response: id=${id}`);
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle empty result correctly', () => {
+            const id = '202';
+            const result = {};
+
+            (server as MCPServer).sendResponse(id, result);
+
+            const expectedResponse = JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                result,
+            }) + '\n';
+
+            expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
+            expect(logInfo).toHaveBeenCalledWith(`MCP sent response: id=${id}`);
         });
     });
 });

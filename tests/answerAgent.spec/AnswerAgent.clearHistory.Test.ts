@@ -7,7 +7,7 @@ jest.mock('../../src/logger', () => ({
     logInfo: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-02 */
+/** @aiContributed-2026-02-03 */
 describe('AnswerAgent', () => {
   let answerAgent: AnswerAgent;
 
@@ -17,10 +17,10 @@ describe('AnswerAgent', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-02 */
-  describe('clearHistory', () => {
-    /** @aiContributed-2026-02-02 */
-    it('should delete the chat history for the given chatId and log the action', () => {
+  /** @aiContributed-2026-02-03 */
+    describe('clearHistory', () => {
+    /** @aiContributed-2026-02-03 */
+        it('should delete the chat history for the given chatId and log the action', () => {
       const chatId = 'chat123';
       (answerAgent as unknown as { conversationHistory: Map<string, object> }).conversationHistory.set(chatId, {});
 
@@ -30,8 +30,8 @@ describe('AnswerAgent', () => {
       expect(logInfo).toHaveBeenCalledWith(`[Answer Agent] Cleared history for chat ${chatId}`);
     });
 
-    /** @aiContributed-2026-02-02 */
-    it('should not log anything if the chatId does not exist in the history', () => {
+    /** @aiContributed-2026-02-03 */
+        it('should not log anything if the chatId does not exist in the history', () => {
       const chatId = 'nonexistentChat';
 
       answerAgent.clearHistory(chatId);
@@ -39,15 +39,23 @@ describe('AnswerAgent', () => {
       expect(logInfo).not.toHaveBeenCalled();
     });
 
-    /** @aiContributed-2026-02-02 */
-    it('should handle undefined chatId gracefully', () => {
+    /** @aiContributed-2026-02-03 */
+        it('should handle undefined chatId gracefully', () => {
       expect(() => answerAgent.clearHistory(undefined as unknown as string)).not.toThrow();
       expect(logInfo).not.toHaveBeenCalled();
     });
 
-    /** @aiContributed-2026-02-02 */
-    it('should handle null chatId gracefully', () => {
+    /** @aiContributed-2026-02-03 */
+        it('should handle null chatId gracefully', () => {
       expect(() => answerAgent.clearHistory(null as unknown as string)).not.toThrow();
+      expect(logInfo).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-03 */
+        it('should not throw an error if conversationHistory is empty', () => {
+      const chatId = 'chat123';
+
+      expect(() => answerAgent.clearHistory(chatId)).not.toThrow();
       expect(logInfo).not.toHaveBeenCalled();
     });
   });

@@ -109,5 +109,25 @@ describe('TicketsTreeDataProvider', () => {
             expect(() => (provider as unknown as { createTicketItem: (ticket: null | undefined) => vscode.TreeItem }).createTicketItem(null)).toThrow();
             expect(() => (provider as unknown as { createTicketItem: (ticket: null | undefined) => vscode.TreeItem }).createTicketItem(undefined)).toThrow();
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle tickets with empty title', () => {
+            const ticket = {
+                id: '5',
+                title: '',
+                status: 'Pending',
+                createdAt: '2023-01-05T00:00:00Z',
+                description: 'Empty title ticket description.',
+            };
+
+            const mockGetIconForStatus = jest.spyOn(provider as unknown as { getIconForStatus: (status: string) => vscode.ThemeIcon }, 'getIconForStatus').mockReturnValue(new vscode.ThemeIcon('icon'));
+
+            const treeItem = (provider as unknown as { createTicketItem: (ticket: typeof ticket) => vscode.TreeItem }).createTicketItem(ticket);
+
+            expect(treeItem.label).toBe('');
+            expect(treeItem.description).toBe('Pending • 1/5/2023 • Plan: Empty title ticket description.');
+            expect(treeItem.tooltip).toBe(ticket.description);
+            expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
+        });
     });
 });

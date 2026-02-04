@@ -19,7 +19,7 @@ describe('answerQuestion', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should return the answer from AnswerAgent on success', async () => {
+    it('should return the answer from AnswerAgent on success', async () => {
     const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
     await initializeOrchestrator(mockContext);
 
@@ -36,7 +36,7 @@ describe('answerQuestion', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle errors from AnswerAgent gracefully', async () => {
+    it('should handle errors from AnswerAgent gracefully', async () => {
     const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
     await initializeOrchestrator(mockContext);
 
@@ -53,7 +53,7 @@ describe('answerQuestion', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should log and return a message for empty questions', async () => {
+    it('should log and return a message for empty questions', async () => {
     const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
     await initializeOrchestrator(mockContext);
 
@@ -68,7 +68,7 @@ describe('answerQuestion', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle multi-turn conversations with chatId', async () => {
+    it('should handle multi-turn conversations with chatId', async () => {
     const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
     await initializeOrchestrator(mockContext);
 
@@ -82,6 +82,40 @@ describe('answerQuestion', () => {
     expect(result).toBe(expectedAnswer);
     expect(mockAnswerAgent.ask).toHaveBeenCalledWith(question, chatId);
     expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Continuing conversation'));
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should initialize AnswerAgent lazily if not already initialized', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    const expectedAnswer = 'TypeScript is a strongly typed superset of JavaScript.';
+    mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+    const result = await answerQuestion(question);
+
+    expect(result).toBe(expectedAnswer);
+    expect(mockAnswerAgent.ask).toHaveBeenCalledWith(question, undefined);
+    expect(AnswerAgent).toHaveBeenCalledTimes(1);
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should log and return a fallback message if AnswerAgent throws a non-Error object', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    mockAnswerAgent.ask.mockRejectedValue('Non-Error object');
+
+    const result = await answerQuestion(question);
+
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Non-Error object'));
     expect(llmStatusBar.start).toHaveBeenCalled();
     expect(llmStatusBar.end).toHaveBeenCalled();
   });

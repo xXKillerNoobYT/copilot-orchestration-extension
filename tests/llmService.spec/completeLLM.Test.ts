@@ -38,7 +38,7 @@ describe('completeLLM', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should call the LLM endpoint and return a response on success', async () => {
+    it('should call the LLM endpoint and return a response on success', async () => {
     const mockResponse = {
       ok: true,
       json: jest.fn().mockResolvedValue({
@@ -69,7 +69,7 @@ describe('completeLLM', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle a timeout error', async () => {
+    it('should handle a timeout error', async () => {
     const prompt = 'Test prompt';
     const options = { systemPrompt: 'System context' };
 
@@ -90,7 +90,7 @@ describe('completeLLM', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle an HTTP error response', async () => {
+    it('should handle an HTTP error response', async () => {
     const mockResponse = { ok: false, status: 500 };
     mockFetch.mockResolvedValue(mockResponse);
 
@@ -107,7 +107,7 @@ describe('completeLLM', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should create a ticket on error', async () => {
+    it('should create a ticket on error', async () => {
     const error = new Error('Test error');
     mockFetch.mockRejectedValue(error);
 
@@ -126,7 +126,7 @@ describe('completeLLM', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle invalid configuration gracefully', async () => {
+    it('should handle invalid configuration gracefully', async () => {
     const mockResponse = {
       ok: true,
       json: jest.fn().mockResolvedValue({
@@ -145,5 +145,57 @@ describe('completeLLM', () => {
       content: 'Test response',
       usage: { total_tokens: 100 },
     });
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should trim messages exceeding token limit', async () => {
+    const mockResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'Trimmed response' } }],
+        usage: { total_tokens: 2048 },
+      }),
+    };
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const prompt = 'A'.repeat(10000); // Large prompt to exceed token limit
+    const options = { systemPrompt: 'System context' };
+
+    const result = await completeLLM(prompt, options);
+
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalled();
+    expect(result).toEqual({
+      content: 'Trimmed response',
+      usage: { total_tokens: 2048 },
+    });
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle system message exceeding token limit', async () => {
+    const mockResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'System message response' } }],
+        usage: { total_tokens: 3000 },
+      }),
+    };
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const prompt = '';
+    const options = {
+      systemPrompt: 'A'.repeat(5000), // Large system prompt
+    };
+
+    const result = await completeLLM(prompt, options);
+
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalled();
+    expect(result).toEqual({
+      content: 'System message response',
+      usage: { total_tokens: 3000 },
+    });
+    expect(llmStatusBar.end).toHaveBeenCalled();
   });
 });

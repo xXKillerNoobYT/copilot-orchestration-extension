@@ -16,6 +16,11 @@ jest.mock('../../src/services/ticketDb', () => ({
     onTicketChange: jest.fn(),
 }));
 
+// Mock orchestrator for in-memory AnswerAgent conversations
+jest.mock('../../src/services/orchestrator', () => ({
+    getOrchestratorInstance: jest.fn(),
+}));
+
 // Mock logger
 jest.mock('../../src/logger', () => ({
     logInfo: jest.fn(),
@@ -24,22 +29,32 @@ jest.mock('../../src/logger', () => ({
 }));
 
 import { listTickets, onTicketChange } from '../../src/services/ticketDb';
+import { getOrchestratorInstance } from '../../src/services/orchestrator';
 import { logError, logInfo, logWarn } from '../../src/logger';
 
 describe('ConversationsTreeDataProvider', () => {
     let provider: ConversationsTreeDataProvider;
     let mockListTickets: jest.Mock;
     let mockOnTicketChange: jest.Mock;
+    let mockGetOrchestratorInstance: jest.Mock;
+    let mockGetActiveConversations: jest.Mock;
     let capturedListener: (() => void) | null = null;
 
     beforeEach(() => {
         jest.clearAllMocks();
         mockListTickets = listTickets as jest.Mock;
         mockOnTicketChange = onTicketChange as jest.Mock;
+        mockGetOrchestratorInstance = getOrchestratorInstance as jest.Mock;
+        mockGetActiveConversations = jest.fn().mockReturnValue([]);
 
         mockListTickets.mockResolvedValue([]);
         mockOnTicketChange.mockImplementation((callback: () => void) => {
             capturedListener = callback;
+        });
+        mockGetOrchestratorInstance.mockReturnValue({
+            getAnswerAgent: () => ({
+                getActiveConversations: mockGetActiveConversations
+            })
         });
 
         provider = new ConversationsTreeDataProvider();
@@ -115,9 +130,13 @@ describe('ConversationsTreeDataProvider', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].label).toBe('User: How do I use COE?');
-            expect(result[0].description).toBe('Last active: 2 minutes ago');
+            expect(result[0].description).toBe('Last active: 2 minutes ago | 2 messages');
             expect(result[0].tooltip).toBe('Click to continue chat');
             expect(result[0].iconPath).toBeInstanceOf(vscode.ThemeIcon);
+            expect(result[0].contextValue).toBe('coe-conversation');
+            expect(result[0].command).toBeDefined();
+            expect(result[0].command?.command).toBe('coe.openTicket');
+            expect(result[0].command?.arguments).toEqual(['TICKET-1']);
 
             jest.useRealTimers();
         });
@@ -207,6 +226,62 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result[0].label).toContain('User:');
         });
 
+        it('should show empty answer_agent tickets as new chats', async () => {
+            mockListTickets.mockResolvedValueOnce([
+                {
+                    id: 'TICKET-EMPTY-ANSWER',
+                    title: 'Empty Answer Agent Ticket',
+                    status: 'open',
+                    createdAt: '2026-02-03T00:00:00.000Z',
+                    updatedAt: '2026-02-03T00:01:00.000Z',
+                    type: 'answer_agent'
+                },
+            ]);
+
+            const result = await provider.getChildren();
+
+            expect(result).toHaveLength(1);
+            expect(result[0].label).toBe('New chat (TICKET-EMPTY-ANSWER)');
+            expect(result[0].description).toContain('0 messages');
+        });
+
+        it('should merge active conversations with tickets and prefer memory', async () => {
+            mockListTickets.mockResolvedValueOnce([
+                {
+                    id: 'TICKET-MEMORY',
+                    title: 'Answer Agent Ticket',
+                    status: 'open',
+                    createdAt: '2026-02-03T00:00:00.000Z',
+                    updatedAt: '2026-02-03T00:01:00.000Z',
+                    type: 'answer_agent',
+                    conversationHistory: JSON.stringify({
+                        chatId: 'TICKET-MEMORY',
+                        createdAt: '2026-02-03T00:00:00.000Z',
+                        lastActivityAt: '2026-02-03T00:01:00.000Z',
+                        messages: [{ role: 'user', content: 'Old history' }],
+                    }),
+                },
+            ]);
+
+            mockGetActiveConversations.mockReturnValueOnce([
+                {
+                    chatId: 'TICKET-MEMORY',
+                    createdAt: '2026-02-03T00:00:00.000Z',
+                    lastActivityAt: '2026-02-03T00:02:00.000Z',
+                    messages: [
+                        { role: 'user', content: 'Live history' },
+                        { role: 'assistant', content: 'Live answer' }
+                    ]
+                }
+            ]);
+
+            const result = await provider.getChildren();
+
+            expect(result).toHaveLength(1);
+            expect(result[0].label).toBe('User: Live history');
+            expect(result[0].description).toContain('2 messages');
+        });
+
         it('should skip unexpected conversation formats', async () => {
             mockListTickets.mockResolvedValueOnce([
                 {
@@ -270,6 +345,58 @@ describe('ConversationsTreeDataProvider', () => {
         it('should expose the event emitter', () => {
             expect(provider.onDidChangeTreeData).toBeDefined();
             expect(typeof provider.onDidChangeTreeData).toBe('function');
+        });
+    });
+
+    describe('contextValue and command integration', () => {
+        it('should set contextValue on all conversation items', async () => {
+            mockListTickets.mockResolvedValueOnce([
+                {
+                    id: 'TICKET-CTX',
+                    title: 'Context Test',
+                    status: 'open',
+                    createdAt: '2026-02-03T00:00:00.000Z',
+                    updatedAt: '2026-02-03T00:01:00.000Z',
+                    type: 'answer_agent',
+                    conversationHistory: JSON.stringify({
+                        chatId: 'TICKET-CTX',
+                        createdAt: '2026-02-03T00:00:00.000Z',
+                        lastActivityAt: '2026-02-03T00:01:00.000Z',
+                        messages: [{ role: 'user', content: 'Test' }],
+                    }),
+                },
+            ]);
+
+            const result = await provider.getChildren();
+
+            expect(result).toHaveLength(1);
+            expect(result[0].contextValue).toBe('coe-conversation');
+        });
+
+        it('should include command with chatId for context menu handlers', async () => {
+            mockListTickets.mockResolvedValueOnce([
+                {
+                    id: 'TICKET-CMD',
+                    title: 'Command Test',
+                    status: 'open',
+                    createdAt: '2026-02-03T00:00:00.000Z',
+                    updatedAt: '2026-02-03T00:01:00.000Z',
+                    type: 'answer_agent',
+                    conversationHistory: JSON.stringify({
+                        chatId: 'TICKET-CMD',
+                        createdAt: '2026-02-03T00:00:00.000Z',
+                        lastActivityAt: '2026-02-03T00:01:00.000Z',
+                        messages: [],
+                    }),
+                },
+            ]);
+
+            const result = await provider.getChildren();
+
+            expect(result).toHaveLength(1);
+            expect(result[0].command).toBeDefined();
+            expect(result[0].command?.command).toBe('coe.openTicket');
+            expect(result[0].command?.arguments).toEqual(['TICKET-CMD']);
         });
     });
 });

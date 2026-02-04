@@ -92,4 +92,32 @@ describe('routeToPlanningAgent', () => {
         expect(Logger.info).toHaveBeenCalledWith('LLM: Chunk 2');
         expect(result).toBe('Plan generated successfully.');
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should truncate and log long plans', async () => {
+        const longPlan = 'A'.repeat(1500);
+        const mockResponse = { content: longPlan };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(Logger.info).toHaveBeenCalledWith(`Full plan (truncated): ${longPlan.substring(0, 1000)}...`);
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', longPlan.substring(0, 100));
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe(longPlan);
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle short plans without truncation', async () => {
+        const shortPlan = 'Short plan content.';
+        const mockResponse = { content: shortPlan };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(Logger.info).toHaveBeenCalledWith(`Full plan: ${shortPlan}`);
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', shortPlan.substring(0, 100));
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe(shortPlan);
+    });
 });

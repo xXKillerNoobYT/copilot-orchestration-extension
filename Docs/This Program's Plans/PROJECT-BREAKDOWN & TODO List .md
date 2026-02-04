@@ -108,7 +108,7 @@ _(Track your improvement over time)_
 **Priority**: P0  
 **Dependencies**: None (starting point!)
 
-- [ ] **MT-001.1**: Initialize MCP server structure (20 min) [actual: __ min] [Priority: P0] ✅
+- [x] **MT-001.1**: Initialize MCP server structure (20 min) [actual: __ min] [Priority: P0] ✅
   - **Files**: Create `src/mcpServer/server.ts`, `src/mcpServer/index.ts`
   - **Tests**: Add basic server initialization test
   - **Behavior**: Server can start and accept JSON-RPC 2.0 messages via stdio
@@ -117,7 +117,7 @@ _(Track your improvement over time)_
   - **Verification**: Run `npm run build && node dist/mcpServer/index.js` - should start without errors
   - **Dependencies**: None
 
-- [ ] **MT-001.2**: Implement getNextTask MCP tool (35 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
+- [x] **MT-001.2**: Implement getNextTask MCP tool (35 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
   - **Files**: Create `src/mcpServer/tools/getNextTask.ts`
   - **Tests**: Unit test with mock task queue returning next ready task
   - **Behavior**: MCP call `getNextTask({filter: 'ready'})` returns task object with full context
@@ -126,7 +126,7 @@ _(Track your improvement over time)_
   - **Verification**: `npm test src/mcpServer/tools/getNextTask.spec.ts` passes
   - **Dependencies**: MT-001.1
 
-- [ ] **MT-001.3**: Implement reportTaskDone MCP tool (30 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
+- [x] **MT-001.3**: Implement reportTaskDone MCP tool (30 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
   - **Files**: Create `src/mcpServer/tools/reportTaskDone.ts`
   - **Tests**: Test task status update from 'in-progress' to 'done'
   - **Behavior**: Updates task status and triggers Verification Team
@@ -144,7 +144,7 @@ _(Track your improvement over time)_
   - **Verification**: Test with sample question, verify Answer Team receives it
   - **Dependencies**: MT-001.1
 
-- [ ] **MT-001.5**: Register all tools with MCP server (25 min) [actual: __ min] [Priority: P0] [depends: MT-001.2, MT-001.3, MT-001.4] 🔒
+- [x] **MT-001.5**: Register all tools with MCP server (25 min) [actual: __ min] [Priority: P0] [depends: MT-001.2, MT-001.3, MT-001.4] 🔒
   - **Files**: Update `src/mcpServer/integration.ts`
   - **Tests**: Update `tests/integration.spec/initializeMCPServer.web.spec.ts` to expect 3+ tools
   - **Behavior**: Server exposes getNextTask, reportTaskDone, askQuestion via JSON-RPC
@@ -153,7 +153,7 @@ _(Track your improvement over time)_
   - **Verification**: `npm test tests/integration.spec/initializeMCPServer.web.spec.ts` passes
   - **Dependencies**: MT-001.2, MT-001.3, MT-001.4
 
-- [ ] **MT-001.6**: Implement JSON-RPC 2.0 message handling (45 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
+- [x] **MT-001.6**: Implement JSON-RPC 2.0 message handling (45 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
   - **Files**: Create `src/mcpServer/jsonrpc.ts`
   - **Tests**: Test request/response format, error responses, batch requests
   - **Behavior**: Parses JSON-RPC requests, routes to tools, formats responses

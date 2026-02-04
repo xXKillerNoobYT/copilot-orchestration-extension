@@ -46,5 +46,10 @@ describe('AgentsTreeDataProvider', () => {
             expect(fireSpy).toHaveBeenCalledTimes(1);
             expect(Logger.debug).toHaveBeenCalledWith('refresh() called, onDidChangeTreeData event fired');
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should not throw any errors when called', () => {
+            expect(() => dataProvider.refresh()).not.toThrow();
+        });
     });
 });

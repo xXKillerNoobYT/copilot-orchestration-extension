@@ -5,59 +5,77 @@ import { logInfo } from '../../src/logger';
 jest.mock('vscode', () => ({
     ...jest.requireActual('vscode'),
     window: {
-    createOutputChannel: jest.fn(),
-  },
+        createOutputChannel: jest.fn(),
+    },
 }));
 
-/** @aiContributed-2026-02-02 */
+/** @aiContributed-2026-02-03 */
 describe('logInfo', () => {
-  let mockOutputChannel: { appendLine: jest.Mock };
+    let mockOutputChannel: { appendLine: jest.Mock };
 
-  beforeEach(() => {
-    mockOutputChannel = { appendLine: jest.fn() };
-    (vscode.window.createOutputChannel as jest.Mock).mockReturnValue(mockOutputChannel);
-  });
+    beforeEach(() => {
+        mockOutputChannel = { appendLine: jest.fn() };
+        (vscode.window.createOutputChannel as jest.Mock).mockReturnValue(mockOutputChannel);
+    });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
 
-  /** @aiContributed-2026-02-02 */
+    /** @aiContributed-2026-02-03 */
     it('should log an info message to the output channel and console', () => {
-    const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    logInfo('Test message');
+        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+        const mockDate = new Date('2023-01-01T00:00:00.000Z');
+        jest.useFakeTimers().setSystemTime(mockDate);
 
-    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/^\[INFO\] .* Test message$/)
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/^\[INFO\] .* Test message$/));
+        logInfo('Test message');
 
-    consoleLogSpy.mockRestore();
-  });
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z Test message'
+        );
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z Test message'
+        );
 
-  /** @aiContributed-2026-02-02 */
+        consoleLogSpy.mockRestore();
+        jest.useRealTimers();
+    });
+
+    /** @aiContributed-2026-02-03 */
     it('should not throw an error if the message is empty', () => {
-    const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    expect(() => logInfo('')).not.toThrow();
+        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+        const mockDate = new Date('2023-01-01T00:00:00.000Z');
+        jest.useFakeTimers().setSystemTime(mockDate);
 
-    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/^\[INFO\] .* $/)
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/^\[INFO\] .* $/));
+        expect(() => logInfo('')).not.toThrow();
 
-    consoleLogSpy.mockRestore();
-  });
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z '
+        );
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z '
+        );
 
-  /** @aiContributed-2026-02-02 */
+        consoleLogSpy.mockRestore();
+        jest.useRealTimers();
+    });
+
+    /** @aiContributed-2026-02-03 */
     it('should handle undefined message gracefully', () => {
-    const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    expect(() => logInfo(undefined as unknown as string)).not.toThrow();
+        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+        const mockDate = new Date('2023-01-01T00:00:00.000Z');
+        jest.useFakeTimers().setSystemTime(mockDate);
 
-    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/^\[INFO\] .* undefined$/)
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/^\[INFO\] .* undefined$/));
+        expect(() => logInfo(undefined as unknown as string)).not.toThrow();
 
-    consoleLogSpy.mockRestore();
-  });
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z undefined'
+        );
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z undefined'
+        );
+
+        consoleLogSpy.mockRestore();
+        jest.useRealTimers();
+    });
 });

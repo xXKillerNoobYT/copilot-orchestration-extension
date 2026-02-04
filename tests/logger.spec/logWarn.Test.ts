@@ -11,7 +11,7 @@ jest.mock('vscode', () => ({
   },
 }));
 
-/** @aiContributed-2026-02-02 */
+/** @aiContributed-2026-02-03 */
 describe('logWarn', () => {
   let mockOutputChannel: vscode.OutputChannel;
 
@@ -20,8 +20,8 @@ describe('logWarn', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should log a warning message to the output channel and console', () => {
+  /** @aiContributed-2026-02-03 */
+    it('should log a warning message to the output channel and console', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const message = 'This is a warning message';
 
@@ -39,8 +39,8 @@ describe('logWarn', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should not log if logLevel is set to "error"', () => {
+  /** @aiContributed-2026-02-03 */
+    it('should not log if logLevel is set to "error"', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const message = 'This is a warning message';
 
@@ -55,8 +55,8 @@ describe('logWarn', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-02 */
-  it('should handle undefined message gracefully', () => {
+  /** @aiContributed-2026-02-03 */
+    it('should handle undefined message gracefully', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
     logWarn(undefined as unknown as string);
@@ -66,6 +66,22 @@ describe('logWarn', () => {
     );
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('[WARN]')
+    );
+    consoleWarnSpy.mockRestore();
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should include a timestamp in the log message', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const message = 'Timestamp test message';
+
+    logWarn(message);
+
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/\[WARN\] \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z Timestamp test message/)
+    );
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/\[WARN\] \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z Timestamp test message/)
     );
     consoleWarnSpy.mockRestore();
   });

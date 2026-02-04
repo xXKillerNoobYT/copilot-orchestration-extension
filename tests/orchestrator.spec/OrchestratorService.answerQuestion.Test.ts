@@ -1,15 +1,13 @@
 // ./orchestrator.Test.ts
 import { OrchestratorService } from '../../src/services/orchestrator';
-import { Logger } from '../../utils/logger';
+import { Logger } from '../../src/logger';
 import { llmStatusBar } from '../../src/ui/llmStatusBar';
+import { AnswerAgent } from '../../src/services/answerAgent';
 
-jest.mock('../../utils/logger', () => ({
-    ...jest.requireActual('../../utils/logger'),
-    Logger: {
-        debug: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-    },
+jest.mock('../../src/logger', () => ({
+    ...jest.requireActual('../../src/logger'),
+    logInfo: jest.fn(),
+    logError: jest.fn(),
 }));
 
 jest.mock('../../src/ui/llmStatusBar', () => ({
@@ -20,15 +18,22 @@ jest.mock('../../src/ui/llmStatusBar', () => ({
     },
 }));
 
+jest.mock('../../src/services/answerAgent', () => ({
+    ...jest.requireActual('../../src/services/answerAgent'),
+    AnswerAgent: jest.fn().mockImplementation(() => ({
+        ask: jest.fn(),
+    })),
+}));
+
 /** @aiContributed-2026-02-03 */
 describe('OrchestratorService', () => {
     let orchestrator: OrchestratorService;
-    let mockAnswerAgent: { ask: jest.Mock };
+    let mockAnswerAgent: jest.Mocked<AnswerAgent>;
 
     beforeEach(() => {
         orchestrator = new OrchestratorService();
-        mockAnswerAgent = { ask: jest.fn() };
-        orchestrator['answerAgent'] = mockAnswerAgent as unknown as typeof orchestrator['answerAgent'];
+        mockAnswerAgent = new AnswerAgent() as jest.Mocked<AnswerAgent>;
+        orchestrator['answerAgent'] = mockAnswerAgent;
     });
 
     afterEach(() => {
@@ -48,8 +53,8 @@ describe('OrchestratorService', () => {
 
         expect(llmStatusBar.start).toHaveBeenCalled();
         expect(llmStatusBar.end).toHaveBeenCalled();
-        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('[Answer] Starting conversation'));
-        expect(Logger.info).toHaveBeenCalledWith('[Answer] Response generated');
+        expect(Logger.logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Starting conversation'));
+        expect(Logger.logInfo).toHaveBeenCalledWith('[Answer] Response generated');
         expect(result).toBe(expectedAnswer);
     });
 
@@ -78,7 +83,7 @@ describe('OrchestratorService', () => {
 
         expect(llmStatusBar.start).toHaveBeenCalled();
         expect(llmStatusBar.end).toHaveBeenCalled();
-        expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining(`[Answer] Failed to answer question: ${errorMessage}`));
+        expect(Logger.logError).toHaveBeenCalledWith(expect.stringContaining(`[Answer] Failed to answer question: ${errorMessage}`));
         expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
     });
 
@@ -88,7 +93,20 @@ describe('OrchestratorService', () => {
 
         expect(llmStatusBar.start).toHaveBeenCalled();
         expect(llmStatusBar.end).toHaveBeenCalled();
-        expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('[Answer] Failed to answer question'));
+        expect(Logger.logError).toHaveBeenCalledWith(expect.stringContaining('[Answer] Failed to answer question'));
         expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should log and truncate long questions in the log', async () => {
+        const longQuestion = 'a'.repeat(100);
+        const expectedAnswer = 'Truncated response';
+
+        mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+        const result = await orchestrator.answerQuestion(longQuestion);
+
+        expect(Logger.logInfo).toHaveBeenCalledWith(expect.stringContaining(longQuestion.substring(0, 50)));
+        expect(result).toBe(expectedAnswer);
     });
 });

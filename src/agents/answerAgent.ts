@@ -1,6 +1,7 @@
 import { ANSWER_SYSTEM_PROMPT } from '../services/orchestrator';
 import { logInfo, logError, logWarn } from '../logger';
 import { completeLLM } from '../services/llmService';
+import { updateTicket } from '../services/ticketDb';
 
 /**
  * Message interface for conversation history
@@ -117,6 +118,8 @@ export class AnswerAgent {
                 });
             }
 
+            await this.persistConversationHistory(sessionId);
+
             logInfo(`[Answer Agent] Chat ${sessionId} response complete`);
             return answer;
         } catch (error: unknown) {
@@ -191,6 +194,13 @@ export class AnswerAgent {
     }
 
     /**
+     * Get active conversations for live UI rendering.
+     */
+    getActiveConversations(): ConversationMetadata[] {
+        return Array.from(this.conversationHistory.values());
+    }
+
+    /**
      * Serialize conversation history for persistence
      * @returns Object mapping chatId -> JSON stringified ConversationMetadata
      */
@@ -234,6 +244,27 @@ export class AnswerAgent {
                 const message = error instanceof Error ? error.message : String(error);
                 logWarn(`[Answer Agent] Failed to load history for chat ${chatId}: ${message}`);
             }
+        }
+    }
+
+    private async persistConversationHistory(chatId: string): Promise<void> {
+        const metadata = this.conversationHistory.get(chatId);
+        if (!metadata) {
+            return;
+        }
+
+        try {
+            const serialized = JSON.stringify(metadata);
+            const updated = await updateTicket(chatId, { conversationHistory: serialized });
+
+            if (!updated) {
+                logWarn(`[Answer Agent] Could not persist history for chat ${chatId} (ticket not found)`);
+            } else {
+                logInfo(`[Answer Agent] Persisted history for chat ${chatId}`);
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logWarn(`[Answer Agent] Failed to persist history for chat ${chatId}: ${message}`);
         }
     }
 }

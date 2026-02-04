@@ -15,6 +15,7 @@
 
 import * as vscode from 'vscode';
 import { listTickets, onTicketChange, Ticket } from '../services/ticketDb';
+import { getOrchestratorInstance } from '../services/orchestrator';
 import { logError, logInfo, logWarn } from '../logger';
 
 interface ConversationMessage {
@@ -83,15 +84,44 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
             // Load all tickets from TicketDb
             const tickets = await listTickets();
 
-            // Keep only tickets that look like Answer Agent conversations
-            const conversationTickets = tickets.filter(ticket => {
-                return this.isConversationTicket(ticket);
-            });
+            const ticketMap = new Map<string, Ticket>(tickets.map(ticket => [ticket.id, ticket]));
+            const conversationEntries = new Map<string, { ticket: Ticket; history: ParsedConversation }>();
 
-            // Parse each ticket's conversation history and build TreeItems
+            // Keep only tickets that look like Answer Agent conversations
+            for (const ticket of tickets) {
+                if (!this.isConversationTicket(ticket)) {
+                    continue;
+                }
+
+                const parsedHistory = this.parseConversationHistory(ticket);
+                if (ticket.conversationHistory && !parsedHistory) {
+                    continue;
+                }
+
+                const history = parsedHistory ?? this.buildEmptyHistory(ticket);
+                if (!history) {
+                    continue;
+                }
+
+                conversationEntries.set(ticket.id, { ticket, history });
+            }
+
+            // Merge in-memory AnswerAgent conversations (overrides any DB entry)
+            const activeConversations = this.getActiveConversations();
+            for (const conversation of activeConversations) {
+                const ticket = ticketMap.get(conversation.chatId) || this.createMemoryTicket(conversation);
+                const history: ParsedConversation = {
+                    messages: conversation.messages,
+                    createdAt: conversation.createdAt,
+                    lastActivityAt: conversation.lastActivityAt
+                };
+                conversationEntries.set(conversation.chatId, { ticket, history });
+            }
+
+            // Build TreeItems
             const items: vscode.TreeItem[] = [];
-            for (const ticket of conversationTickets) {
-                const item = this.createConversationItem(ticket);
+            for (const entry of conversationEntries.values()) {
+                const item = this.createConversationItemFromHistory(entry.ticket, entry.history);
                 if (item) {
                     items.push(item);
                 }
@@ -133,15 +163,15 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
      * Returns null if the JSON is invalid or missing required fields.
      */
     private createConversationItem(ticket: Ticket): vscode.TreeItem | null {
-        if (!ticket.conversationHistory) {
-            return null;
-        }
-
         const history = this.parseConversationHistory(ticket);
         if (!history) {
             return null;
         }
 
+        return this.createConversationItemFromHistory(ticket, history);
+    }
+
+    private createConversationItemFromHistory(ticket: Ticket, history: ParsedConversation): vscode.TreeItem | null {
         const messageCount = history.messages.length;
         const lastActivityTimestamp = this.getConversationTimestamp(history, ticket);
         const relativeTime = this.formatRelativeTime(lastActivityTimestamp);
@@ -151,6 +181,16 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
         item.description = this.getConversationDescription(relativeTime, messageCount);
         item.iconPath = new vscode.ThemeIcon('comment-discussion');
         item.tooltip = 'Click to continue chat';
+
+        // Set contextValue for right-click menu (enables context menu items)
+        item.contextValue = 'coe-conversation';
+
+        // Store ticket.id for command handlers (used by context menu commands)
+        item.command = {
+            command: 'coe.openTicket',
+            title: 'Continue Chat',
+            arguments: [ticket.id]
+        };
 
         // Store timestamp for sorting (not shown to users)
         item.timestamp = lastActivityTimestamp;
@@ -179,7 +219,7 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
             return `User: ${this.truncateText(preview, 60)}`;
         }
 
-        return `Conversation ${ticket.id}`;
+        return `New chat (${ticket.id})`;
     }
 
     /**
@@ -244,8 +284,7 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
      * Decide if a ticket should appear in the Conversations view.
      */
     private isConversationTicket(ticket: Ticket): boolean {
-        const ticketType = (ticket as { type?: string }).type;
-        if (ticketType === 'answer_agent') {
+        if (ticket.type === 'answer_agent') {
             return true;
         }
 
@@ -287,14 +326,49 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
         }
     }
 
+    private buildEmptyHistory(ticket: Ticket): ParsedConversation | null {
+        if (ticket.type === 'answer_agent') {
+            return { messages: [] };
+        }
+
+        return null;
+    }
+
+    private getActiveConversations(): ConversationMetadata[] {
+        try {
+            const orchestrator = getOrchestratorInstance();
+            return orchestrator.getAnswerAgent().getActiveConversations();
+        } catch (error: unknown) {
+            logWarn(`[ConversationsTreeProvider] Unable to read active conversations: ${error}`);
+            return [];
+        }
+    }
+
+    private createMemoryTicket(metadata: ConversationMetadata): Ticket {
+        const timestamp = metadata.lastActivityAt || metadata.createdAt || new Date().toISOString();
+        const ticket: Ticket = {
+            id: metadata.chatId,
+            title: 'Answer Agent Conversation',
+            status: 'open',
+            type: 'answer_agent',
+            createdAt: metadata.createdAt || timestamp,
+            updatedAt: metadata.lastActivityAt || timestamp,
+            conversationHistory: undefined
+        };
+
+        return ticket;
+    }
+
     /**
      * Build a beginner-friendly description for each conversation row.
      */
     private getConversationDescription(relativeTime: string, messageCount: number): string {
+        const messageLabel = `${messageCount} ${messageCount === 1 ? 'message' : 'messages'}`;
+
         if (relativeTime === 'Unknown time') {
-            return `${messageCount} ${messageCount === 1 ? 'message' : 'messages'}`;
+            return messageLabel;
         }
 
-        return `Last active: ${relativeTime}`;
+        return `Last active: ${relativeTime} | ${messageLabel}`;
     }
 }

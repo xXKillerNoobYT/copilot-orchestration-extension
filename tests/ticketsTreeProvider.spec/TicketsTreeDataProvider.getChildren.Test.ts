@@ -84,5 +84,23 @@ describe('TicketsTreeDataProvider', () => {
             expect(result[0].tooltip).toBe(`Database error: ${error}`);
             expect(logError).toHaveBeenCalledWith(`Failed to load tickets: ${error}`);
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle tickets with undefined or missing status gracefully', async () => {
+            const mockTickets = [
+                { id: '1', title: 'Ticket 1', status: undefined, createdAt: '', updatedAt: '' },
+                { id: '2', title: 'Ticket 2', status: 'open', createdAt: '', updatedAt: '' },
+            ];
+            (listTickets as jest.Mock).mockResolvedValueOnce(mockTickets);
+
+            jest.spyOn(provider as TicketsTreeDataProvider, 'createTicketItem').mockImplementation((ticket) => {
+                return new vscode.TreeItem(ticket.title);
+            });
+
+            const result = await provider.getChildren();
+
+            expect(result).toHaveLength(1);
+            expect(result[0].label).toBe('Ticket 2');
+        });
     });
 });

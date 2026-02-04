@@ -137,4 +137,27 @@ describe('initializeLLMService', () => {
 
     global.fetch = originalFetch;
   });
+
+  /** @aiContributed-2026-02-03 */
+  it('should log a warning if config file is missing required fields', async () => {
+    const mockConfig = {
+      llm: {
+        endpoint: 'http://mock.endpoint',
+      },
+    };
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
+
+    await initializeLLMService(mockContext);
+
+    expect(logWarn).toHaveBeenCalledWith(
+      'Invalid timeoutSeconds: undefined, using default: 60'
+    );
+    expect(logWarn).toHaveBeenCalledWith(
+      'Invalid maxTokens: undefined, using default: 2048'
+    );
+    expect(logWarn).toHaveBeenCalledWith(
+      'Invalid startupTimeoutSeconds: undefined, using default: 300'
+    );
+  });
 });

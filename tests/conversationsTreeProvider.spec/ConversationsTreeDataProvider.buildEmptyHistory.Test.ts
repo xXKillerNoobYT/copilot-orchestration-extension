@@ -1,0 +1,51 @@
+// ./conversationsTreeProvider.Test.ts
+import { ConversationsTreeDataProvider } from '../../src/ui/conversationsTreeProvider';
+import { Logger } from '../../utils/logger';
+
+/** @aiContributed-2026-02-03 */
+describe('ConversationsTreeDataProvider', () => {
+    let provider: ConversationsTreeDataProvider;
+
+    beforeEach(() => {
+        provider = new ConversationsTreeDataProvider();
+    });
+
+    /** @aiContributed-2026-02-03 */
+    describe('buildEmptyHistory', () => {
+        /** @aiContributed-2026-02-03 */
+        it('should return an empty messages array when ticket type is "answer_agent"', () => {
+            const ticket = { type: 'answer_agent' };
+            const result = provider.buildEmptyHistory(ticket);
+            expect(result).toEqual({ messages: [] });
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should return null when ticket type is not "answer_agent"', () => {
+            const ticket = { type: 'other_type' };
+            const result = provider.buildEmptyHistory(ticket);
+            expect(result).toBeNull();
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should return null when ticket type is undefined', () => {
+            const ticket = { type: undefined };
+            const result = provider.buildEmptyHistory(ticket);
+            expect(result).toBeNull();
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should return null when ticket is null', () => {
+            const ticket = null;
+            const result = provider.buildEmptyHistory(ticket);
+            expect(result).toBeNull();
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should log debug information during execution', () => {
+            const ticket = { type: 'answer_agent' };
+            const debugSpy = jest.spyOn(Logger, 'debug');
+            provider.buildEmptyHistory(ticket);
+            expect(debugSpy).toHaveBeenCalledWith('Building empty history for ticket type: answer_agent');
+        });
+    });
+});

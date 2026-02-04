@@ -106,4 +106,18 @@ describe('OrchestratorService - routeToVerificationAgent', () => {
         expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ✓ Verified');
         expect(result).toEqual({ passed: true, explanation: 'All criteria met.' });
     });
+
+    /** @aiContributed-2026-02-03 */
+    it('should truncate long explanations in logs', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        const longExplanation = 'PASS: ' + 'A'.repeat(300);
+        (completeLLM as jest.Mock).mockResolvedValue({ content: longExplanation });
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Verification: PASS - '));
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('A'.repeat(200) + '...'));
+        expect(result).toEqual({ passed: true, explanation: 'A'.repeat(300) });
+    });
 });

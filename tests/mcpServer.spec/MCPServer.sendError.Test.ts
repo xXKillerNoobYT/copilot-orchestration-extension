@@ -25,7 +25,8 @@ describe('MCPServer', () => {
             const code = 500;
             const message = 'Internal Server Error';
 
-            server['sendError'](id, code, message);
+            (server as unknown as { sendError: (id: string | number | null | undefined, code: number, message: string | null) => void })
+                .sendError(id, code, message);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',
@@ -42,7 +43,8 @@ describe('MCPServer', () => {
             const code = 404;
             const message = 'Not Found';
 
-            server['sendError'](id, code, message);
+            (server as unknown as { sendError: (id: string | number | null | undefined, code: number, message: string | null) => void })
+                .sendError(id, code, message);
 
             expect(logWarn).toHaveBeenCalledWith(
                 `MCP sent error: id=${id}, code=${code}, message=${message}`
@@ -55,7 +57,8 @@ describe('MCPServer', () => {
             const code = 400;
             const message = 'Bad Request';
 
-            server['sendError'](id, code, message);
+            (server as unknown as { sendError: (id: string | number | null | undefined, code: number, message: string | null) => void })
+                .sendError(id, code, message);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',
@@ -75,7 +78,29 @@ describe('MCPServer', () => {
             const code = 401;
             const message = null;
 
-            server['sendError'](id, code, message);
+            (server as unknown as { sendError: (id: string | number | null | undefined, code: number, message: string | null) => void })
+                .sendError(id, code, message);
+
+            const expectedResponse = JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                error: { code, message },
+            }) + '\n';
+
+            expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
+            expect(logWarn).toHaveBeenCalledWith(
+                `MCP sent error: id=${id}, code=${code}, message=${message}`
+            );
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle numeric id correctly', () => {
+            const id = 42;
+            const code = 403;
+            const message = 'Forbidden';
+
+            (server as unknown as { sendError: (id: string | number | null | undefined, code: number, message: string | null) => void })
+                .sendError(id, code, message);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',

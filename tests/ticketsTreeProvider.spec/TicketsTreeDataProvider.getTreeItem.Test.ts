@@ -40,7 +40,7 @@ describe('TicketsTreeDataProvider', () => {
         });
 
         /** @aiContributed-2026-02-03 */
-        it('should log an error if an invalid object is passed', () => {
+        it('should throw an error if an invalid object is passed', () => {
             const invalidInput = {} as vscode.TreeItem;
             const logErrorSpy = jest.spyOn(Logger, 'error');
             expect(() => provider.getTreeItem(invalidInput)).toThrow();

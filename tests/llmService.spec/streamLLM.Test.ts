@@ -1,7 +1,7 @@
 // ./llmService.Test.ts
 import { streamLLM } from '../../src/services/llmService';
 import { llmStatusBar } from '../../src/ui/llmStatusBar';
-import { logWarn, logError } from '../../src/logger';
+import { logWarn, logError } from '../../src/logger'; // Removed unused 'logInfo' import
 import { createTicket } from '../../src/services/ticketDb';
 
 jest.mock('../../src/ui/llmStatusBar', () => ({
@@ -68,7 +68,7 @@ describe('streamLLM', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle a timeout error', async () => {
+  it('should handle a startup timeout', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
 
@@ -79,6 +79,33 @@ describe('streamLLM', () => {
     );
 
     await expect(streamLLM(prompt, onChunk)).rejects.toThrow('LLM streaming startup timeout after');
+
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+    expect(logWarn).toHaveBeenCalled();
+    expect(logError).toHaveBeenCalled();
+    expect(createTicket).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should handle an inactivity timeout', async () => {
+    const prompt = 'Test prompt';
+    const onChunk = jest.fn();
+    const mockResponse = {
+      body: {
+        getReader: () => ({
+          read: jest
+            .fn()
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"chunk1"}}]}\n') })
+            .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ done: true }), 70000))),
+        }),
+      },
+      ok: true,
+    };
+
+    mockFetch.mockResolvedValue(mockResponse);
+
+    await expect(streamLLM(prompt, onChunk)).rejects.toThrow('LLM streaming inactivity timeout after');
 
     expect(llmStatusBar.start).toHaveBeenCalled();
     expect(llmStatusBar.end).toHaveBeenCalled();
@@ -144,6 +171,29 @@ describe('streamLLM', () => {
     expect(llmStatusBar.end).toHaveBeenCalled();
     expect(onChunk).not.toHaveBeenCalled();
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to parse SSE line'));
+    expect(result.content).toBe('');
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should handle a streaming response with no chunks', async () => {
+    const prompt = 'Test prompt';
+    const onChunk = jest.fn();
+    const mockResponse = {
+      body: {
+        getReader: () => ({
+          read: jest.fn().mockResolvedValueOnce({ done: true }),
+        }),
+      },
+      ok: true,
+    };
+
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await streamLLM(prompt, onChunk);
+
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+    expect(onChunk).not.toHaveBeenCalled();
     expect(result.content).toBe('');
   });
 });

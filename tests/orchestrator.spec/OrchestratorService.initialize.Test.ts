@@ -28,9 +28,9 @@ describe('OrchestratorService', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  describe('initialize', () => {
+    describe('initialize', () => {
     /** @aiContributed-2026-02-03 */
-    it('should initialize with default timeout if config file does not exist', async () => {
+        it('should initialize with default timeout if config file does not exist', async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       await orchestrator.initialize(mockContext);
@@ -41,7 +41,7 @@ describe('OrchestratorService', () => {
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should initialize with orchestrator.taskTimeoutSeconds if present in config', async () => {
+        it('should initialize with orchestrator.taskTimeoutSeconds if present in config', async () => {
       const mockConfig = {
         orchestrator: { taskTimeoutSeconds: 45 },
       };
@@ -56,7 +56,7 @@ describe('OrchestratorService', () => {
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should fallback to llm.timeoutSeconds if orchestrator.taskTimeoutSeconds is not present', async () => {
+        it('should fallback to llm.timeoutSeconds if orchestrator.taskTimeoutSeconds is not present', async () => {
       const mockConfig = {
         llm: { timeoutSeconds: 60 },
       };
@@ -71,7 +71,7 @@ describe('OrchestratorService', () => {
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should handle JSON parsing errors gracefully', async () => {
+        it('should handle JSON parsing errors gracefully', async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
       (fs.readFileSync as jest.Mock).mockImplementation(() => {
         throw new Error('Invalid JSON');
@@ -85,7 +85,7 @@ describe('OrchestratorService', () => {
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should call loadTasksFromTickets during initialization', async () => {
+        it('should call loadTasksFromTickets during initialization', async () => {
       const loadTasksFromTicketsSpy = jest
         .spyOn(orchestrator as unknown as { loadTasksFromTickets: () => Promise<void> }, 'loadTasksFromTickets')
         .mockResolvedValue();
@@ -93,6 +93,18 @@ describe('OrchestratorService', () => {
       await orchestrator.initialize(mockContext);
 
       expect(loadTasksFromTicketsSpy).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-03 */
+        it('should handle errors during loadTasksFromTickets gracefully', async () => {
+      const loadTasksFromTicketsSpy = jest
+        .spyOn(orchestrator as unknown as { loadTasksFromTickets: () => Promise<void> }, 'loadTasksFromTickets')
+        .mockRejectedValue(new Error('Failed to load tasks'));
+
+      await orchestrator.initialize(mockContext);
+
+      expect(loadTasksFromTicketsSpy).toHaveBeenCalled();
+      expect(logWarn).toHaveBeenCalledWith('Failed to read orchestrator config: Error: Failed to load tasks');
     });
   });
 });

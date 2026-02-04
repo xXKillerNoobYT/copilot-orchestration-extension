@@ -14,12 +14,24 @@ jest.mock('../../src/logger', () => ({
     logError: jest.fn(),
 }));
 
+type Task = {
+  id: string;
+  ticketId: string;
+  title: string;
+  status: string;
+  createdAt: string;
+};
+
+type OrchestratorServiceWithQueue = OrchestratorService & {
+  taskQueue: Task[];
+};
+
 /** @aiContributed-2026-02-03 */
 describe('OrchestratorService - loadTasksFromTickets', () => {
-  let orchestrator: OrchestratorService;
+  let orchestrator: OrchestratorServiceWithQueue;
 
   beforeEach(() => {
-    orchestrator = new OrchestratorService();
+    orchestrator = new OrchestratorService() as OrchestratorServiceWithQueue;
     orchestrator.taskQueue = [];
   });
 
@@ -72,5 +84,23 @@ describe('OrchestratorService - loadTasksFromTickets', () => {
 
     expect(orchestrator.taskQueue).toEqual([]);
     expect(logInfo).toHaveBeenCalledWith('Loaded 0 tasks from tickets');
+  });
+
+  /** @aiContributed-2026-02-03 */
+  it('should handle tickets with mixed statuses', async () => {
+    const mockTickets = [
+      { id: '1', title: 'Ticket 1', status: 'open', createdAt: '2023-01-01' },
+      { id: '2', title: 'Ticket 2', status: 'closed', createdAt: '2023-01-02' },
+      { id: '3', title: 'Ticket 3', status: 'in-progress', createdAt: '2023-01-03' },
+    ];
+    (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+    await orchestrator.loadTasksFromTickets();
+
+    expect(orchestrator.taskQueue).toEqual([
+      { id: '1', ticketId: '1', title: 'Ticket 1', status: 'pending', createdAt: '2023-01-01' },
+      { id: '3', ticketId: '3', title: 'Ticket 3', status: 'pending', createdAt: '2023-01-03' },
+    ]);
+    expect(logInfo).toHaveBeenCalledWith('Loaded 2 tasks from tickets');
   });
 });

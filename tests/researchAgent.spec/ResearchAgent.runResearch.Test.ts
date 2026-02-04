@@ -6,7 +6,7 @@ import { logInfo, logError } from '../../src/logger';
 jest.mock('../../src/services/llmService');
 jest.mock('../../src/logger');
 
-/** @aiContributed-2026-02-02 */
+/** @aiContributed-2026-02-03 */
 describe('ResearchAgent', () => {
     let researchAgent: ResearchAgent;
 
@@ -15,9 +15,9 @@ describe('ResearchAgent', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-02 */
+    /** @aiContributed-2026-02-03 */
     describe('runResearch', () => {
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should return a formatted report on successful research', async () => {
             const query = 'Test query';
             const mockResponse = { content: 'Generated content' };
@@ -36,7 +36,7 @@ describe('ResearchAgent', () => {
             expect(result).toContain('Generated content');
         });
 
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should return an error report if completeLLM throws an error', async () => {
             const query = 'Test query';
             const errorMessage = 'LLM error';
@@ -49,7 +49,7 @@ describe('ResearchAgent', () => {
             expect(result).toContain(errorMessage);
         });
 
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should handle null or undefined query gracefully', async () => {
             const query = null as unknown as string;
 
@@ -59,7 +59,7 @@ describe('ResearchAgent', () => {
             expect(result).toContain('query is null or undefined');
         });
 
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should handle timeouts gracefully', async () => {
             const query = 'Test query';
             jest.useFakeTimers();
@@ -70,6 +70,31 @@ describe('ResearchAgent', () => {
 
             await expect(promise).resolves.toContain('query timed out');
             jest.useRealTimers();
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should truncate long queries in logs', async () => {
+            const longQuery = 'a'.repeat(150);
+            const mockResponse = { content: 'Generated content' };
+            (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+            await researchAgent.runResearch(longQuery);
+
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining(`Starting research for query: "${longQuery.substring(0, 100)}..."`));
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should log and return an error report if an unexpected error occurs', async () => {
+            const query = 'Test query';
+            const unexpectedError = 'Unexpected error';
+            jest.spyOn(global, 'setTimeout').mockImplementationOnce(() => {
+                throw new Error(unexpectedError);
+            });
+
+            const result = await researchAgent.runResearch(query);
+
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining(`Research failed: ${unexpectedError}`));
+            expect(result).toContain(unexpectedError);
         });
     });
 });

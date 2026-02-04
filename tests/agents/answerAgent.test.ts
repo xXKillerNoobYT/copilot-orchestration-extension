@@ -1,16 +1,28 @@
 import AnswerAgent, { Message, ConversationMetadata, createChatId, MAX_HISTORY_EXCHANGES } from '../../src/agents/answerAgent';
 import * as llmService from '../../src/services/llmService';
 import { logInfo, logError, logWarn } from '../../src/logger';
+import { updateTicket } from '../../src/services/ticketDb';
 
 // Mock the llmService
 jest.mock('../../src/services/llmService');
 jest.mock('../../src/logger');
+jest.mock('../../src/services/ticketDb', () => ({
+    updateTicket: jest.fn(),
+}));
 
 const mockCompleteLLM = llmService.completeLLM as jest.MockedFunction<typeof llmService.completeLLM>;
+const mockUpdateTicket = updateTicket as jest.MockedFunction<typeof updateTicket>;
 
 describe('AnswerAgent', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockUpdateTicket.mockResolvedValue({
+            id: 'mock-ticket',
+            title: 'Mock Ticket',
+            status: 'open',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        });
     });
 
     describe('createChatId', () => {
@@ -91,6 +103,29 @@ describe('AnswerAgent', () => {
             expect(history?.length).toBe(2); // user + assistant
             expect(history?.[0]).toEqual({ role: 'user', content: question });
             expect(history?.[1]).toEqual({ role: 'assistant', content: answer });
+        });
+
+        it('should persist conversation history after each ask', async () => {
+            const agent = new AnswerAgent();
+            const chatId = 'TICKET-123';
+            const question = 'Persist this chat.';
+            const answer = 'Persisted.';
+
+            mockCompleteLLM.mockResolvedValue({
+                content: answer,
+                usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+            });
+
+            await agent.ask(question, chatId);
+
+            expect(mockUpdateTicket).toHaveBeenCalledWith(chatId, {
+                conversationHistory: expect.any(String)
+            });
+
+            const serialized = mockUpdateTicket.mock.calls[0][1]?.conversationHistory as string;
+            const parsed = JSON.parse(serialized) as ConversationMetadata;
+            expect(parsed.chatId).toBe(chatId);
+            expect(parsed.messages.length).toBe(2);
         });
 
         it('should generate new chatId if none provided', async () => {
@@ -271,6 +306,22 @@ describe('AnswerAgent', () => {
             // Assert
             expect(history).toBeDefined();
             expect(history?.length).toBe(2); // Q1 + A1
+        });
+    });
+
+    describe('AnswerAgent.getActiveConversations()', () => {
+        it('should return active conversation metadata', async () => {
+            const agent = new AnswerAgent();
+            const chatId = 'chat-active-1';
+
+            mockCompleteLLM.mockResolvedValue({ content: 'Answer' });
+
+            await agent.ask('Question', chatId);
+
+            const active = agent.getActiveConversations();
+
+            expect(active).toHaveLength(1);
+            expect(active[0].chatId).toBe(chatId);
         });
     });
 

@@ -7,7 +7,7 @@ jest.mock('../../src/logger', () => ({
     logInfo: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-02 */
+/** @aiContributed-2026-02-03 */
 describe('MCPServer', () => {
   let mockInputStream: NodeJS.ReadableStream;
   let mockOutputStream: NodeJS.WritableStream;
@@ -29,10 +29,10 @@ describe('MCPServer', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-02 */
-  describe('stop', () => {
-    /** @aiContributed-2026-02-02 */
-    it('should stop the server when it is started', () => {
+  /** @aiContributed-2026-02-03 */
+    describe('stop', () => {
+    /** @aiContributed-2026-02-03 */
+        it('should stop the server when it is started', () => {
       server.stop();
 
       expect(logInfo).toHaveBeenCalledWith('MCP server stopping...');
@@ -42,8 +42,8 @@ describe('MCPServer', () => {
       expect(logInfo).toHaveBeenCalledWith('MCP server stopped');
     });
 
-    /** @aiContributed-2026-02-02 */
-    it('should pause inputStream if it is process.stdin', () => {
+    /** @aiContributed-2026-02-03 */
+        it('should pause inputStream if it is process.stdin', () => {
       const stdin = process.stdin as unknown as NodeJS.ReadableStream;
       server = new MCPServer(stdin, mockOutputStream);
       (server as MCPServer & { isStarted: boolean }).isStarted = true;
@@ -56,8 +56,8 @@ describe('MCPServer', () => {
       expect(logInfo).toHaveBeenCalledWith('MCP server stopped');
     });
 
-    /** @aiContributed-2026-02-02 */
-    it('should do nothing if the server is not started', () => {
+    /** @aiContributed-2026-02-03 */
+        it('should do nothing if the server is not started', () => {
       (server as MCPServer & { isStarted: boolean }).isStarted = false;
 
       server.stop();
@@ -65,6 +65,19 @@ describe('MCPServer', () => {
       expect(logInfo).not.toHaveBeenCalled();
       expect(mockInputStream.removeAllListeners).not.toHaveBeenCalled();
       expect(mockInputStream.pause).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-03 */
+        it('should handle case where inputStream is already paused', () => {
+      mockInputStream.pause = jest.fn(() => {
+        throw new Error('Stream already paused');
+      });
+
+      expect(() => server.stop()).not.toThrow();
+      expect(logInfo).toHaveBeenCalledWith('MCP server stopping...');
+      expect(mockInputStream.removeAllListeners).toHaveBeenCalledWith('data');
+      expect((server as MCPServer & { isStarted: boolean }).isStarted).toBe(false);
+      expect(logInfo).toHaveBeenCalledWith('MCP server stopped');
     });
   });
 });

@@ -22,7 +22,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle the happy path and return the full plan', async () => {
+    it('should handle the happy path and return the full plan', async () => {
     const question = 'What is the plan?';
     const mockResponse = { content: 'This is the plan.' };
     (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
@@ -46,7 +46,22 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle an empty response from the planning agent', async () => {
+    it('should handle a long response from the planning agent', async () => {
+    const question = 'What is the plan?';
+    const longContent = 'A'.repeat(1500);
+    const mockResponse = { content: longContent };
+    (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestrator.routeToPlanningAgent(question);
+
+    expect(logInfo).toHaveBeenCalledWith(`Full plan (truncated): ${longContent.substring(0, 1000)}...`);
+    expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', longContent.substring(0, 100));
+    expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+    expect(result).toBe(longContent);
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle an empty response from the planning agent', async () => {
     const question = 'What is the plan?';
     const mockResponse = { content: '' };
     (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
@@ -60,7 +75,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle errors thrown by the planning agent', async () => {
+    it('should handle errors thrown by the planning agent', async () => {
     const question = 'What is the plan?';
     const errorMessage = 'Network error';
     (streamLLM as jest.Mock).mockRejectedValue(new Error(errorMessage));
@@ -75,7 +90,7 @@ describe('OrchestratorService - routeToPlanningAgent', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle undefined question input gracefully', async () => {
+    it('should handle undefined question input gracefully', async () => {
     await orchestrator.routeToPlanningAgent(undefined as unknown as string);
 
     expect(logInfo).toHaveBeenCalledWith('Routing request to Planning agent: undefined');

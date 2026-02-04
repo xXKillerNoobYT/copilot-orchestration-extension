@@ -8,7 +8,6 @@ import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
 import { ConversationsTreeDataProvider } from './ui/conversationsTreeProvider';
 import { agentStatusTracker } from './ui/agentStatusTracker';
-import { createChatId } from './agents/answerAgent';
 import { ResearchAgent } from './agents/researchAgent';
 
 // Module-level status bar item - can be updated from orchestrator
@@ -263,8 +262,15 @@ export async function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            // Generate new chat ID for this conversation
-            const chatId = createChatId();
+            // Create a ticket for this Answer Agent conversation (ticket.id becomes chatId)
+            const ticket = await createTicket({
+                title: `Answer Chat: ${question.substring(0, 60)}${question.length > 60 ? '...' : ''}`,
+                status: 'open',
+                type: 'answer_agent',
+                description: `Answer Agent conversation started with: ${question}`
+            });
+
+            const chatId = ticket.id;
             logInfo(`Starting new conversation: ${chatId}`);
 
             // Store chatId in globalState for use in Continue command
@@ -427,6 +433,47 @@ export async function activate(context: vscode.ExtensionContext) {
      * Context menu command to manually update ticket status
      * @param treeItem The TreeItem selected in context menu
      */
+    /**
+     * Command: coe.clearConversationHistory
+     * Context menu command to clear Answer Agent conversation history
+     * Clears both in-memory and persisted history while keeping ticket open
+     * @param treeItem The TreeItem selected in context menu
+     */
+    const clearConversationHistoryCommand = vscode.commands.registerCommand(
+        'coe.clearConversationHistory',
+        async (treeItem: vscode.TreeItem) => {
+            try {
+                // Extract chatId from TreeItem.command.arguments
+                const chatId = treeItem.command?.arguments?.[0] as string | undefined;
+
+                if (!chatId) {
+                    logWarn('[ClearHistory] No chat ID found in TreeItem');
+                    vscode.window.showWarningMessage('No conversation selected');
+                    return;
+                }
+
+                logInfo(`[ClearHistory] Clearing history for chat ${chatId}`);
+
+                // Clear in-memory history in AnswerAgent
+                const orchestrator = getOrchestratorInstance();
+                orchestrator.getAnswerAgent().clearHistory(chatId);
+
+                // Update ticket in DB with empty conversation history
+                await updateTicket(chatId, { conversationHistory: '[]' });
+
+                // Refresh Conversations tree view to show updated state
+                conversationsProvider.refresh();
+
+                logInfo(`[ClearHistory] Successfully cleared history for chat ${chatId}`);
+                vscode.window.showInformationMessage(`Conversation history cleared for ${chatId}`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[ClearHistory] Error: ${message}`);
+                vscode.window.showErrorMessage(`Failed to clear conversation history: ${message}`);
+            }
+        }
+    );
+
     const updateTicketStatusCommand = vscode.commands.registerCommand(
         'coe.updateTicketStatus',
         async (treeItem: vscode.TreeItem) => {
@@ -678,6 +725,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(viewTicketProgressCommand);
     context.subscriptions.push(updateTicketStatusCommand);
     context.subscriptions.push(addTicketCommentCommand);
+    context.subscriptions.push(clearConversationHistoryCommand);
     context.subscriptions.push(researchWithAgentCommand);
 
     logInfo('Extension fully activated');

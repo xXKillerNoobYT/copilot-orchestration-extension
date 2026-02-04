@@ -1247,6 +1247,7 @@ describe('Extension Helpers', () => {
 
     it('should run Ask Answer Agent with a new question', async () => {
         const mockOrchestrator = require('../src/services/orchestrator');
+        const mockTicketDb = require('../src/services/ticketDb');
 
         const mockContext = {
             extensionPath: '/mock/path',
@@ -1257,6 +1258,16 @@ describe('Extension Helpers', () => {
             },
         } as any;
 
+        const mockTicket = {
+            id: 'TICKET-123',
+            title: 'Answer Chat: New question',
+            status: 'open',
+            type: 'answer_agent',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        mockTicketDb.createTicket.mockResolvedValue(mockTicket);
         mockOrchestrator.answerQuestion.mockResolvedValue('Fresh answer');
         (vscode.window.showInputBox as jest.Mock).mockResolvedValue('New question');
 
@@ -1268,9 +1279,15 @@ describe('Extension Helpers', () => {
 
         await askHandler();
 
+        expect(mockTicketDb.createTicket).toHaveBeenCalledWith({
+            title: 'Answer Chat: New question',
+            status: 'open',
+            type: 'answer_agent',
+            description: 'Answer Agent conversation started with: New question'
+        });
         expect(mockOrchestrator.answerQuestion).toHaveBeenCalledWith(
             'New question',
-            expect.any(String),
+            'TICKET-123',
             false
         );
         expect(vscode.window.showInformationMessage).toHaveBeenCalled();

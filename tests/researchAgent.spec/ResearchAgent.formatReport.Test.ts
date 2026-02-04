@@ -1,9 +1,9 @@
 // ./researchAgent.Test.ts
 import { ResearchAgent } from '../../src/agents/researchAgent.ts';
 
-/** @aiContributed-2026-02-02 */
+/** @aiContributed-2026-02-03 */
 describe('ResearchAgent', () => {
-    /** @aiContributed-2026-02-02 */
+    /** @aiContributed-2026-02-03 */
     describe('formatReport', () => {
         let researchAgent: ResearchAgent;
 
@@ -11,7 +11,7 @@ describe('ResearchAgent', () => {
             researchAgent = new ResearchAgent();
         });
 
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should format the report correctly with valid query and content', () => {
             const query = 'AI Research';
             const content = 'This is the content of the research.';
@@ -34,7 +34,7 @@ This is the content of the research.
 `);
         });
 
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should handle empty content gracefully', () => {
             const query = 'AI Research';
             const content = '';
@@ -55,7 +55,7 @@ This is the content of the research.
 `);
         });
 
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should handle empty query gracefully', () => {
             const query = '';
             const content = 'This is the content of the research.';
@@ -78,7 +78,7 @@ This is the content of the research.
 `);
         });
 
-        /** @aiContributed-2026-02-02 */
+        /** @aiContributed-2026-02-03 */
         it('should handle both query and content as empty strings', () => {
             const query = '';
             const content = '';

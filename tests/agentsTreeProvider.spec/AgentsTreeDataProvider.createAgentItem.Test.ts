@@ -42,7 +42,12 @@ describe('AgentsTreeDataProvider', () => {
             };
             (vscode.TreeItem as jest.Mock).mockImplementation(() => mockTreeItem);
 
-            const result = provider.createAgentItem(mockName, mockStatus, mockTooltip, mockIcon);
+            const result = (provider as unknown as { createAgentItem: (name: string, status: string, tooltip: string, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+                mockName,
+                mockStatus,
+                mockTooltip,
+                mockIcon
+            );
 
             expect(vscode.TreeItem).toHaveBeenCalledWith(mockName, vscode.TreeItemCollapsibleState.None);
             expect(result.description).toBe(mockStatus);
@@ -54,7 +59,12 @@ describe('AgentsTreeDataProvider', () => {
         it('should handle null or undefined inputs gracefully', () => {
             const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
 
-            const result = provider.createAgentItem(null, undefined, null, mockIcon);
+            const result = (provider as unknown as { createAgentItem: (name: string | null, status: string | undefined, tooltip: string | null, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+                null,
+                undefined,
+                null,
+                mockIcon
+            );
 
             expect(result.description).toBeUndefined();
             expect(result.tooltip).toBeNull();
@@ -68,9 +78,40 @@ describe('AgentsTreeDataProvider', () => {
             const mockTooltip = 'Agent is active';
             const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
 
-            provider.createAgentItem(mockName, mockStatus, mockTooltip, mockIcon);
+            (provider as unknown as { createAgentItem: (name: string, status: string, tooltip: string, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+                mockName,
+                mockStatus,
+                mockTooltip,
+                mockIcon
+            );
 
             expect(Logger.debug).toHaveBeenCalled();
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should create a TreeItem with an empty tooltip if not provided', () => {
+            const mockName = 'Agent 2';
+            const mockStatus = 'Inactive';
+            const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
+
+            const mockTreeItem = {
+                description: '',
+                tooltip: '',
+                iconPath: null,
+            };
+            (vscode.TreeItem as jest.Mock).mockImplementation(() => mockTreeItem);
+
+            const result = (provider as unknown as { createAgentItem: (name: string, status: string, tooltip: string, icon: vscode.ThemeIcon) => vscode.TreeItem }).createAgentItem(
+                mockName,
+                mockStatus,
+                '',
+                mockIcon
+            );
+
+            expect(vscode.TreeItem).toHaveBeenCalledWith(mockName, vscode.TreeItemCollapsibleState.None);
+            expect(result.description).toBe(mockStatus);
+            expect(result.tooltip).toBe('');
+            expect(result.iconPath).toBe(mockIcon);
         });
     });
 });

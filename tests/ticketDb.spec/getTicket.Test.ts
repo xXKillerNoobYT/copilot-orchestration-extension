@@ -1,5 +1,5 @@
 // ./ticketDb.Test.ts
-import { getTicket, initializeTicketDb, resetTicketDbForTests } from '../../src/services/ticketDb';
+import { getTicket, initializeTicketDb, resetTicketDbForTests, createTicket } from '../../src/services/ticketDb';
 import * as vscode from 'vscode';
 import { Logger } from '../../utils/logger';
 
@@ -11,54 +11,73 @@ jest.mock('vscode', () => ({
 jest.mock('../../utils/logger', () => ({
     ...jest.requireActual('../../utils/logger'),
     Logger: {
-    debug: jest.fn(),
-    info: jest.fn(),
-    error: jest.fn(),
-  },
+        debug: jest.fn(),
+        info: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn(),
+    },
 }));
 
 /** @aiContributed-2026-02-03 */
 describe('getTicket', () => {
-  let mockContext: vscode.ExtensionContext;
+    let mockContext: vscode.ExtensionContext;
 
-  beforeEach(async () => {
-    mockContext = {
-      extensionPath: '/mock/extension/path',
-    } as unknown as vscode.ExtensionContext;
+    beforeEach(async () => {
+        mockContext = {
+            extensionPath: '/mock/extension/path',
+        } as unknown as vscode.ExtensionContext;
 
-    await initializeTicketDb(mockContext);
-  });
+        await initializeTicketDb(mockContext);
+    });
 
-  afterEach(() => {
-    resetTicketDbForTests();
-    jest.clearAllMocks();
-  });
+    afterEach(() => {
+        resetTicketDbForTests();
+        jest.clearAllMocks();
+    });
 
-  /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-03 */
     it('should return the ticket when it exists in memory', async () => {
-    const ticket = {
-      title: 'Test Ticket',
-      status: 'open',
-    };
+        const ticket = {
+            title: 'Test Ticket',
+            status: 'open',
+        };
 
-    const createdTicket = await createTicket(ticket);
-    const result = await getTicket(createdTicket.id);
+        const createdTicket = await createTicket(ticket);
+        const result = await getTicket(createdTicket.id);
 
-    expect(result).toEqual(createdTicket);
-    expect(Logger.info).toHaveBeenCalledWith(`Created ticket: ${createdTicket.id}`);
-  });
+        expect(result).toEqual(createdTicket);
+        expect(Logger.info).toHaveBeenCalledWith(`Created ticket: ${createdTicket.id}`);
+    });
 
-  /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-03 */
     it('should return null when the ticket does not exist', async () => {
-    const result = await getTicket('non-existent-id');
-    expect(result).toBeNull();
-    expect(Logger.warn).toHaveBeenCalledWith('Ticket non-existent-id not found');
-  });
+        const result = await getTicket('non-existent-id');
+        expect(result).toBeNull();
+        expect(Logger.warn).toHaveBeenCalledWith('Ticket non-existent-id not found');
+    });
 
-  /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-03 */
     it('should throw an error if the database is not initialized', async () => {
-    resetTicketDbForTests();
+        resetTicketDbForTests();
 
-    await expect(getTicket('any-id')).rejects.toThrow('TicketDb not initialized');
-  });
+        await expect(getTicket('any-id')).rejects.toThrow('TicketDb not initialized');
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle SQLite fallback to in-memory mode gracefully', async () => {
+        jest.spyOn(Logger, 'warn').mockImplementation(() => {});
+        jest.spyOn(Logger, 'info').mockImplementation(() => {});
+
+        const ticket = {
+            title: 'Fallback Test Ticket',
+            status: 'open',
+        };
+
+        const createdTicket = await createTicket(ticket);
+        const result = await getTicket(createdTicket.id);
+
+        expect(result).toEqual(createdTicket);
+        expect(Logger.info).toHaveBeenCalledWith(`Created ticket: ${createdTicket.id}`);
+        expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('SQLite init failed'));
+    });
 });

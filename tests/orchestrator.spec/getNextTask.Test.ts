@@ -31,14 +31,14 @@ describe('getNextTask', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should return null if the task queue is empty', async () => {
+    it('should return null if the task queue is empty', async () => {
     const task = await orchestrator.getNextTask();
     expect(task).toBeNull();
     expect(logInfo).toHaveBeenCalledWith('No pending tasks in queue');
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should return the next task and update its status', async () => {
+    it('should return the next task and update its status', async () => {
     const mockTask = {
       id: 'TICKET-001',
       ticketId: 'TICKET-001',
@@ -64,7 +64,7 @@ describe('getNextTask', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should check for blocked tasks before returning the next task', async () => {
+    it('should check for blocked tasks before returning the next task', async () => {
     const mockTask = {
       id: 'TICKET-002',
       ticketId: 'TICKET-002',
@@ -86,7 +86,7 @@ describe('getNextTask', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle errors during blocked task detection gracefully', async () => {
+    it('should handle errors during blocked task detection gracefully', async () => {
     const mockTask = {
       id: 'TICKET-003',
       ticketId: 'TICKET-003',
@@ -101,5 +101,39 @@ describe('getNextTask', () => {
     await orchestrator.getNextTask();
 
     expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to create blocked ticket'));
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should not update lastPickedAt if the task queue is empty', async () => {
+    orchestrator['taskQueue'] = [];
+    const task = await orchestrator.getNextTask();
+    expect(task).toBeNull();
+    expect(logInfo).toHaveBeenCalledWith('No pending tasks in queue');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should correctly handle tasks with undefined lastPickedAt', async () => {
+    const mockTask = {
+      id: 'TICKET-004',
+      ticketId: 'TICKET-004',
+      title: 'Undefined LastPickedAt Task',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    orchestrator['taskQueue'] = [mockTask];
+
+    const task = await orchestrator.getNextTask();
+
+    expect(task).toEqual({
+      ...mockTask,
+      status: 'picked',
+      lastPickedAt: expect.any(String),
+    });
+    expect(orchestrator['pickedTasks']).toContainEqual({
+      ...mockTask,
+      status: 'picked',
+      lastPickedAt: expect.any(String),
+    });
+    expect(logInfo).toHaveBeenCalledWith(`Task picked: ${mockTask.id} - ${mockTask.title}`);
   });
 });

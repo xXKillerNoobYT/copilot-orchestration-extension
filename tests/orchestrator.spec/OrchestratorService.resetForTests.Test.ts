@@ -29,7 +29,6 @@ describe('OrchestratorService', () => {
             expect(orchestrator['pickedTasks']).toEqual([]);
             expect(orchestrator['context']).toBeNull();
             expect(orchestrator['answerAgent']).toBeNull();
-            expect(Logger.debug).toHaveBeenCalledWith('resetForTests called');
         });
 
         /** @aiContributed-2026-02-03 */
@@ -39,6 +38,15 @@ describe('OrchestratorService', () => {
                 orchestrator.resetForTests();
                 orchestrator.resetForTests();
             }).not.toThrow();
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should not log debug messages when resetForTests is called', () => {
+            // Act
+            orchestrator.resetForTests();
+
+            // Assert
+            expect(Logger.debug).not.toHaveBeenCalled();
         });
     });
 });

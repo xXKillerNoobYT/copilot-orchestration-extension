@@ -20,20 +20,20 @@ describe('AgentsTreeDataProvider', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  describe('getChildren', () => {
+    describe('getChildren', () => {
     /** @aiContributed-2026-02-03 */
-    it('should return an empty array when element is provided', () => {
+        it('should return an empty array when element is provided', () => {
       const result = dataProvider.getChildren({} as vscode.TreeItem);
       expect(result).toEqual([]);
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should return agent items with correct properties for root level', () => {
+        it('should return agent items with correct properties for root level', () => {
       const mockStatuses = {
-        Planning: { status: 'Active', currentTask: 'Planning requirements...', lastResult: '', timestamp: Date.now() },
-        Orchestrator: { status: 'Waiting', currentTask: '', lastResult: 'Step 1 completed', timestamp: Date.now() },
-        Answer: { status: 'Failed', currentTask: '', lastResult: '', timestamp: Date.now() },
-        Verification: { status: 'Idle', currentTask: '', lastResult: '', timestamp: Date.now() },
+        Planning: { status: 'Active', currentTask: 'Planning requirements...', lastResult: '', timestamp: 1672531200000 },
+        Orchestrator: { status: 'Waiting', currentTask: '', lastResult: 'Step 1 completed', timestamp: 1672531200000 },
+        Answer: { status: 'Failed', currentTask: '', lastResult: '', timestamp: 1672531200000 },
+        Verification: { status: 'Idle', currentTask: '', lastResult: '', timestamp: 1672531200000 },
       };
 
       (agentStatusTracker.getAgentStatus as jest.Mock).mockImplementation((name: string) => mockStatuses[name]);
@@ -63,7 +63,7 @@ describe('AgentsTreeDataProvider', () => {
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should handle missing status gracefully', () => {
+        it('should handle missing status gracefully', () => {
       (agentStatusTracker.getAgentStatus as jest.Mock).mockReturnValue(null);
 
       const result = dataProvider.getChildren();
@@ -76,7 +76,7 @@ describe('AgentsTreeDataProvider', () => {
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should truncate long currentTask and lastResult descriptions', () => {
+        it('should truncate long currentTask and lastResult descriptions', () => {
       const longTask = 'A'.repeat(100);
       const longResult = 'B'.repeat(100);
 
@@ -84,12 +84,44 @@ describe('AgentsTreeDataProvider', () => {
         status: 'Active',
         currentTask: longTask,
         lastResult: longResult,
-        timestamp: Date.now(),
+        timestamp: 1672531200000,
       });
 
       const result = dataProvider.getChildren();
 
       expect(result[0].description).toContain(`Task: ${longTask.substring(0, 50)}...`);
+    });
+
+    /** @aiContributed-2026-02-03 */
+        it('should include timestamp in tooltip if available', () => {
+      const mockStatus = {
+        status: 'Active',
+        currentTask: 'Working on task',
+        lastResult: '',
+        timestamp: 1672531200000,
+      };
+
+      (agentStatusTracker.getAgentStatus as jest.Mock).mockReturnValue(mockStatus);
+
+      const result = dataProvider.getChildren();
+
+      expect(result[0].tooltip).toContain('Updated: 12:00:00 AM');
+    });
+
+    /** @aiContributed-2026-02-03 */
+        it('should prioritize currentTask over lastResult in description', () => {
+      const mockStatus = {
+        status: 'Waiting',
+        currentTask: 'Current task in progress',
+        lastResult: 'Previous task completed',
+        timestamp: 1672531200000,
+      };
+
+      (agentStatusTracker.getAgentStatus as jest.Mock).mockReturnValue(mockStatus);
+
+      const result = dataProvider.getChildren();
+
+      expect(result[0].description).toContain('Waiting, Task: Current task in progress');
     });
   });
 });

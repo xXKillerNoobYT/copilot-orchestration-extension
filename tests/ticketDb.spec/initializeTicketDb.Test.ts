@@ -69,4 +69,32 @@ describe('initializeTicketDb', () => {
 
     expect(Logger.warn).toHaveBeenCalledWith('TicketDb already initialized');
   });
+
+  /** @aiContributed-2026-02-03 */
+    it('should handle errors when reading the config file', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Failed to read config');
+    });
+    (path.join as jest.Mock).mockImplementation((...args) => args.join('/'));
+    (path.resolve as jest.Mock).mockImplementation((...args) => args.join('/'));
+
+    await initializeTicketDb(mockContext);
+
+    expect(Logger.warn).toHaveBeenCalledWith('Failed to read config for dbPath: Error: Failed to read config');
+    expect(Logger.info).toHaveBeenCalledWith('Ticket DB initialized: SQLite at /mock/extension/path/.coe/tickets.db');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should create the .coe directory if it does not exist', async () => {
+    (fs.existsSync as jest.Mock).mockImplementation((path) => path !== '/mock/extension/path/.coe');
+    (fs.mkdirSync as jest.Mock).mockImplementation();
+    (path.join as jest.Mock).mockImplementation((...args) => args.join('/'));
+    (path.resolve as jest.Mock).mockImplementation((...args) => args.join('/'));
+
+    await initializeTicketDb(mockContext);
+
+    expect(fs.mkdirSync).toHaveBeenCalledWith('/mock/extension/path/.coe', { recursive: true });
+    expect(Logger.info).toHaveBeenCalledWith('Ticket DB initialized: SQLite at /mock/extension/path/.coe/tickets.db');
+  });
 });

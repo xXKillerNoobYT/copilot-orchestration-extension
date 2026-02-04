@@ -22,7 +22,7 @@ describe('initializeOrchestrator', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should initialize orchestrator with default timeout when config file does not exist', async () => {
+    it('should initialize orchestrator with default timeout when config file does not exist', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
 
     const orchestrator = await initializeOrchestrator(mockContext);
@@ -34,7 +34,7 @@ describe('initializeOrchestrator', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should initialize orchestrator with timeout from config file', async () => {
+    it('should initialize orchestrator with timeout from config file', async () => {
     const mockConfig = JSON.stringify({ orchestrator: { taskTimeoutSeconds: 60 } });
     (fs.existsSync as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
@@ -49,7 +49,7 @@ describe('initializeOrchestrator', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should fallback to default timeout if config file is invalid', async () => {
+    it('should fallback to default timeout if config file is invalid', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as jest.Mock).mockImplementation(() => {
       throw new Error('Invalid JSON');
@@ -65,7 +65,7 @@ describe('initializeOrchestrator', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should load tasks from TicketDb during initialization', async () => {
+    it('should load tasks from TicketDb during initialization', async () => {
     const mockTickets = [
       { id: 'TICKET-001', title: 'Test Ticket 1', status: 'open', createdAt: '2023-01-01T00:00:00Z' },
     ];
@@ -80,7 +80,7 @@ describe('initializeOrchestrator', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should handle errors when loading tasks from TicketDb', async () => {
+    it('should handle errors when loading tasks from TicketDb', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
     (listTickets as jest.Mock).mockRejectedValue(new Error('Database error'));
 
@@ -92,10 +92,40 @@ describe('initializeOrchestrator', () => {
   });
 
   /** @aiContributed-2026-02-03 */
-  it('should warn if orchestrator is already initialized', async () => {
+    it('should warn if orchestrator is already initialized', async () => {
     await initializeOrchestrator(mockContext);
     await initializeOrchestrator(mockContext);
 
     expect(logWarn).toHaveBeenCalledWith('Orchestrator already initialized');
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should fallback to llm.timeoutSeconds if orchestrator.taskTimeoutSeconds is not defined', async () => {
+    const mockConfig = JSON.stringify({ llm: { timeoutSeconds: 45 } });
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(fs.readFileSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json', 'utf-8');
+    expect(logWarn).not.toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 45s');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-03 */
+    it('should use default timeout if neither orchestrator.taskTimeoutSeconds nor llm.timeoutSeconds is defined', async () => {
+    const mockConfig = JSON.stringify({});
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(fs.readFileSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json', 'utf-8');
+    expect(logWarn).not.toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    expect(orchestrator).toBeDefined();
   });
 });
