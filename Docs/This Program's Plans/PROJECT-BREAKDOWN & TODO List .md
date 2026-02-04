@@ -1,9 +1,9 @@
 # Copilot Orchestration Extension (COE)
 # PROJECT BREAKDOWN & MASTER DEVELOPMENT GUIDE
-**Last Updated**: February 3, 2026  
+**Last Updated**: February 4, 2026  
 **Status**: In Progress - Stage 1  
 **Current Stage**: Stage 1 - Foundation & Core Infrastructure  
-**Overall Progress**: 8/353 tasks complete (2.3%)
+**Overall Progress**: 9/353 tasks complete (2.5%)
 
 ---
 
@@ -47,14 +47,14 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓░░░░░░░░░░░░░░░░░░░] 2.3% (8/353 tasks)
+[▓░░░░░░░░░░░░░░░░░░░] 2.5% (9/353 tasks)
 ```
 
 ### Stage Completion
 
 | Stage | Status | Tasks | Complete | Progress | Gate Status |
 |-------|--------|-------|----------|----------|-------------|
-| **Stage 1: Foundation** | 🔄 In Progress | 26 | 8/27 | 30.8% | 🔒 Locked |
+| **Stage 1: Foundation** | 🔄 In Progress | 26 | 9/27 | 33.3% | 🔒 Locked |
 | **Stage 2: Ticket System** | ⏳ Queued | 38 | 0/38 | 0% | 🔒 Locked |
 | **Stage 3: LLM Integration** | ⏳ Queued | 28 | 0/28 | 0% | 🔒 Locked |
 | **Stage 4: Agent Teams** | ⏳ Queued | 71 | 0/71 | 0% | 🔒 Locked |
@@ -64,20 +64,24 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### 🎉 Recently Completed (Last 3 Task's Only)
 
-1. ✅ **MT-002.1**: Create error code enum (completed Feb 3, 2026)
+1. ✅ **MT-001.10**: Implement Config Schema & Validation (completed Feb 4, 2026)
+  - Created `src/config/schema.ts` with Zod schema + TypeScript interface
+  - Added safe config loader in `src/config/loader.ts` with validation
+  - Implemented singleton service in `src/config/index.ts`
+  - Comprehensive tests in `tests/config/` (35 tests, 100% coverage)
+  - Added Zod to dependencies, created `.coe/config.json.example`
+  - No TypeScript errors, all tests pass, manual verification successful
+
+2. ✅ **MT-002.1**: Create error code enum (completed Feb 3, 2026)
   - Added `src/errors/errorCodes.ts` with catalog-aligned enum
   - Tests added in `tests/errors/errorCodes.spec.ts`
   - Documentation updated with actual enum
 
-2. ✅ **MT-001.7**: Add MCP server graceful shutdown (completed Feb 3, 2026)
+3. ✅ **MT-001.7**: Add MCP server graceful shutdown (completed Feb 3, 2026)
   - Added SIGINT/SIGTERM handlers in `src/mcpServer/server.ts`
   - Tests updated to verify handler registration/unregistration
   - Documentation updated in Server Lifecycle section
 
-3. ✅ **MT-001.6**: Implement JSON-RPC 2.0 message handling (completed Feb 3, 2026)
-  - Added JSON-RPC parser/validator in `src/mcpServer/jsonrpc.ts`
-  - 7 comprehensive tests (all passing)
-  - MCP server now handles batch/invalid requests consistently
 
 
 
@@ -187,14 +191,15 @@ _(Track your improvement over time)_
   - **Verification**: ✅ `npm test -- mcpServer.test.ts` passes
   - **Dependencies**: MT-001.1 ✅
 
-- [ ] **MT-001.10**: Implement Config Schema & Validation (20 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
-  - **Files**: Create `src/config/schema.ts` with Zod schema + TypeScript interface
-  - **Tests**: Add tests to `tests/config/schema.spec.ts` covering happy path + invalid cases
-  - **Behavior**: Reads and validates `.coe/config.json` with defaults on missing values
-  - **Documentation**: Update [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md) with schema definition
-  - **Quality**: Invalid values log warning and use defaults, no crashes on malformed config
-  - **Verification**: Test with sample configs, verify invalid inputs handled gracefully
+- [x] **MT-001.10**: Implement Config Schema & Validation (20 min) [actual: 180 min] [Priority: P0] [depends: MT-001.1] ✅
+  - **Files**: Created `src/config/schema.ts` with Zod schema + TypeScript interface, `src/config/loader.ts` with validation, `src/config/index.ts` with singleton, comprehensive tests in `tests/config/`, `.coe/config.json.example`
+  - **Tests**: 35 comprehensive tests (19 schema, 9 loader, 7 singleton) all passing, 100% coverage on config files
+  - **Behavior**: Reads and validates `.coe/config.json` with defaults on missing/invalid values, logs warnings via Logger, returns readonly config via singleton pattern
+  - **Documentation**: Updated [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md) with schema definition, created example config file
+  - **Quality**: Invalid values log warning and use defaults, no crashes on malformed config, TypeScript compilation passes, no writes to config.json
+  - **Verification**: ✅ `npm run compile` passes, all tests pass with coverage ≥80%, manual verification successful
   - **Dependencies**: MT-001.1 ✅
+  - **Required Fields**: `githubIssuesPath`, `lmStudioTokenPollIntervalSeconds` (10-120), `watcherDebounceMs`, `llmRequestTimeoutSeconds`, `auditLog.enabled`
   - **Required Fields**:
     - `githubIssuesPath` (default: `github-issues`)
     - `lmStudioTokenPollIntervalSeconds` (default: 30, min: 10, max: 120)

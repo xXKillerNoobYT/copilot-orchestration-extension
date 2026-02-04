@@ -1,0 +1,30 @@
+{
+  "debug": {
+    "logLevel": "info"
+  },
+  "llm": {
+    "endpoint": "http://127.0.0.1:1234/v1",
+    "model": "ministral-3-14b-reasoning",
+    "timeoutSeconds": 120,
+    "maxTokens": 2048,
+    "startupTimeoutSeconds": 300
+  },
+  "orchestrator": {
+    "taskTimeoutSeconds": 30
+  },
+  "tickets": {
+    "dbPath": "./.coe/tickets.db"
+  },
+  "githubIssues": {
+    "path": "github-issues"
+  },
+  "lmStudioPolling": {
+    "tokenPollIntervalSeconds": 30
+  },
+  "watcher": {
+    "debounceMs": 500
+  },
+  "auditLog": {
+    "enabled": true
+  }
+}
