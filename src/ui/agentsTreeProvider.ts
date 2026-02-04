@@ -59,17 +59,28 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
             return [];
         }
 
-        // Query live agent status from tracker instead of hardcoded values
-        const agentNames = ['Planning', 'Orchestrator', 'Answer', 'Verification'];
-        return agentNames.map(name => {
+        // Create toggle item for Auto/Manual processing mode (appears at top)
+        const toggleItem = this.createProcessingToggleItem();
+
+        // Dynamic agent list - add new agents here as they are created
+        const agentNames = ['Planning', 'Orchestrator', 'Answer', 'Verification', 'Research'];
+        const agentItems = agentNames.map(name => {
+            // Check if agent is enabled in settings
+            const config = vscode.workspace.getConfiguration('coe');
+            const settingKey = `enable${name}Agent`;
+            const isEnabled = config.get<boolean>(settingKey, true); // Default to true for most agents
+
             const status = agentStatusTracker.getAgentStatus(name);
             const statusText = status?.status || 'Idle';
             const currentTask = status?.currentTask || '';
             const lastResult = status?.lastResult || '';
 
             // Build description: prioritize currentTask for active agents, show lastResult for completed
+            // If disabled, show "Disabled" status
             let description: string;
-            if (currentTask) {
+            if (!isEnabled) {
+                description = 'Disabled';
+            } else if (currentTask) {
                 // Show current task (e.g., "Active, Task: Planning requirements...")
                 const truncated = currentTask.substring(0, 50);
                 description = `${statusText}, Task: ${truncated}${currentTask.length > 50 ? '...' : ''}`;
@@ -83,38 +94,89 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
             }
 
             // Map status to appropriate icon with progress indicator for Active
+            // Use gray icon for disabled agents
             let icon: vscode.ThemeIcon;
-            switch (statusText) {
-                case 'Active':
-                    // Use spinning loader icon for active agents (progress indicator)
-                    icon = new vscode.ThemeIcon('loading~spin', new vscode.ThemeColor('charts.green'));
-                    break;
-                case 'Waiting':
-                    icon = new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.blue'));
-                    break;
-                case 'Failed':
-                    icon = new vscode.ThemeIcon('error', new vscode.ThemeColor('charts.red'));
-                    break;
-                case 'Idle':
-                default:
-                    icon = new vscode.ThemeIcon('circle-outline');
-                    break;
+            if (!isEnabled) {
+                // Gray icon for disabled agents
+                icon = new vscode.ThemeIcon('circle-slash', new vscode.ThemeColor('disabledForeground'));
+            } else {
+                switch (statusText) {
+                    case 'Active':
+                        // Use spinning loader icon for active agents (progress indicator)
+                        icon = new vscode.ThemeIcon('loading~spin', new vscode.ThemeColor('charts.green'));
+                        break;
+                    case 'Waiting':
+                        icon = new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.blue'));
+                        break;
+                    case 'Failed':
+                        icon = new vscode.ThemeIcon('error', new vscode.ThemeColor('charts.red'));
+                        break;
+                    case 'Idle':
+                    default:
+                        icon = new vscode.ThemeIcon('circle-outline');
+                        break;
+                }
             }
 
             // Build rich tooltip with all available info
-            let tooltip = `${name}: ${statusText}`;
-            if (currentTask) {
-                tooltip += `\nTask: ${currentTask}`;
-            }
-            if (lastResult) {
-                tooltip += `\nLast Result: ${lastResult}`;
-            }
-            if (status?.timestamp) {
-                tooltip += `\nUpdated: ${new Date(status.timestamp).toLocaleTimeString()}`;
+            let tooltip = `${name}: ${isEnabled ? statusText : 'Disabled'}`;
+            if (!isEnabled) {
+                tooltip += `\nRight-click to enable this agent`;
+            } else {
+                if (currentTask) {
+                    tooltip += `\nTask: ${currentTask}`;
+                }
+                if (lastResult) {
+                    tooltip += `\nLast Result: ${lastResult}`;
+                }
+                if (status?.timestamp) {
+                    tooltip += `\nUpdated: ${new Date(status.timestamp).toLocaleTimeString()}`;
+                }
+                tooltip += `\nRight-click to disable this agent`;
             }
 
-            return this.createAgentItem(name, description, tooltip, icon);
+            return this.createAgentItem(name, description, tooltip, icon, isEnabled);
         });
+
+        // Return toggle item at top, followed by all agent items
+        return [toggleItem, ...agentItems];
+    }
+
+    /**
+     * Create the Auto/Manual processing mode toggle item
+     * Appears at top of tree view with clickable command
+     * Green icon + "Auto" when auto-processing enabled
+     * Red icon + "Manual" when auto-processing disabled (default)
+     */
+    private createProcessingToggleItem(): vscode.TreeItem {
+        // Get current auto-processing setting (default: false = Manual mode)
+        const config = vscode.workspace.getConfiguration('coe');
+        const isAutoMode = config.get<boolean>('autoProcessTickets', false);
+
+        // Create label and icon based on current mode
+        const label = 'Processing';
+        const description = isAutoMode ? 'Auto' : 'Manual';
+        const icon = isAutoMode
+            ? new vscode.ThemeIcon('play', new vscode.ThemeColor('charts.green'))
+            : new vscode.ThemeIcon('debug-stop', new vscode.ThemeColor('charts.red'));
+
+        const tooltip = isAutoMode
+            ? 'Auto mode: Tickets are processed automatically. Click to switch to Manual.'
+            : 'Manual mode: Tickets wait for manual action. Click to switch to Auto.';
+
+        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+        item.description = description;
+        item.iconPath = icon;
+        item.tooltip = tooltip;
+
+        // Make item clickable - triggers toggle command
+        item.command = {
+            command: 'coe.toggleAutoProcessing',
+            title: 'Toggle Auto Processing',
+            arguments: []
+        };
+
+        return item;
     }
 
     /**
@@ -123,17 +185,21 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
      * @param status Agent status (e.g., "Active")
      * @param tooltip Detailed tooltip text
      * @param icon ThemeIcon for the agent
+     * @param isEnabled Whether the agent is enabled
      */
     private createAgentItem(
         name: string,
         status: string,
         tooltip: string,
-        icon: vscode.ThemeIcon
+        icon: vscode.ThemeIcon,
+        isEnabled: boolean
     ): vscode.TreeItem {
         const item = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.None);
         item.description = status; // Shows to the right of the label (e.g., "Planning - Active")
         item.tooltip = tooltip; // Hover text
         item.iconPath = icon; // Icon on the left
+        // Set contextValue for menu support (enables right-click menu based on enabled/disabled state)
+        item.contextValue = isEnabled ? 'coe-agent-enabled' : 'coe-agent-disabled';
         return item;
     }
 

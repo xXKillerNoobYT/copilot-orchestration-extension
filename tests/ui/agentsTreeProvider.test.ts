@@ -42,9 +42,22 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
     let mockGetAgentStatus: jest.Mock;
     let mockOnTicketChange: jest.Mock;
     let capturedListener: (() => void) | null = null;
+    let mockWorkspaceConfig: { get: jest.Mock };
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        // Setup workspace configuration mock
+        mockWorkspaceConfig = {
+            get: jest.fn((key: string, defaultValue?: any) => {
+                // Default all agents to enabled except Research
+                if (key === 'enableResearchAgent') {
+                    return defaultValue !== undefined ? defaultValue : false;
+                }
+                return defaultValue !== undefined ? defaultValue : true;
+            })
+        };
+        (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => mockWorkspaceConfig);
 
         // Setup mocks
         mockGetAgentStatus = agentStatusTracker.getAgentStatus as jest.Mock;
@@ -78,20 +91,67 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
     });
 
     describe('getChildren with dynamic status', () => {
-        it('should return 4 agent items always', () => {
+        it('should return 6 items: 1 toggle + 5 agents', () => {
             const result = provider.getChildren();
-            expect(result).toHaveLength(4);
-            expect(result[0].label).toBe('Planning');
-            expect(result[1].label).toBe('Orchestrator');
-            expect(result[2].label).toBe('Answer');
-            expect(result[3].label).toBe('Verification');
+            expect(result).toHaveLength(6);
+            // First item is the processing toggle
+            expect(result[0].label).toBe('Processing');
+            // Then the 5 agents
+            expect(result[1].label).toBe('Planning');
+            expect(result[2].label).toBe('Orchestrator');
+            expect(result[3].label).toBe('Answer');
+            expect(result[4].label).toBe('Verification');
+            expect(result[5].label).toBe('Research');
+        });
+
+        it('should display Manual mode toggle when autoProcessTickets is false', () => {
+            mockWorkspaceConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+                if (key === 'autoProcessTickets') {
+                    return false;
+                }
+                return defaultValue !== undefined ? defaultValue : true;
+            });
+
+            const result = provider.getChildren();
+            const toggleItem = result[0];
+
+            expect(toggleItem.label).toBe('Processing');
+            expect(toggleItem.description).toBe('Manual');
+            expect((toggleItem.iconPath as vscode.ThemeIcon).id).toBe('debug-stop');
+            expect(toggleItem.tooltip).toContain('Manual mode');
+        });
+
+        it('should display Auto mode toggle when autoProcessTickets is true', () => {
+            mockWorkspaceConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+                if (key === 'autoProcessTickets') {
+                    return true;
+                }
+                return defaultValue !== undefined ? defaultValue : true;
+            });
+
+            const result = provider.getChildren();
+            const toggleItem = result[0];
+
+            expect(toggleItem.label).toBe('Processing');
+            expect(toggleItem.description).toBe('Auto');
+            expect((toggleItem.iconPath as vscode.ThemeIcon).id).toBe('play');
+            expect(toggleItem.tooltip).toContain('Auto mode');
+        });
+
+        it('should set command on toggle item to trigger toggleAutoProcessing', () => {
+            const result = provider.getChildren();
+            const toggleItem = result[0];
+
+            expect(toggleItem.command).toBeDefined();
+            expect(toggleItem.command?.command).toBe('coe.toggleAutoProcessing');
         });
 
         it('should display Idle when status is undefined', () => {
             mockGetAgentStatus.mockReturnValue(undefined);
             const result = provider.getChildren();
-            expect(result[0].description).toBe('Idle');
-            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('circle-outline');
+            // Index 1 is first agent (Planning), index 0 is toggle
+            expect(result[1].description).toBe('Idle');
+            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('circle-outline');
         });
 
         it('should display Active status with truncated result', () => {
@@ -102,7 +162,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const item = result[0];
+            const item = result[1]; // First agent
 
             expect(item.description).toContain('Active');
             expect(item.description).toContain('Last:');
@@ -117,7 +177,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('loading~spin');
+            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('loading~spin');
         });
 
         it('should use check icon for Waiting agent', () => {
@@ -127,7 +187,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('check');
+            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('check');
         });
 
         it('should use error icon for Failed agent', () => {
@@ -138,7 +198,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('error');
+            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('error');
         });
 
         it('should include timestamp in tooltip', () => {
@@ -150,8 +210,8 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect(result[0].tooltip).toContain('Active');
-            expect(result[0].tooltip).toContain('Test result');
+            expect(result[1].tooltip).toContain('Active');
+            expect(result[1].tooltip).toContain('Test result');
         });
 
         it('should handle result truncation to 50 chars', () => {
@@ -163,7 +223,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const desc = result[0].description as string;
+            const desc = result[1].description as string;
 
             // Result should be max 50 chars
             expect(desc).toContain('A'.repeat(50));
@@ -181,10 +241,11 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             mockGetAgentStatus.mockImplementation((name: string) => statuses[name]);
 
             const result = provider.getChildren();
-            expect(result[0].description).toContain('Active');
-            expect(result[1].description).toBe('Waiting');
-            expect(result[2].description).toBe('Idle');
-            expect(result[3].description).toContain('Failed');
+            // Index 0 is toggle, agents start at 1
+            expect(result[1].description).toContain('Active');
+            expect(result[2].description).toBe('Waiting');
+            expect(result[3].description).toBe('Idle');
+            expect(result[4].description).toContain('Failed');
         });
 
         it('should not include "Last:" in description when no result', () => {
@@ -194,8 +255,8 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect(result[0].description).toBe('Waiting');
-            expect((result[0].description as string).indexOf('Last')).toBe(-1);
+            expect(result[1].description).toBe('Waiting');
+            expect((result[1].description as string).indexOf('Last')).toBe(-1);
         });
 
         it('should display currentTask in description when available', () => {
@@ -206,9 +267,9 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect(result[0].description).toContain('Active');
-            expect(result[0].description).toContain('Task:');
-            expect(result[0].description).toContain('Planning task X');
+            expect(result[1].description).toContain('Active');
+            expect(result[1].description).toContain('Task:');
+            expect(result[1].description).toContain('Planning task X');
         });
 
         it('should prioritize currentTask over lastResult in description', () => {
@@ -220,7 +281,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const desc = result[0].description as string;
+            const desc = result[1].description as string; // First agent, not toggle
             expect(desc).toContain('Task:');
             expect(desc).toContain('Generating requirements');
             expect(desc).not.toContain('Last:');
@@ -236,7 +297,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const desc = result[0].description as string;
+            const desc = result[1].description as string;
             expect(desc).toContain('A'.repeat(50));
             expect(desc).toContain('...');
         });
@@ -249,9 +310,9 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect(result[0].tooltip).toContain('Active');
-            expect(result[0].tooltip).toContain('Task:');
-            expect(result[0].tooltip).toContain('Verifying step 2');
+            expect(result[1].tooltip).toContain('Active');
+            expect(result[1].tooltip).toContain('Task:');
+            expect(result[1].tooltip).toContain('Verifying step 2');
         });
 
         it('should include both currentTask and lastResult in tooltip', () => {
@@ -263,7 +324,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const tooltip = result[0].tooltip as string;
+            const tooltip = result[1].tooltip as string; // First agent, not toggle
             expect(tooltip).toContain('Active');
             expect(tooltip).toContain('Task: Analyzing code');
             expect(tooltip).toContain('Last Result: Previous: Found 3 issues');
@@ -276,8 +337,8 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect(result[0].description).toBe('Idle');
-            const tooltip = result[0].tooltip as string;
+            expect(result[1].description).toBe('Idle');
+            const tooltip = result[1].tooltip as string;
             expect(tooltip).toContain('Idle');
             expect(tooltip).not.toContain('Task:');
             expect(tooltip).not.toContain('Last Result:');
@@ -291,10 +352,97 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('error');
-            const tooltip = result[0].tooltip as string;
+            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('error');
+            const tooltip = result[1].tooltip as string;
             expect(tooltip).toContain('Failed');
             expect(tooltip).toContain('LLM connection timeout');
+        });
+
+        it('should display "Disabled" and gray icon for disabled agents', () => {
+            // Mock Research agent as disabled (default behavior)
+            mockWorkspaceConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+                if (key === 'enableResearchAgent') {
+                    return false;
+                }
+                return true;
+            });
+
+            const result = provider.getChildren();
+            // Research is the 5th agent (index 5, since toggle is at 0)
+            const researchItem = result[5];
+
+            expect(researchItem.label).toBe('Research');
+            expect(researchItem.description).toBe('Disabled');
+            expect((researchItem.iconPath as vscode.ThemeIcon).id).toBe('circle-slash');
+        });
+
+        it('should set contextValue to coe-agent-enabled for enabled agents', () => {
+            mockWorkspaceConfig.get.mockReturnValue(true);
+
+            const result = provider.getChildren();
+
+            // All agents should be enabled (indices 1-5, 0 is toggle)
+            expect(result[1].contextValue).toBe('coe-agent-enabled');
+            expect(result[2].contextValue).toBe('coe-agent-enabled');
+            expect(result[3].contextValue).toBe('coe-agent-enabled');
+            expect(result[4].contextValue).toBe('coe-agent-enabled');
+            expect(result[5].contextValue).toBe('coe-agent-enabled');
+        });
+
+        it('should set contextValue to coe-agent-disabled for disabled agents', () => {
+            mockWorkspaceConfig.get.mockImplementation((key: string) => {
+                // Disable Planning agent
+                if (key === 'enablePlanningAgent') {
+                    return false;
+                }
+                return true;
+            });
+
+            const result = provider.getChildren();
+
+            // Index 0 is toggle, Planning is index 1
+            expect(result[1].contextValue).toBe('coe-agent-disabled');
+            expect(result[1].label).toBe('Planning');
+        });
+
+        it('should include right-click hint in tooltip for enabled agents', () => {
+            mockWorkspaceConfig.get.mockReturnValue(true);
+            mockGetAgentStatus.mockReturnValue({
+                status: 'Idle',
+                timestamp: Date.now(),
+            } as AgentStatus);
+
+            const result = provider.getChildren();
+            const tooltip = result[1].tooltip as string; // First agent, not toggle
+
+            expect(tooltip).toContain('Right-click to disable this agent');
+        });
+
+        it('should include right-click hint in tooltip for disabled agents', () => {
+            mockWorkspaceConfig.get.mockImplementation((key: string) => {
+                if (key === 'enablePlanningAgent') {
+                    return false;
+                }
+                return true;
+            });
+
+            const result = provider.getChildren();
+            const tooltip = result[1].tooltip as string; // First agent, not toggle
+
+            expect(tooltip).toContain('Right-click to enable this agent');
+        });
+
+        it('should check correct setting key for each agent', () => {
+            const getSpy = jest.spyOn(mockWorkspaceConfig, 'get');
+
+            provider.getChildren();
+
+            // Verify it checks all agent settings
+            expect(getSpy).toHaveBeenCalledWith('enablePlanningAgent', true);
+            expect(getSpy).toHaveBeenCalledWith('enableOrchestratorAgent', true);
+            expect(getSpy).toHaveBeenCalledWith('enableAnswerAgent', true);
+            expect(getSpy).toHaveBeenCalledWith('enableVerificationAgent', true);
+            expect(getSpy).toHaveBeenCalledWith('enableResearchAgent', true);
         });
     });
 
@@ -365,8 +513,8 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect(result[0].tooltip).toContain('Active');
-            expect(result[0].tooltip).toContain('Processing');
+            expect(result[1].tooltip).toContain('Active');
+            expect(result[1].tooltip).toContain('Processing');
             // Should not crash
         });
 
@@ -382,20 +530,21 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
 
             const result = provider.getChildren();
 
+            // Index 0 is toggle, agents start at 1
             // Verify each has correct icon
-            expect((result[0].iconPath as vscode.ThemeIcon).id).toBe('loading~spin'); // Planning - Active
-            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('check');        // Orchestrator - Waiting
-            expect((result[2].iconPath as vscode.ThemeIcon).id).toBe('circle-outline'); // Answer - Idle
-            expect((result[3].iconPath as vscode.ThemeIcon).id).toBe('error');        // Verification - Failed
+            expect((result[1].iconPath as vscode.ThemeIcon).id).toBe('loading~spin'); // Planning - Active
+            expect((result[2].iconPath as vscode.ThemeIcon).id).toBe('check');        // Orchestrator - Waiting
+            expect((result[3].iconPath as vscode.ThemeIcon).id).toBe('circle-outline'); // Answer - Idle
+            expect((result[4].iconPath as vscode.ThemeIcon).id).toBe('error');        // Verification - Failed
 
             // Verify descriptions have correct format
-            expect(result[0].description).toContain('Active');
-            expect(result[0].description).toContain('Task:');
-            expect(result[1].description).toContain('Waiting');
-            expect(result[1].description).toContain('Last:');
-            expect(result[2].description).toBe('Idle');
-            expect(result[3].description).toContain('Failed');
-            expect(result[3].description).toContain('Last:');
+            expect(result[1].description).toContain('Active');
+            expect(result[1].description).toContain('Task:');
+            expect(result[2].description).toContain('Waiting');
+            expect(result[2].description).toContain('Last:');
+            expect(result[3].description).toBe('Idle');
+            expect(result[4].description).toContain('Failed');
+            expect(result[4].description).toContain('Last:');
         });
 
         it('should handle very long currentTask and lastResult both present', () => {
@@ -410,8 +559,8 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const desc = result[0].description as string;
-            const tooltip = result[0].tooltip as string;
+            const desc = result[1].description as string;
+            const tooltip = result[1].tooltip as string;
 
             // Description should only show truncated task (priority)
             expect(desc).toContain('T'.repeat(50));
@@ -446,7 +595,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const tooltip = result[0].tooltip as string;
+            const tooltip = result[1].tooltip as string;
 
             // Should include formatted time
             expect(tooltip).toContain('Updated:');
@@ -463,7 +612,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            const desc = result[0].description as string;
+            const desc = result[1].description as string;
 
             // Empty task should fall back to lastResult
             expect(desc).toContain('Last:');
@@ -479,7 +628,7 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             } as AgentStatus);
 
             const result = provider.getChildren();
-            expect(result[0].description).toBe('Waiting');
+            expect(result[1].description).toBe('Waiting');
         });
     });
 });

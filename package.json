@@ -75,12 +75,49 @@
             {
                 "command": "coe.askAnswerAgentContinue",
                 "title": "COE: Continue Answer Agent Chat"
+            },
+            {
+                "command": "coe.enableAgent",
+                "title": "Enable Agent"
+            },
+            {
+                "command": "coe.disableAgent",
+                "title": "Disable Agent"
+            },
+            {
+                "command": "coe.toggleAutoProcessing",
+                "title": "COE: Toggle Auto Processing"
             }
         ],
         "configuration": {
             "type": "object",
             "title": "COE Configuration",
             "properties": {
+                "coe.autoProcessTickets": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable automatic ticket processing. When enabled (Auto mode), new tickets are automatically routed to agents and processed with LLM. When disabled (Manual mode - default), tickets stay in 'Pending' status awaiting manual action."
+                },
+                "coe.enablePlanningAgent": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable the Planning Agent for task decomposition and planning."
+                },
+                "coe.enableOrchestratorAgent": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable the Orchestrator Agent for coordinating multi-agent workflows."
+                },
+                "coe.enableAnswerAgent": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable the Answer Agent for answering user questions with conversation history."
+                },
+                "coe.enableVerificationAgent": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable the Verification Agent for validating completed tasks."
+                },
                 "coe.enableResearchAgent": {
                     "type": "boolean",
                     "default": false,
@@ -90,6 +127,16 @@
         },
         "menus": {
             "view/item/context": [
+                {
+                    "command": "coe.enableAgent",
+                    "when": "view == coe-agents && viewItem == coe-agent-disabled",
+                    "group": "agent@1"
+                },
+                {
+                    "command": "coe.disableAgent",
+                    "when": "view == coe-agents && viewItem == coe-agent-enabled",
+                    "group": "agent@1"
+                },
                 {
                     "command": "coe.viewTicketProgress",
                     "when": "view == coe-tickets && viewItem == ticket",

@@ -103,6 +103,10 @@ jest.mock('vscode', () => {
                 languageId: 'markdown',
                 getText: jest.fn().mockReturnValue(''),
             }),
+            getConfiguration: jest.fn(() => ({
+                get: jest.fn(),
+                update: jest.fn(),
+            })),
         },
         ViewColumn: {
             One: 1,
@@ -110,6 +114,11 @@ jest.mock('vscode', () => {
         },
         StatusBarAlignment: {
             Right: 1,
+        },
+        ConfigurationTarget: {
+            Global: 1,
+            Workspace: 2,
+            WorkspaceFolder: 3,
         },
     };
 });
@@ -1424,5 +1433,337 @@ describe('Answer Agent Persistence', () => {
         expect(mockLogger.logWarn).toHaveBeenCalledWith(
             expect.stringContaining('Failed to persist Answer Agent history for ticket TICKET-200')
         );
+    });
+
+    describe('coe.enableAgent command', () => {
+        it('should register the COE: Enable Agent command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.enableAgent',
+                expect.any(Function)
+            );
+        });
+
+        it('should enable a disabled agent and refresh tree view', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            const mockUpdate = jest.fn(async () => { });
+            const mockGetConfiguration = jest.fn(() => ({
+                get: jest.fn(),
+                update: mockUpdate,
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const enableAgentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.enableAgent'
+            );
+            expect(enableAgentCall).toBeDefined();
+
+            const enableAgentHandler = enableAgentCall![1];
+
+            jest.clearAllMocks();
+
+            // Create mock TreeItem for Research agent
+            const mockTreeItem = {
+                label: 'Research',
+            } as vscode.TreeItem;
+
+            await enableAgentHandler(mockTreeItem);
+
+            expect(mockUpdate).toHaveBeenCalledWith(
+                'enableResearchAgent',
+                true,
+                vscode.ConfigurationTarget.Global
+            );
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                'Research Agent enabled'
+            );
+        });
+
+        it('should handle missing tree item gracefully', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const enableAgentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.enableAgent'
+            );
+            const enableAgentHandler = enableAgentCall![1];
+
+            jest.clearAllMocks();
+
+            await enableAgentHandler(null);
+
+            expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('coe.disableAgent command', () => {
+        it('should register the COE: Disable Agent command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.disableAgent',
+                expect.any(Function)
+            );
+        });
+
+        it('should disable an enabled agent and refresh tree view', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            const mockUpdate = jest.fn(async () => { });
+            const mockGetConfiguration = jest.fn(() => ({
+                get: jest.fn(),
+                update: mockUpdate,
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const disableAgentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.disableAgent'
+            );
+            expect(disableAgentCall).toBeDefined();
+
+            const disableAgentHandler = disableAgentCall![1];
+
+            jest.clearAllMocks();
+
+            const mockTreeItem = {
+                label: 'Planning',
+            } as vscode.TreeItem;
+
+            await disableAgentHandler(mockTreeItem);
+
+            expect(mockUpdate).toHaveBeenCalledWith(
+                'enablePlanningAgent',
+                false,
+                vscode.ConfigurationTarget.Global
+            );
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                'Planning Agent disabled'
+            );
+        });
+
+        it('should handle errors when updating settings', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            const mockUpdate = jest.fn(async () => {
+                throw new Error('Settings update failed');
+            });
+            const mockGetConfiguration = jest.fn(() => ({
+                get: jest.fn(),
+                update: mockUpdate,
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const disableAgentCall = registerCommandCalls.find(
+                call => call[0] === 'coe.disableAgent'
+            );
+            const disableAgentHandler = disableAgentCall![1];
+
+            jest.clearAllMocks();
+
+            const mockTreeItem = {
+                label: 'Answer',
+            } as vscode.TreeItem;
+
+            await disableAgentHandler(mockTreeItem);
+
+            expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+                'Failed to disable Answer Agent'
+            );
+        });
+    });
+
+    describe('coe.toggleAutoProcessing command', () => {
+        it('should register the COE: Toggle Auto Processing command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.toggleAutoProcessing',
+                expect.any(Function)
+            );
+        });
+
+        it('should toggle from Manual to Auto mode', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            const mockUpdate = jest.fn(async () => { });
+            const mockGet = jest.fn((key: string, defaultValue?: any) => {
+                if (key === 'autoProcessTickets') {
+                    return false; // Currently Manual
+                }
+                return defaultValue;
+            });
+            const mockGetConfiguration = jest.fn(() => ({
+                get: mockGet,
+                update: mockUpdate,
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const toggleCall = registerCommandCalls.find(
+                call => call[0] === 'coe.toggleAutoProcessing'
+            );
+            expect(toggleCall).toBeDefined();
+
+            const toggleHandler = toggleCall![1];
+
+            jest.clearAllMocks();
+
+            await toggleHandler();
+
+            expect(mockUpdate).toHaveBeenCalledWith(
+                'autoProcessTickets',
+                true,
+                vscode.ConfigurationTarget.Global
+            );
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                'Processing mode: Auto'
+            );
+        });
+
+        it('should toggle from Auto to Manual mode', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            const mockUpdate = jest.fn(async () => { });
+            const mockGet = jest.fn((key: string, defaultValue?: any) => {
+                if (key === 'autoProcessTickets') {
+                    return true; // Currently Auto
+                }
+                return defaultValue;
+            });
+            const mockGetConfiguration = jest.fn(() => ({
+                get: mockGet,
+                update: mockUpdate,
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const toggleCall = registerCommandCalls.find(
+                call => call[0] === 'coe.toggleAutoProcessing'
+            );
+            const toggleHandler = toggleCall![1];
+
+            jest.clearAllMocks();
+
+            await toggleHandler();
+
+            expect(mockUpdate).toHaveBeenCalledWith(
+                'autoProcessTickets',
+                false,
+                vscode.ConfigurationTarget.Global
+            );
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                'Processing mode: Manual'
+            );
+        });
+
+        it('should handle errors when updating settings', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+                globalState: {
+                    get: jest.fn(),
+                    update: jest.fn(),
+                },
+            } as any;
+
+            const mockUpdate = jest.fn(async () => {
+                throw new Error('Settings update failed');
+            });
+            const mockGetConfiguration = jest.fn(() => ({
+                get: jest.fn(() => false),
+                update: mockUpdate,
+            }));
+            (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            await activate(mockContext);
+
+            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
+            const toggleCall = registerCommandCalls.find(
+                call => call[0] === 'coe.toggleAutoProcessing'
+            );
+            const toggleHandler = toggleCall![1];
+
+            jest.clearAllMocks();
+
+            await toggleHandler();
+
+            expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+                'Failed to toggle processing mode'
+            );
+        });
     });
 });

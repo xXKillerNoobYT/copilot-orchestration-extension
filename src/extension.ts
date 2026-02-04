@@ -211,6 +211,103 @@ export async function activate(context: vscode.ExtensionContext) {
         conversationsProvider.refresh();
     });
 
+    /**
+     * Command: coe.enableAgent
+     * Enables a disabled agent by updating its setting
+     * Called from right-click context menu on disabled agents
+     */
+    const enableAgentCommand = vscode.commands.registerCommand('coe.enableAgent', async (item: vscode.TreeItem) => {
+        if (!item || !item.label) {
+            logError('[EnableAgent] No agent item provided');
+            return;
+        }
+
+        const agentName = item.label.toString();
+        logInfo(`[EnableAgent] Enabling agent: ${agentName}`);
+
+        try {
+            const config = vscode.workspace.getConfiguration('coe');
+            const settingKey = `enable${agentName}Agent`;
+
+            // Update setting to true
+            await config.update(settingKey, true, vscode.ConfigurationTarget.Global);
+
+            // Refresh the agents tree view to show updated state
+            agentsProvider.refresh();
+
+            vscode.window.showInformationMessage(`${agentName} Agent enabled`);
+            logInfo(`[EnableAgent] ${agentName} Agent enabled successfully`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[EnableAgent] Failed to enable ${agentName}: ${message}`);
+            vscode.window.showErrorMessage(`Failed to enable ${agentName} Agent`);
+        }
+    });
+
+    /**
+     * Command: coe.disableAgent
+     * Disables an enabled agent by updating its setting
+     * Called from right-click context menu on enabled agents
+     */
+    const disableAgentCommand = vscode.commands.registerCommand('coe.disableAgent', async (item: vscode.TreeItem) => {
+        if (!item || !item.label) {
+            logError('[DisableAgent] No agent item provided');
+            return;
+        }
+
+        const agentName = item.label.toString();
+        logInfo(`[DisableAgent] Disabling agent: ${agentName}`);
+
+        try {
+            const config = vscode.workspace.getConfiguration('coe');
+            const settingKey = `enable${agentName}Agent`;
+
+            // Update setting to false
+            await config.update(settingKey, false, vscode.ConfigurationTarget.Global);
+
+            // Refresh the agents tree view to show updated state
+            agentsProvider.refresh();
+
+            vscode.window.showInformationMessage(`${agentName} Agent disabled`);
+            logInfo(`[DisableAgent] ${agentName} Agent disabled successfully`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[DisableAgent] Failed to disable ${agentName}: ${message}`);
+            vscode.window.showErrorMessage(`Failed to disable ${agentName} Agent`);
+        }
+    });
+
+    /**
+     * Command: coe.toggleAutoProcessing
+     * Toggles between Auto and Manual ticket processing mode
+     * Auto mode: Tickets are automatically routed to agents and processed with LLM
+     * Manual mode: Tickets stay in "Pending" status, waiting for manual action
+     * Called when clicking the Processing toggle at top of Agents tab
+     */
+    const toggleAutoProcessingCommand = vscode.commands.registerCommand('coe.toggleAutoProcessing', async () => {
+        logInfo('[ToggleAutoProcessing] User clicked processing mode toggle');
+
+        try {
+            const config = vscode.workspace.getConfiguration('coe');
+            const currentMode = config.get<boolean>('autoProcessTickets', false);
+            const newMode = !currentMode;
+
+            // Update setting
+            await config.update('autoProcessTickets', newMode, vscode.ConfigurationTarget.Global);
+
+            // Refresh agents tree view to show updated toggle state
+            agentsProvider.refresh();
+
+            const modeText = newMode ? 'Auto' : 'Manual';
+            vscode.window.showInformationMessage(`Processing mode: ${modeText}`);
+            logInfo(`[ToggleAutoProcessing] Mode changed to: ${modeText}`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[ToggleAutoProcessing] Failed to toggle mode: ${message}`);
+            vscode.window.showErrorMessage('Failed to toggle processing mode');
+        }
+    });
+
     const planTaskCommand = vscode.commands.registerCommand('coe.planTask', async () => {
         logInfo('User triggered: Plan Task');
         const orchestratorInstance = getOrchestratorInstance();
@@ -716,6 +813,9 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(refreshAgentsCommand);
     context.subscriptions.push(refreshTicketsCommand);
     context.subscriptions.push(refreshConversationsCommand);
+    context.subscriptions.push(enableAgentCommand);
+    context.subscriptions.push(disableAgentCommand);
+    context.subscriptions.push(toggleAutoProcessingCommand);
     context.subscriptions.push(planTaskCommand);
     context.subscriptions.push(verifyTaskCommand);
     context.subscriptions.push(verifyLastTicketCommand);
