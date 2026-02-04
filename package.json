@@ -81,6 +81,10 @@
                 "title": "COE: Continue Answer Agent Chat"
             },
             {
+                "command": "coe.replyConversation",
+                "title": "Reply to Conversation"
+            },
+            {
                 "command": "coe.enableAgent",
                 "title": "Enable Agent"
             },
@@ -176,6 +180,11 @@
                 },
                 {
                     "command": "coe.clearConversationHistory",
+                    "when": "view == coe-conversations && viewItem == coe-conversation",
+                    "group": "conversation@1"
+                },
+                {
+                    "command": "coe.replyConversation",
                     "when": "view == coe-conversations && viewItem == coe-conversation",
                     "group": "conversation@1"
                 },

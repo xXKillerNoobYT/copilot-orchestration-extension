@@ -16,10 +16,6 @@ jest.mock('../../src/services/ticketDb', () => ({
     onTicketChange: jest.fn(),
 }));
 
-// Mock orchestrator for in-memory AnswerAgent conversations
-jest.mock('../../src/services/orchestrator', () => ({
-    getOrchestratorInstance: jest.fn(),
-}));
 
 // Mock logger
 jest.mock('../../src/logger', () => ({
@@ -29,32 +25,21 @@ jest.mock('../../src/logger', () => ({
 }));
 
 import { listTickets, onTicketChange } from '../../src/services/ticketDb';
-import { getOrchestratorInstance } from '../../src/services/orchestrator';
 import { logError, logInfo, logWarn } from '../../src/logger';
 
 describe('ConversationsTreeDataProvider', () => {
     let provider: ConversationsTreeDataProvider;
     let mockListTickets: jest.Mock;
     let mockOnTicketChange: jest.Mock;
-    let mockGetOrchestratorInstance: jest.Mock;
-    let mockGetActiveConversations: jest.Mock;
     let capturedListener: (() => void) | null = null;
 
     beforeEach(() => {
         jest.clearAllMocks();
         mockListTickets = listTickets as jest.Mock;
         mockOnTicketChange = onTicketChange as jest.Mock;
-        mockGetOrchestratorInstance = getOrchestratorInstance as jest.Mock;
-        mockGetActiveConversations = jest.fn().mockReturnValue([]);
-
         mockListTickets.mockResolvedValue([]);
         mockOnTicketChange.mockImplementation((callback: () => void) => {
             capturedListener = callback;
-        });
-        mockGetOrchestratorInstance.mockReturnValue({
-            getAnswerAgent: () => ({
-                getActiveConversations: mockGetActiveConversations
-            })
         });
 
         provider = new ConversationsTreeDataProvider();
@@ -105,16 +90,6 @@ describe('ConversationsTreeDataProvider', () => {
             jest.useFakeTimers();
             jest.setSystemTime(new Date('2026-02-03T00:03:00.000Z'));
 
-            const history = {
-                chatId: 'TICKET-1',
-                createdAt: '2026-02-03T00:00:00.000Z',
-                lastActivityAt: '2026-02-03T00:01:00.000Z',
-                messages: [
-                    { role: 'user', content: 'How do I use COE?' },
-                    { role: 'assistant', content: 'Here is how you use it.' },
-                ],
-            };
-
             mockListTickets.mockResolvedValueOnce([
                 {
                     id: 'TICKET-1',
@@ -122,7 +97,10 @@ describe('ConversationsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-03T00:00:00.000Z',
                     updatedAt: '2026-02-03T00:01:00.000Z',
-                    conversationHistory: JSON.stringify(history),
+                    thread: [
+                        { role: 'user', content: 'How do I use COE?', createdAt: '2026-02-03T00:00:00.000Z' },
+                        { role: 'assistant', content: 'Here is how you use it.', createdAt: '2026-02-03T00:01:00.000Z' }
+                    ]
                 },
             ]);
 
@@ -170,11 +148,11 @@ describe('ConversationsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '',
                     updatedAt: '',
-                    conversationHistory: JSON.stringify([
-                        { role: 'user', content: 'Hello' },
-                        { role: 'assistant', content: 'Hi there!' },
-                        { role: 'user', content: 'Thanks' },
-                    ]),
+                    thread: [
+                        { role: 'user', content: 'Hello', createdAt: '' },
+                        { role: 'assistant', content: 'Hi there!', createdAt: '' },
+                        { role: 'user', content: 'Thanks', createdAt: '' },
+                    ],
                 },
             ]);
 
@@ -192,7 +170,7 @@ describe('ConversationsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-03T00:00:00.000Z',
                     updatedAt: '2026-02-03T00:01:00.000Z',
-                    conversationHistory: '[]',
+                    thread: [],
                 },
             ]);
 
@@ -211,12 +189,9 @@ describe('ConversationsTreeDataProvider', () => {
                     createdAt: '2026-02-03T00:00:00.000Z',
                     updatedAt: '2026-02-03T00:01:00.000Z',
                     type: 'answer_agent',
-                    conversationHistory: JSON.stringify({
-                        chatId: 'TICKET-ANSWER',
-                        createdAt: '2026-02-03T00:00:00.000Z',
-                        lastActivityAt: '2026-02-03T00:01:00.000Z',
-                        messages: [{ role: 'user', content: 'Hello Answer' }],
-                    }),
+                    thread: [
+                        { role: 'user', content: 'Hello Answer', createdAt: '2026-02-03T00:00:00.000Z' }
+                    ]
                 },
             ]);
 
@@ -234,7 +209,8 @@ describe('ConversationsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-03T00:00:00.000Z',
                     updatedAt: '2026-02-03T00:01:00.000Z',
-                    type: 'answer_agent'
+                    type: 'answer_agent',
+                    thread: []
                 },
             ]);
 
@@ -243,43 +219,6 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result).toHaveLength(1);
             expect(result[0].label).toBe('New chat (TICKET-EMPTY-ANSWER)');
             expect(result[0].description).toContain('0 messages');
-        });
-
-        it('should merge active conversations with tickets and prefer memory', async () => {
-            mockListTickets.mockResolvedValueOnce([
-                {
-                    id: 'TICKET-MEMORY',
-                    title: 'Answer Agent Ticket',
-                    status: 'open',
-                    createdAt: '2026-02-03T00:00:00.000Z',
-                    updatedAt: '2026-02-03T00:01:00.000Z',
-                    type: 'answer_agent',
-                    conversationHistory: JSON.stringify({
-                        chatId: 'TICKET-MEMORY',
-                        createdAt: '2026-02-03T00:00:00.000Z',
-                        lastActivityAt: '2026-02-03T00:01:00.000Z',
-                        messages: [{ role: 'user', content: 'Old history' }],
-                    }),
-                },
-            ]);
-
-            mockGetActiveConversations.mockReturnValueOnce([
-                {
-                    chatId: 'TICKET-MEMORY',
-                    createdAt: '2026-02-03T00:00:00.000Z',
-                    lastActivityAt: '2026-02-03T00:02:00.000Z',
-                    messages: [
-                        { role: 'user', content: 'Live history' },
-                        { role: 'assistant', content: 'Live answer' }
-                    ]
-                }
-            ]);
-
-            const result = await provider.getChildren();
-
-            expect(result).toHaveLength(1);
-            expect(result[0].label).toBe('User: Live history');
-            expect(result[0].description).toContain('2 messages');
         });
 
         it('should skip unexpected conversation formats', async () => {
@@ -358,12 +297,9 @@ describe('ConversationsTreeDataProvider', () => {
                     createdAt: '2026-02-03T00:00:00.000Z',
                     updatedAt: '2026-02-03T00:01:00.000Z',
                     type: 'answer_agent',
-                    conversationHistory: JSON.stringify({
-                        chatId: 'TICKET-CTX',
-                        createdAt: '2026-02-03T00:00:00.000Z',
-                        lastActivityAt: '2026-02-03T00:01:00.000Z',
-                        messages: [{ role: 'user', content: 'Test' }],
-                    }),
+                    thread: [
+                        { role: 'user', content: 'Test', createdAt: '2026-02-03T00:00:00.000Z' }
+                    ]
                 },
             ]);
 
@@ -382,12 +318,7 @@ describe('ConversationsTreeDataProvider', () => {
                     createdAt: '2026-02-03T00:00:00.000Z',
                     updatedAt: '2026-02-03T00:01:00.000Z',
                     type: 'answer_agent',
-                    conversationHistory: JSON.stringify({
-                        chatId: 'TICKET-CMD',
-                        createdAt: '2026-02-03T00:00:00.000Z',
-                        lastActivityAt: '2026-02-03T00:01:00.000Z',
-                        messages: [],
-                    }),
+                    thread: []
                 },
             ]);
 

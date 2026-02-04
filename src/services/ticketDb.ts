@@ -21,6 +21,13 @@ import { EventEmitter } from 'events';
 import { logInfo, logWarn } from '../logger';
 
 // Ticket interface - defines what a ticket looks like
+export interface TicketThreadMessage {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    createdAt: string;
+    status?: 'reviewing' | 'planning' | 'needs-approval' | 'blocked';
+}
+
 export interface Ticket {
     id: string;           // Unique ID (e.g., "TICKET-001")
     title: string;        // Short description
@@ -30,6 +37,7 @@ export interface Ticket {
     updatedAt: string;    // ISO timestamp
     description?: string; // Optional long description
     conversationHistory?: string; // Optional serialized Answer Agent history (JSON)
+    thread?: TicketThreadMessage[]; // Optional threaded conversation messages
 }
 
 // Database abstraction - works with SQLite OR in-memory
@@ -94,6 +102,7 @@ class TicketDatabase {
                     title TEXT NOT NULL,
                     status TEXT NOT NULL,
                     type TEXT,
+                    thread TEXT,
                     createdAt TEXT NOT NULL,
                     updatedAt TEXT NOT NULL,
                     description TEXT
@@ -126,6 +135,22 @@ class TicketDatabase {
                     logInfo('Migrating tickets table: adding conversationHistory column');
                     await this.runSQL('ALTER TABLE tickets ADD COLUMN conversationHistory TEXT');
                     logInfo('Migration complete: conversationHistory column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            // Migration: Add thread column for ticket-based conversation threads
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasThreadColumn = columns.some(
+                    (col: any) => col.name === 'thread'
+                );
+
+                if (!hasThreadColumn) {
+                    logInfo('Migrating tickets table: adding thread column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN thread TEXT');
+                    logInfo('Migration complete: thread column added');
                 }
             } catch (migrationErr) {
                 logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
@@ -196,6 +221,7 @@ class TicketDatabase {
             type: data.type,
             description: data.description,
             conversationHistory: data.conversationHistory,
+            thread: data.thread,
             createdAt: now,
             updatedAt: now,
         };
@@ -204,8 +230,8 @@ class TicketDatabase {
             this.inMemoryStore!.set(id, ticket);
         } else {
             await this.runSQL(
-                `INSERT INTO tickets (id, title, status, type, description, conversationHistory, createdAt, updatedAt)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO tickets (id, title, status, type, description, conversationHistory, thread, createdAt, updatedAt)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     ticket.id,
                     ticket.title,
@@ -213,6 +239,7 @@ class TicketDatabase {
                     ticket.type || null,
                     ticket.description || null,
                     ticket.conversationHistory || null,
+                    ticket.thread ? JSON.stringify(ticket.thread) : null,
                     ticket.createdAt,
                     ticket.updatedAt
                 ]
@@ -247,7 +274,7 @@ class TicketDatabase {
             // SQLite UPDATE SET query
             await this.runSQL(
                 `UPDATE tickets
-                 SET title = ?, status = ?, description = ?, type = ?, conversationHistory = ?, updatedAt = ?
+                 SET title = ?, status = ?, description = ?, type = ?, conversationHistory = ?, thread = ?, updatedAt = ?
                  WHERE id = ?`,
                 [
                     updated.title,
@@ -255,6 +282,7 @@ class TicketDatabase {
                     updated.description || null,
                     updated.type || null,
                     updated.conversationHistory || null,
+                    updated.thread ? JSON.stringify(updated.thread) : null,
                     updated.updatedAt,
                     id
                 ]
@@ -291,6 +319,15 @@ class TicketDatabase {
     }
 
     private rowToTicket(row: any): Ticket {
+        let parsedThread: TicketThreadMessage[] | undefined = undefined;
+        if (row.thread) {
+            try {
+                parsedThread = JSON.parse(row.thread) as TicketThreadMessage[];
+            } catch (error) {
+                logWarn(`Failed to parse thread for ticket ${row.id}: ${error}`);
+            }
+        }
+
         return {
             id: row.id,
             title: row.title,
@@ -300,6 +337,7 @@ class TicketDatabase {
             updatedAt: row.updatedAt,
             description: row.description || undefined,
             conversationHistory: row.conversationHistory || undefined,
+            thread: parsedThread,
         };
     }
 

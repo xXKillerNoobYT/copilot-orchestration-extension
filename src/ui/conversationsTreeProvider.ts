@@ -14,24 +14,11 @@
  */
 
 import * as vscode from 'vscode';
-import { listTickets, onTicketChange, Ticket } from '../services/ticketDb';
-import { getOrchestratorInstance } from '../services/orchestrator';
+import { listTickets, onTicketChange, Ticket, TicketThreadMessage } from '../services/ticketDb';
 import { logError, logInfo, logWarn } from '../logger';
 
-interface ConversationMessage {
-    role: string;
-    content: string;
-}
-
-interface ConversationMetadata {
-    chatId: string;
-    createdAt: string;
-    lastActivityAt: string;
-    messages: ConversationMessage[];
-}
-
 interface ParsedConversation {
-    messages?: ConversationMessage[]; // Made optional since it can be undefined
+    messages?: TicketThreadMessage[]; // Made optional since it can be undefined
     createdAt?: string;
     lastActivityAt?: string;
 }
@@ -84,7 +71,6 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
             // Load all tickets from TicketDb
             const tickets = await listTickets();
 
-            const ticketMap = new Map<string, Ticket>(tickets.map(ticket => [ticket.id, ticket]));
             const conversationEntries = new Map<string, { ticket: Ticket; history: ParsedConversation }>();
 
             // Keep only tickets that look like Answer Agent conversations
@@ -104,18 +90,6 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
                 }
 
                 conversationEntries.set(ticket.id, { ticket, history });
-            }
-
-            // Merge in-memory AnswerAgent conversations (overrides any DB entry)
-            const activeConversations = this.getActiveConversations();
-            for (const conversation of activeConversations) {
-                const ticket = ticketMap.get(conversation.chatId) || this.createMemoryTicket(conversation);
-                const history: ParsedConversation = {
-                    messages: conversation.messages,
-                    createdAt: conversation.createdAt,
-                    lastActivityAt: conversation.lastActivityAt
-                };
-                conversationEntries.set(conversation.chatId, { ticket, history });
             }
 
             // Build TreeItems
@@ -295,7 +269,11 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
      * Decide if a ticket should appear in the Conversations view.
      */
     private isConversationTicket(ticket: Ticket): boolean {
-        if (ticket.type === 'answer_agent') {
+        if (ticket.type === 'answer_agent' || ticket.type === 'human_to_ai') {
+            return true;
+        }
+
+        if (Array.isArray(ticket.thread) && ticket.thread.length > 0) {
             return true;
         }
 
@@ -307,25 +285,25 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
      * Parse conversation history safely and normalize its shape.
      */
     private parseConversationHistory(ticket: Ticket): ParsedConversation | null {
+        if (Array.isArray(ticket.thread)) {
+            return {
+                messages: ticket.thread,
+                createdAt: ticket.createdAt,
+                lastActivityAt: ticket.updatedAt
+            };
+        }
+
         const rawHistory = ticket.conversationHistory?.trim();
         if (!rawHistory) {
             return null;
         }
 
         try {
-            const parsed = JSON.parse(rawHistory) as ConversationMetadata | ConversationMessage[];
+            const parsed = JSON.parse(rawHistory) as TicketThreadMessage[];
 
             if (Array.isArray(parsed)) {
                 return {
                     messages: parsed,
-                };
-            }
-
-            if (parsed && Array.isArray(parsed.messages)) {
-                return {
-                    messages: parsed.messages,
-                    createdAt: parsed.createdAt,
-                    lastActivityAt: parsed.lastActivityAt,
                 };
             }
 
@@ -338,36 +316,11 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
     }
 
     private buildEmptyHistory(ticket: Ticket): ParsedConversation | null {
-        if (ticket.type === 'answer_agent') {
+        if (ticket.type === 'answer_agent' || ticket.type === 'human_to_ai') {
             return { messages: [] };
         }
 
         return null;
-    }
-
-    private getActiveConversations(): ConversationMetadata[] {
-        try {
-            const orchestrator = getOrchestratorInstance();
-            return orchestrator.getAnswerAgent().getActiveConversations();
-        } catch (error: unknown) {
-            logWarn(`[ConversationsTreeProvider] Unable to read active conversations: ${error}`);
-            return [];
-        }
-    }
-
-    private createMemoryTicket(metadata: ConversationMetadata): Ticket {
-        const timestamp = metadata.lastActivityAt || metadata.createdAt || new Date().toISOString();
-        const ticket: Ticket = {
-            id: metadata.chatId,
-            title: 'Answer Agent Conversation',
-            status: 'open',
-            type: 'answer_agent',
-            createdAt: metadata.createdAt || timestamp,
-            updatedAt: metadata.lastActivityAt || timestamp,
-            conversationHistory: undefined
-        };
-
-        return ticket;
     }
 
     /**

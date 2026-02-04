@@ -25,18 +25,23 @@ jest.mock('../src/services/orchestrator', () => {
         serializeHistory: jest.fn(() => ({}))
     };
 
+    const mockOrchestratorInstance = {
+        routeToPlanningAgent: jest.fn(async () => 'Mocked plan response'),
+        routeToVerificationAgent: jest.fn(async () => ({
+            passed: true,
+            explanation: 'All criteria met'
+        })),
+        getAnswerAgent: jest.fn(() => mockAnswerAgent),
+        processConversationTicket: jest.fn(async () => { })
+    };
+
     return {
         __mockAnswerAgent: mockAnswerAgent,
         initializeOrchestrator: jest.fn(),
         answerQuestion: jest.fn(async () => 'Mocked answer'),
-        getOrchestratorInstance: jest.fn(() => ({
-            routeToPlanningAgent: jest.fn(async () => 'Mocked plan response'),
-            routeToVerificationAgent: jest.fn(async () => ({
-                passed: true,
-                explanation: 'All criteria met'
-            })),
-            getAnswerAgent: jest.fn(() => mockAnswerAgent)
-        })),
+        processConversationTicket: jest.fn(async () => { }),
+        getOrchestratorInstance: jest.fn(() => mockOrchestratorInstance),
+        __mockOrchestratorInstance: mockOrchestratorInstance,
     };
 });
 
@@ -186,7 +191,24 @@ describe('Extension Commands', () => {
         const mockContext = {
             extensionPath: '/mock/path',
             subscriptions: [],
+            globalState: {
+                get: jest.fn(),
+                update: jest.fn(),
+            },
         } as any;
+
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+        const createdTicket = {
+            id: 'TICKET-ASK-1',
+            title: 'User Question: Test',
+            status: 'open',
+            createdAt: '2026-02-03T00:00:00.000Z',
+            updatedAt: '2026-02-03T00:00:00.000Z'
+        };
+
+        mockTicketDb.createTicket.mockResolvedValue(createdTicket);
+        (vscode.window.showInputBox as jest.Mock).mockResolvedValue('Test question');
 
         await activate(mockContext);
 
@@ -203,8 +225,13 @@ describe('Extension Commands', () => {
         // Execute the handler
         await askAnswerAgentHandler();
 
-        // Verify that showInformationMessage was called with expected message
-        expect(vscode.window.showInformationMessage).toHaveBeenCalled();
+        expect(mockTicketDb.createTicket).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'open',
+                type: 'human_to_ai',
+                thread: expect.any(Array)
+            })
+        );
     });
 
     it('should register the COE: Open Ticket command', async () => {
@@ -533,6 +560,20 @@ describe('Extension Commands', () => {
 
             expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
                 'coe.addTicketComment',
+                expect.any(Function)
+            );
+        });
+
+        it('should register the COE: Reply Conversation command', async () => {
+            const mockContext = {
+                extensionPath: '/mock/path',
+                subscriptions: [],
+            } as any;
+
+            await activate(mockContext);
+
+            expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+                'coe.replyConversation',
                 expect.any(Function)
             );
         });
@@ -1411,21 +1452,28 @@ describe('Extension Helpers', () => {
             },
         } as any;
 
-        const answerAgent = {
-            cleanupInactiveConversations: jest.fn(async () => { })
-        };
-
-        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+        const mockedInstance = {
             routeToPlanningAgent: jest.fn(async () => 'Mocked plan response'),
             routeToVerificationAgent: jest.fn(async () => ({
                 passed: true,
                 explanation: 'All criteria met'
             })),
-            getAnswerAgent: jest.fn(() => answerAgent)
-        });
+            getAnswerAgent: jest.fn(() => ({
+                cleanupInactiveConversations: jest.fn(async () => { })
+            })),
+            processConversationTicket: jest.fn(async () => { })
+        };
 
-        mockOrchestrator.answerQuestion.mockResolvedValue('Mocked response');
-        mockTicketDb.listTickets.mockResolvedValue([]);
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue(mockedInstance);
+
+        mockTicketDb.getTicket.mockResolvedValue({
+            id: 'chat-continue',
+            title: 'Chat Ticket',
+            status: 'open',
+            createdAt: '2026-02-03T00:00:00.000Z',
+            updatedAt: '2026-02-03T00:00:00.000Z',
+            thread: []
+        });
         (vscode.window.showInputBox as jest.Mock).mockResolvedValue('Follow-up question');
 
         await activate(mockContext);
@@ -1438,11 +1486,13 @@ describe('Extension Helpers', () => {
 
         await continueHandler();
 
-        expect(mockOrchestrator.answerQuestion).toHaveBeenCalledWith(
-            'Follow-up question',
+        expect(mockTicketDb.updateTicket).toHaveBeenCalledWith(
             'chat-continue',
-            true
+            expect.objectContaining({
+                thread: expect.any(Array)
+            })
         );
+        expect(mockedInstance.processConversationTicket).toHaveBeenCalledWith('chat-continue');
     });
 
     it('should warn when continuing without an active chat', async () => {
@@ -1536,15 +1586,14 @@ describe('Extension Helpers', () => {
 
         const mockTicket = {
             id: 'TICKET-123',
-            title: 'Answer Chat: New question',
+            title: 'User Question: New question',
             status: 'open',
-            type: 'answer_agent',
+            type: 'human_to_ai',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
 
         mockTicketDb.createTicket.mockResolvedValue(mockTicket);
-        mockOrchestrator.answerQuestion.mockResolvedValue('Fresh answer');
         (vscode.window.showInputBox as jest.Mock).mockResolvedValue('New question');
 
         await activate(mockContext);
@@ -1556,17 +1605,12 @@ describe('Extension Helpers', () => {
         await askHandler();
 
         expect(mockTicketDb.createTicket).toHaveBeenCalledWith({
-            title: 'Answer Chat: New question',
+            title: 'User Question: New question',
             status: 'open',
-            type: 'answer_agent',
-            description: 'Answer Agent conversation started with: New question'
+            type: 'human_to_ai',
+            description: 'User question submitted: New question',
+            thread: expect.any(Array)
         });
-        expect(mockOrchestrator.answerQuestion).toHaveBeenCalledWith(
-            'New question',
-            'TICKET-123',
-            false
-        );
-        expect(vscode.window.showInformationMessage).toHaveBeenCalled();
     });
 
     it('should show error when verify last ticket fails', async () => {

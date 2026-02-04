@@ -26,7 +26,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logInfo, logWarn, logError } from '../logger';
-import { listTickets, createTicket, onTicketChange, updateTicket } from './ticketDb';
+import { listTickets, createTicket, onTicketChange, updateTicket, Ticket, TicketThreadMessage } from './ticketDb';
 import { completeLLM, streamLLM } from './llmService';
 import { agentStatusTracker } from '../ui/agentStatusTracker';
 import { llmStatusBar } from '../ui/llmStatusBar';
@@ -50,6 +50,8 @@ export const PLANNING_SYSTEM_PROMPT = "You are a Planning agent. Break coding ta
  * Tells the LLM to check if code matches task success criteria
  */
 export const VERIFICATION_SYSTEM_PROMPT = "You are a Verification agent. Check if the code meets the task success criteria. Return only: PASS or FAIL, then 1-2 sentence explanation. Be strict.";
+
+const CONVERSATION_CLASSIFIER_PROMPT = "You are a routing assistant. Classify the user request into exactly one of: planning, verification, answer. Reply with only the single word.";
 
 /**
  * Task interface - represents a work item in the queue
@@ -94,6 +96,9 @@ export class OrchestratorService {
     // Answer Agent for multi-turn conversations
     private answerAgent: AnswerAgent | null = null;
 
+    // Track last processed thread length per ticket
+    private conversationThreadLengths = new Map<string, number>();
+
     /**
      * Initialize the orchestrator service
      * 
@@ -137,8 +142,207 @@ export class OrchestratorService {
         // Step 2b: Register manual mode listener for new tickets
         this.registerManualModeListener();
 
+        // Step 2c: Register conversation thread listener
+        await this.initializeConversationThreadState();
+        this.registerConversationThreadListener();
+
         // Step 3: Log initialization
         logInfo(`Orchestrator initialized with timeout: ${this.taskTimeoutSeconds}s`);
+    }
+
+    /**
+     * Initialize tracked thread lengths so we only process new user messages.
+     */
+    private async initializeConversationThreadState(): Promise<void> {
+        try {
+            const tickets = await listTickets();
+            for (const ticket of tickets) {
+                const threadLength = ticket.thread?.length ?? 0;
+                this.conversationThreadLengths.set(ticket.id, threadLength);
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Failed to initialize conversation thread state: ${message}`);
+        }
+    }
+
+    /**
+     * Register listener to route ticket-based conversations.
+     */
+    private registerConversationThreadListener(): void {
+        try {
+            onTicketChange(() => {
+                void this.handleConversationThreadUpdates();
+            });
+            logInfo('Conversation thread listener registered');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Failed to register conversation thread listener: ${message}`);
+        }
+    }
+
+    /**
+     * Process any new user messages in ticket threads.
+     */
+    private async handleConversationThreadUpdates(): Promise<void> {
+        try {
+            const tickets = await listTickets();
+            for (const ticket of tickets) {
+                await this.processConversationTicketInternal(ticket);
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Failed to handle conversation updates: ${message}`);
+        }
+    }
+
+    /**
+     * Public hook for commands to process a conversation ticket immediately.
+     */
+    async processConversationTicket(ticketId: string): Promise<void> {
+        const tickets = await listTickets();
+        const ticket = tickets.find(item => item.id === ticketId);
+        if (!ticket) {
+            logWarn(`[ConversationRouting] Ticket ${ticketId} not found`);
+            return;
+        }
+
+        await this.processConversationTicketInternal(ticket);
+    }
+
+    /**
+     * Core conversation routing logic for a ticket.
+     */
+    private async processConversationTicketInternal(ticket: Ticket): Promise<void> {
+        const thread = ticket.thread ?? [];
+        if (thread.length === 0) {
+            return;
+        }
+
+        const lastProcessed = this.conversationThreadLengths.get(ticket.id) ?? 0;
+        if (thread.length <= lastProcessed) {
+            return;
+        }
+
+        const lastMessage = thread[thread.length - 1];
+        if (lastMessage.role !== 'user') {
+            this.conversationThreadLengths.set(ticket.id, thread.length);
+            return;
+        }
+
+        this.conversationThreadLengths.set(ticket.id, thread.length);
+
+        await this.appendThreadMessage(ticket, {
+            role: 'system',
+            content: 'Status: Reviewing request...'
+        });
+
+        const agent = await this.determineConversationAgent(ticket, lastMessage.content);
+
+        switch (agent) {
+            case 'planning':
+                await this.handlePlanningConversation(ticket, lastMessage.content);
+                break;
+            case 'verification':
+                await this.handleVerificationConversation(ticket, lastMessage.content);
+                break;
+            default:
+                await this.handleAnswerConversation(ticket, lastMessage.content);
+                break;
+        }
+    }
+
+    private async determineConversationAgent(ticket: Ticket, userMessage: string): Promise<'planning' | 'verification' | 'answer'> {
+        if (ticket.type === 'ai_to_human') {
+            return 'planning';
+        }
+
+        if (ticket.type === 'human_to_ai') {
+            return await this.classifyConversationIntent(userMessage);
+        }
+
+        if (ticket.type === 'answer_agent') {
+            return 'answer';
+        }
+
+        return await this.classifyConversationIntent(userMessage);
+    }
+
+    private async classifyConversationIntent(userMessage: string): Promise<'planning' | 'verification' | 'answer'> {
+        try {
+            const response = await completeLLM(userMessage, {
+                systemPrompt: CONVERSATION_CLASSIFIER_PROMPT
+            });
+            const normalized = response.content.trim().toLowerCase();
+            if (normalized.includes('planning')) {
+                return 'planning';
+            }
+            if (normalized.includes('verification')) {
+                return 'verification';
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Conversation classification failed: ${message}`);
+        }
+
+        return 'answer';
+    }
+
+    private async handlePlanningConversation(ticket: Ticket, userMessage: string): Promise<void> {
+        await this.appendThreadMessage(ticket, {
+            role: 'system',
+            content: 'Status: Building a plan...'
+        });
+
+        const plan = await this.routeToPlanningAgent(userMessage);
+
+        await this.appendThreadMessage(ticket, {
+            role: 'assistant',
+            content: `Plan ready:\n${plan}\n\nDo you approve this plan?`
+        });
+    }
+
+    private async handleVerificationConversation(ticket: Ticket, userMessage: string): Promise<void> {
+        await this.appendThreadMessage(ticket, {
+            role: 'assistant',
+            content: 'Please provide the code diff or changes you want verified.'
+        });
+    }
+
+    private async handleAnswerConversation(ticket: Ticket, userMessage: string): Promise<void> {
+        const messages = this.buildMessagesFromThread(ticket.thread ?? []);
+        const response = await completeLLM('', {
+            messages
+        });
+
+        await this.appendThreadMessage(ticket, {
+            role: 'assistant',
+            content: response.content
+        });
+    }
+
+    private buildMessagesFromThread(thread: TicketThreadMessage[]): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+        const historyMessages = thread
+            .filter(message => message.role === 'user' || message.role === 'assistant')
+            .map(message => ({ role: message.role, content: message.content }));
+
+        return [
+            { role: 'system', content: ANSWER_SYSTEM_PROMPT },
+            ...historyMessages
+        ];
+    }
+
+    private async appendThreadMessage(ticket: Ticket, message: Omit<TicketThreadMessage, 'createdAt'>): Promise<void> {
+        const thread = ticket.thread ? [...ticket.thread] : [];
+        const entry: TicketThreadMessage = {
+            ...message,
+            createdAt: new Date().toISOString()
+        };
+
+        thread.push(entry);
+
+        await updateTicket(ticket.id, { thread });
+        this.conversationThreadLengths.set(ticket.id, thread.length);
     }
 
     /**

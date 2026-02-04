@@ -226,7 +226,9 @@ describe('TicketDb', () => {
                                 { name: 'priority' },
                                 { name: 'createdAt' },
                                 { name: 'updatedAt' },
-                                { name: 'type' } // Include type column for success path
+                                { name: 'type' },
+                                { name: 'conversationHistory' },
+                                { name: 'thread' }
                             ]), 0);
                             return;
                         }

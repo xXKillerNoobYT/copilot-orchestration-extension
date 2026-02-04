@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { initializeLogger, logInfo, logError, logWarn } from './logger';
 import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange, getTicket } from './services/ticketDb';
-import { initializeOrchestrator, getOrchestratorInstance, answerQuestion } from './services/orchestrator';
+import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
 import { initializeLLMService } from './services/llmService';
 import { startMCPServer } from './mcpServer/mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
@@ -369,28 +369,33 @@ export async function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            // Create a ticket for this Answer Agent conversation (ticket.id becomes chatId)
+            const threadEntry = {
+                role: 'user' as const,
+                content: question,
+                createdAt: new Date().toISOString()
+            };
+
+            // Create a ticket for this conversation (ticket.id becomes chatId)
             const ticket = await createTicket({
-                title: `Answer Chat: ${question.substring(0, 60)}${question.length > 60 ? '...' : ''}`,
+                title: `User Question: ${question.substring(0, 60)}${question.length > 60 ? '...' : ''}`,
                 status: 'open',
-                type: 'answer_agent',
-                description: `Answer Agent conversation started with: ${question}`
+                type: 'human_to_ai',
+                description: `User question submitted: ${question}`,
+                thread: [threadEntry]
             });
 
             const chatId = ticket.id;
-            logInfo(`Starting new conversation: ${chatId}`);
+            logInfo(`Starting new ticket conversation: ${chatId}`);
 
             // Store chatId in globalState for use in Continue command
             await context.globalState.update('currentChatId', chatId);
 
-            await getOrchestratorInstance().getAnswerAgent().cleanupInactiveConversations();
+            // Route the ticket through the orchestrator
+            const orchestrator = getOrchestratorInstance();
+            await orchestrator.processConversationTicket(chatId);
 
-            // Call Answer Agent with new conversation
-            const response = await answerQuestion(question, chatId, false);
-
-            // Display answer
             vscode.window.showInformationMessage(
-                `Answer: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
+                `Conversation started for ${chatId}. Response incoming...`
             );
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
@@ -430,21 +435,89 @@ export async function activate(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                logInfo(`Continuing conversation: ${chatId}`);
+                logInfo(`Continuing ticket conversation: ${chatId}`);
 
-                await getOrchestratorInstance().getAnswerAgent().cleanupInactiveConversations();
+                const ticket = await getTicket(chatId);
+                if (!ticket) {
+                    logWarn(`[Answer Agent Continue] Ticket ${chatId} not found`);
+                    vscode.window.showWarningMessage(`Ticket ${chatId} not found or was deleted`);
+                    return;
+                }
 
-                // Call Answer Agent with same chatId (reuses history)
-                const response = await answerQuestion(followUpQuestion, chatId, true);
+                const updatedThread = ticket.thread ? [...ticket.thread] : [];
+                updatedThread.push({
+                    role: 'user',
+                    content: followUpQuestion,
+                    createdAt: new Date().toISOString()
+                });
 
-                // Display answer
+                await updateTicket(chatId, { thread: updatedThread });
+
+                const orchestrator = getOrchestratorInstance();
+                await orchestrator.processConversationTicket(chatId);
+
                 vscode.window.showInformationMessage(
-                    `Answer: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
+                    `Follow-up sent for ${chatId}. Response incoming...`
                 );
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error);
                 logError(`Answer Agent continue command error: ${message}`);
                 vscode.window.showErrorMessage('Answer Agent failed - see logs for details.');
+            }
+        }
+    );
+
+    /**
+     * Command: coe.replyConversation
+     * Context menu command to reply to a conversation ticket
+     * @param treeItem The TreeItem selected in context menu
+     */
+    const replyConversationCommand = vscode.commands.registerCommand(
+        'coe.replyConversation',
+        async (treeItem: vscode.TreeItem) => {
+            try {
+                const chatId = treeItem.command?.arguments?.[0] as string | undefined;
+
+                if (!chatId) {
+                    logWarn('[ReplyConversation] No chat ID found in TreeItem');
+                    vscode.window.showWarningMessage('No conversation selected');
+                    return;
+                }
+
+                const reply = await vscode.window.showInputBox({
+                    prompt: 'Reply to this conversation',
+                    placeHolder: 'Type your message...'
+                });
+
+                if (!reply) {
+                    logInfo(`[ReplyConversation] User cancelled reply for ${chatId}`);
+                    return;
+                }
+
+                const ticket = await getTicket(chatId);
+                if (!ticket) {
+                    logWarn(`[ReplyConversation] Ticket ${chatId} not found`);
+                    vscode.window.showWarningMessage(`Ticket ${chatId} not found or was deleted`);
+                    return;
+                }
+
+                const updatedThread = ticket.thread ? [...ticket.thread] : [];
+                updatedThread.push({
+                    role: 'user',
+                    content: reply,
+                    createdAt: new Date().toISOString()
+                });
+
+                await updateTicket(chatId, { thread: updatedThread });
+
+                const orchestrator = getOrchestratorInstance();
+                await orchestrator.processConversationTicket(chatId);
+
+                vscode.window.showInformationMessage(`Reply sent for ${chatId}. Response incoming...`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[ReplyConversation] Error: ${message}`);
+                vscode.window.showErrorMessage(`Failed to reply: ${message}`);
             }
         }
     );
@@ -555,7 +628,8 @@ export async function activate(context: vscode.ExtensionContext) {
         // This hides the conversation from the Conversations view.
         await updateTicket(chatId, {
             conversationHistory: undefined,
-            type: undefined
+            type: undefined,
+            thread: undefined
         });
 
         // Refresh Conversations tree view to show updated state
@@ -993,6 +1067,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(verifyLastTicketCommand);
     context.subscriptions.push(askAnswerAgentCommand);
     context.subscriptions.push(askAnswerAgentContinueCommand);
+    context.subscriptions.push(replyConversationCommand);
     context.subscriptions.push(openTicketCommand);
     context.subscriptions.push(processTicketCommand);
     context.subscriptions.push(approveTicketCommand);

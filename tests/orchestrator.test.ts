@@ -68,7 +68,11 @@ describe('Orchestrator Service', () => {
 
         // Default: TicketDb has no tickets
         mockTicketDb.listTickets.mockResolvedValue([]);
-        mockTicketDb.onTicketChange.mockImplementation(() => { });
+        const listeners: Array<() => void> = [];
+        mockTicketDb.onTicketChange.mockImplementation((listener: () => void) => {
+            listeners.push(listener);
+        });
+        (mockTicketDb.onTicketChange as jest.Mock & { listeners?: Array<() => void> }).listeners = listeners;
         mockTicketDb.updateTicket.mockResolvedValue(null);
 
         const configMock = {
@@ -134,10 +138,10 @@ describe('Orchestrator Service', () => {
 
     describe('manual mode ticket handling', () => {
         it('Test 4: should set ai_to_human ticket to pending when manual mode enabled', async () => {
-            let changeListener: (() => void) | undefined;
+            const changeListeners: Array<() => void> = [];
 
             mockTicketDb.onTicketChange.mockImplementation((listener) => {
-                changeListener = listener;
+                changeListeners.push(listener);
             });
 
             const manualModeConfig = {
@@ -164,20 +168,20 @@ describe('Orchestrator Service', () => {
 
             await initializeOrchestrator(mockContext);
 
-            if (changeListener) {
-                changeListener();
-                await new Promise((resolve) => setImmediate(resolve));
+            for (const listener of changeListeners) {
+                listener();
             }
+            await new Promise((resolve) => setImmediate(resolve));
 
             expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-10', { status: 'pending' });
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Manual mode: Ticket pending approval'));
         });
 
         it('Test 5: should skip pending update when auto mode enabled', async () => {
-            let changeListener: (() => void) | undefined;
+            const changeListeners: Array<() => void> = [];
 
             mockTicketDb.onTicketChange.mockImplementation((listener) => {
-                changeListener = listener;
+                changeListeners.push(listener);
             });
 
             const autoModeConfig = {
@@ -200,10 +204,10 @@ describe('Orchestrator Service', () => {
 
             await initializeOrchestrator(mockContext);
 
-            if (changeListener) {
-                changeListener();
-                await new Promise((resolve) => setImmediate(resolve));
+            for (const listener of changeListeners) {
+                listener();
             }
+            await new Promise((resolve) => setImmediate(resolve));
 
             expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
         });
