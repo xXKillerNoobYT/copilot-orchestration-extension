@@ -7,6 +7,7 @@ import { initializeMCPServer } from './mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
 import { ConversationsTreeDataProvider } from './ui/conversationsTreeProvider';
+import { OrchestratorStatusTreeDataProvider } from './ui/orchestratorStatusTreeProvider';
 import { ConversationWebviewPanel } from './ui/conversationWebview';
 import { agentStatusTracker } from './ui/agentStatusTracker';
 import { ResearchAgent } from './agents/researchAgent';
@@ -204,6 +205,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize TreeView providers for sidebar (Agents, Tickets, and Conversations tabs)
     // AgentsTreeDataProvider = static hardcoded agent list
     const agentsProvider = new AgentsTreeDataProvider();
+    // OrchestratorStatusTreeDataProvider = live orchestrator queue stats
+    const orchestratorStatusProvider = new OrchestratorStatusTreeDataProvider();
     // TicketsTreeDataProvider = queries TicketDb for open tickets
     const ticketsProvider = new TicketsTreeDataProvider();
     // ConversationsTreeDataProvider = displays active Answer Agent conversations (placeholder for now)
@@ -212,6 +215,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Register tree providers with VS Code (connects provider class to view ID from package.json)
     // registerTreeDataProvider = tells VS Code to use our provider for the specified view
     const agentsTreeView = vscode.window.registerTreeDataProvider('coe-agents', agentsProvider);
+    const orchestratorStatusTreeView = vscode.window.registerTreeDataProvider('coe-agents-status', orchestratorStatusProvider);
     const ticketsTreeView = vscode.window.registerTreeDataProvider('coe-tickets', ticketsProvider);
     const conversationsTreeView = vscode.window.registerTreeDataProvider('coe-conversations', conversationsProvider);
 
@@ -230,6 +234,78 @@ export async function activate(context: vscode.ExtensionContext) {
         logInfo('Manual refresh: Conversations');
         conversationsProvider.refresh();
     });
+
+    const refreshOrchestratorStatusCommand = vscode.commands.registerCommand('coe.refreshOrchestratorStatus', async () => {
+        logInfo('Manual refresh: Orchestrator Status');
+        try {
+            await orchestrator.refreshQueueFromTickets();
+            orchestratorStatusProvider.refresh();
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[OrchestratorStatus] Manual refresh failed: ${message}`);
+            vscode.window.showWarningMessage(`Orchestrator status refresh failed: ${message}`);
+        }
+    });
+
+    const showOrchestratorStatusDetailsCommand = vscode.commands.registerCommand(
+        'coe.showOrchestratorStatusDetails',
+        async (detailType?: 'queue' | 'blocked' | 'lastPicked') => {
+            try {
+                const details = await orchestrator.getQueueDetails();
+
+                if (detailType === 'queue') {
+                    const items: vscode.QuickPickItem[] = [];
+
+                    items.push({ label: 'Queue (pending)', kind: vscode.QuickPickItemKind.Separator });
+                    if (details.queueTitles.length === 0) {
+                        items.push({ label: 'No pending tasks' });
+                    } else {
+                        details.queueTitles.forEach(title => items.push({ label: title }));
+                    }
+
+                    items.push({ label: 'Picked (in-progress)', kind: vscode.QuickPickItemKind.Separator });
+                    if (details.pickedTitles.length === 0) {
+                        items.push({ label: 'No picked tasks' });
+                    } else {
+                        details.pickedTitles.forEach(title => items.push({ label: title }));
+                    }
+
+                    await vscode.window.showQuickPick(items, {
+                        title: 'Orchestrator Queue Details'
+                    });
+                    return;
+                }
+
+                if (detailType === 'blocked') {
+                    if (details.blockedP1Titles.length === 0) {
+                        vscode.window.showInformationMessage('No blocked P1 tickets right now.');
+                        return;
+                    }
+
+                    await vscode.window.showQuickPick(
+                        details.blockedP1Titles.map(title => ({ label: title })),
+                        { title: 'Blocked P1 Tickets' }
+                    );
+                    return;
+                }
+
+                if (detailType === 'lastPicked') {
+                    const title = details.lastPickedTitle ?? 'Idle';
+                    const timestamp = details.lastPickedAt ? new Date(details.lastPickedAt).toLocaleTimeString() : 'N/A';
+                    vscode.window.showInformationMessage(`Last picked: ${title} (at ${timestamp})`);
+                    return;
+                }
+
+                vscode.window.showInformationMessage(
+                    `Queue: ${details.queueTitles.length} tasks, Blocked P1: ${details.blockedP1Titles.length}`
+                );
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[OrchestratorStatus] Failed to show details: ${message}`);
+                vscode.window.showWarningMessage(`Failed to show orchestrator details: ${message}`);
+            }
+        }
+    );
 
     /**
      * Command: coe.enableAgent
@@ -1117,11 +1193,14 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(helloCommand);
     context.subscriptions.push(statusBarItem);
     context.subscriptions.push(agentsTreeView);
+    context.subscriptions.push(orchestratorStatusTreeView);
     context.subscriptions.push(ticketsTreeView);
     context.subscriptions.push(conversationsTreeView);
     context.subscriptions.push(refreshAgentsCommand);
     context.subscriptions.push(refreshTicketsCommand);
     context.subscriptions.push(refreshConversationsCommand);
+    context.subscriptions.push(refreshOrchestratorStatusCommand);
+    context.subscriptions.push(showOrchestratorStatusDetailsCommand);
     context.subscriptions.push(enableAgentCommand);
     context.subscriptions.push(disableAgentCommand);
     context.subscriptions.push(toggleAutoProcessingCommand);

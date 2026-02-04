@@ -31,6 +31,14 @@ jest.mock('../src/services/orchestrator', () => {
             passed: true,
             explanation: 'All criteria met'
         })),
+        refreshQueueFromTickets: jest.fn(async () => { }),
+        getQueueDetails: jest.fn(async () => ({
+            queueTitles: [],
+            pickedTitles: [],
+            blockedP1Titles: [],
+            lastPickedTitle: null,
+            lastPickedAt: null
+        })),
         getAnswerAgent: jest.fn(() => mockAnswerAgent),
         processConversationTicket: jest.fn(async () => { })
     };
@@ -76,6 +84,12 @@ jest.mock('../src/ui/agentsTreeProvider', () => ({
 
 jest.mock('../src/ui/ticketsTreeProvider', () => ({
     TicketsTreeDataProvider: jest.fn(() => ({
+        refresh: jest.fn(),
+    })),
+}));
+
+jest.mock('../src/ui/orchestratorStatusTreeProvider', () => ({
+    OrchestratorStatusTreeDataProvider: jest.fn(() => ({
         refresh: jest.fn(),
     })),
 }));

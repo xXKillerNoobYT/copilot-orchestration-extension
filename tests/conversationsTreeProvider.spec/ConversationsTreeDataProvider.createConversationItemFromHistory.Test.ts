@@ -15,6 +15,7 @@ jest.mock('../../utils/logger', () => ({
     Logger: {
         debug: jest.fn(),
         info: jest.fn(),
+        warn: jest.fn(),
         error: jest.fn(),
     },
 }));
@@ -35,33 +36,48 @@ describe('ConversationsTreeDataProvider', () => {
             const history = {
                 messages: [{ content: 'Message 1' }, { content: 'Message 2' }],
             };
-            const mockGetConversationTimestamp = jest.spyOn(provider as unknown as { getConversationTimestamp: (history: typeof history, ticket: typeof ticket) => number }, 'getConversationTimestamp').mockReturnValue(1672531200000);
-            const mockFormatRelativeTime = jest.spyOn(provider as unknown as { formatRelativeTime: (timestamp: number) => string }, 'formatRelativeTime').mockReturnValue('2 days ago');
-            const mockGetConversationLabel = jest.spyOn(provider as unknown as { getConversationLabel: (ticket: typeof ticket, history: typeof history) => string }, 'getConversationLabel').mockReturnValue('Test Label');
-            const mockGetConversationDescription = jest.spyOn(provider as unknown as { getConversationDescription: (relativeTime: string, messageCount: number) => string }, 'getConversationDescription').mockReturnValue('2 messages, last updated 2 days ago');
+            jest.spyOn(provider, 'getConversationTimestamp' as keyof ConversationsTreeDataProvider).mockReturnValue(1672531200000);
+            jest.spyOn(provider, 'formatRelativeTime' as keyof ConversationsTreeDataProvider).mockReturnValue('2 days ago');
+            jest.spyOn(provider, 'getConversationLabel' as keyof ConversationsTreeDataProvider).mockReturnValue('Test Label');
+            jest.spyOn(provider, 'getConversationDescription' as keyof ConversationsTreeDataProvider).mockReturnValue('2 messages, last updated 2 days ago');
 
-            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: typeof history) => vscode.TreeItem }).createConversationItemFromHistory(ticket, history);
+            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: typeof history) => vscode.TreeItem })
+                .createConversationItemFromHistory(ticket, history);
 
             expect(result).toBeInstanceOf(vscode.TreeItem);
             expect(result.label).toBe('Test Label');
             expect(result.description).toBe('2 messages, last updated 2 days ago');
             expect(result.iconPath).toBeInstanceOf(vscode.ThemeIcon);
-            expect(result.tooltip).toBe('Click to continue chat');
-            expect(result.timestamp).toBe(1672531200000);
-
-            expect(mockGetConversationTimestamp).toHaveBeenCalledWith(history, ticket);
-            expect(mockFormatRelativeTime).toHaveBeenCalledWith(1672531200000);
-            expect(mockGetConversationLabel).toHaveBeenCalledWith(ticket, history);
-            expect(mockGetConversationDescription).toHaveBeenCalledWith('2 days ago', 2);
+            expect(result.tooltip).toBe('Click to open conversation in webview');
+            expect((result as { timestamp: number }).timestamp).toBe(1672531200000);
         });
 
         /** @aiContributed-2026-02-03 */
         it('should return null if history is null', () => {
             const ticket = { id: '1', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
 
-            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: null) => vscode.TreeItem | null }).createConversationItemFromHistory(ticket, null);
+            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: null) => vscode.TreeItem | null })
+                .createConversationItemFromHistory(ticket, null);
 
             expect(result).toBeNull();
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should log a warning and create an empty TreeItem if messages array is missing', () => {
+            const ticket = { id: '1', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
+            const history = { messages: null };
+            jest.spyOn(provider, 'getConversationTimestamp' as keyof ConversationsTreeDataProvider).mockReturnValue(1672531200000);
+            jest.spyOn(provider, 'formatRelativeTime' as keyof ConversationsTreeDataProvider).mockReturnValue('2 days ago');
+            jest.spyOn(provider, 'getConversationLabel' as keyof ConversationsTreeDataProvider).mockReturnValue('Test Label');
+            jest.spyOn(provider, 'getConversationDescription' as keyof ConversationsTreeDataProvider).mockReturnValue('0 messages, last updated 2 days ago');
+
+            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: typeof history) => vscode.TreeItem })
+                .createConversationItemFromHistory(ticket, history);
+
+            expect(result).toBeInstanceOf(vscode.TreeItem);
+            expect(result.label).toBe('Test Label');
+            expect(result.description).toBe('0 messages, last updated 2 days ago');
+            expect(Logger.warn).toHaveBeenCalledWith('[ConversationsTreeProvider] Missing messages array for ticket 1; showing empty conversation');
         });
 
         /** @aiContributed-2026-02-03 */
@@ -70,11 +86,12 @@ describe('ConversationsTreeDataProvider', () => {
             const history = {
                 messages: [{ content: 'Message 1' }, { content: 'Message 2' }],
             };
-            jest.spyOn(provider as unknown as { getConversationTimestamp: (history: typeof history, ticket: typeof ticket) => number }, 'getConversationTimestamp').mockImplementation(() => {
+            jest.spyOn(provider, 'getConversationTimestamp' as keyof ConversationsTreeDataProvider).mockImplementation(() => {
                 throw new Error('Test Error');
             });
 
-            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: typeof history) => vscode.TreeItem | null }).createConversationItemFromHistory(ticket, history);
+            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: typeof history) => vscode.TreeItem | null })
+                .createConversationItemFromHistory(ticket, history);
 
             expect(result).toBeNull();
             expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));

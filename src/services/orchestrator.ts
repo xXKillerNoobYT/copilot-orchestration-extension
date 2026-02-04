@@ -76,6 +76,18 @@ export interface Task {
 }
 
 /**
+ * QueueStatus - snapshot of orchestrator queue info for UI display.
+ *
+ * **Simple explanation**: This is a quick summary of what's waiting,
+ * what's blocked, and what was picked last.
+ */
+export interface QueueStatus {
+    queueCount: number;
+    blockedP1Count: number;
+    lastPickedTitle: string | null;
+}
+
+/**
  * OrchestratorService class
  * 
  * Manages the task queue and orchestrates work for Copilot.
@@ -86,6 +98,13 @@ export class OrchestratorService {
 
     // Tracks tasks that have been picked and are in-flight (waiting for completion)
     private pickedTasks: Task[] = [];
+
+    // EventEmitter for queue change notifications (used by UI)
+    private queueChangeEmitter = new vscode.EventEmitter<void>();
+
+    // Track the last picked task title and timestamp
+    private lastPickedTaskTitle: string | null = null;
+    private lastPickedTaskAt: string | null = null;
 
     // Timeout in seconds before creating blocked ticket (read from config, default 30)
     private taskTimeoutSeconds: number = 30;
@@ -150,6 +169,9 @@ export class OrchestratorService {
         // Step 2: Load initial tasks from TicketDb
         await this.loadTasksFromTickets();
 
+        // Step 2a: Keep queue in sync with ticket changes
+        this.registerQueueRefreshListener();
+
         // Step 2b: Register manual mode listener for new tickets
         this.registerManualModeListener();
 
@@ -159,6 +181,122 @@ export class OrchestratorService {
 
         // Step 3: Log initialization
         logInfo(`Orchestrator initialized with timeout: ${this.taskTimeoutSeconds}s`);
+    }
+
+    /**
+     * Subscribe to queue changes for UI refresh.
+     *
+     * **Simple explanation**: This lets the sidebar know when the queue changes.
+     */
+    onQueueChange(listener: () => void): vscode.Disposable {
+        return this.queueChangeEmitter.event(listener);
+    }
+
+    /**
+     * Emit a queue change event.
+     *
+     * **Simple explanation**: This is the "ping" that tells the UI to refresh.
+     */
+    private emitQueueChange(): void {
+        this.queueChangeEmitter.fire();
+    }
+
+    /**
+     * Refresh the queue from TicketDb (manual refresh support).
+     *
+     * **Simple explanation**: Rebuild the queue list from the database.
+     */
+    async refreshQueueFromTickets(): Promise<void> {
+        try {
+            const tickets = await listTickets();
+            const openTickets = tickets.filter(ticket => ticket.status === 'open');
+
+            const existingIds = new Set([
+                ...this.taskQueue.map(task => task.id),
+                ...this.pickedTasks.map(task => task.id)
+            ]);
+
+            const newTasks: Task[] = openTickets
+                .filter(ticket => !existingIds.has(ticket.id))
+                .map(ticket => ({
+                    id: ticket.id,
+                    ticketId: ticket.id,
+                    title: ticket.title,
+                    status: 'pending',
+                    createdAt: ticket.createdAt
+                }));
+
+            const openIds = new Set(openTickets.map(ticket => ticket.id));
+            this.taskQueue = this.taskQueue.filter(task => openIds.has(task.id));
+            this.taskQueue.push(...newTasks);
+
+            this.emitQueueChange();
+            logInfo('[Orchestrator] Queue refreshed from TicketDb');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[Orchestrator] Queue refresh failed: ${message}`);
+        }
+    }
+
+    /**
+     * Return a snapshot of queue status for UI display.
+     *
+     * **Simple explanation**: This answers "how many tasks are waiting and blocked".
+     */
+    async getQueueStatus(): Promise<QueueStatus> {
+        try {
+            const tickets = await listTickets();
+            const blockedP1Count = tickets.filter(ticket => this.isBlockedP1Ticket(ticket)).length;
+
+            return {
+                queueCount: this.taskQueue.length,
+                blockedP1Count,
+                lastPickedTitle: this.lastPickedTaskTitle
+            };
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`[Orchestrator] Failed to get queue status: ${message}`);
+            return {
+                queueCount: this.taskQueue.length,
+                blockedP1Count: 0,
+                lastPickedTitle: this.lastPickedTaskTitle
+            };
+        }
+    }
+
+    /**
+     * Return detailed info for popups/quick picks.
+     *
+     * **Simple explanation**: This is the "full list" version of the status.
+     */
+    async getQueueDetails(): Promise<{
+        queueTitles: string[];
+        pickedTitles: string[];
+        blockedP1Titles: string[];
+        lastPickedTitle: string | null;
+        lastPickedAt: string | null;
+    }> {
+        const tickets = await listTickets();
+        const blockedP1Titles = tickets
+            .filter(ticket => this.isBlockedP1Ticket(ticket))
+            .map(ticket => ticket.title);
+
+        return {
+            queueTitles: this.taskQueue.map(task => task.title),
+            pickedTitles: this.pickedTasks.map(task => task.title),
+            blockedP1Titles,
+            lastPickedTitle: this.lastPickedTaskTitle,
+            lastPickedAt: this.lastPickedTaskAt
+        };
+    }
+
+    private isBlockedP1Ticket(ticket: Ticket): boolean {
+        if (ticket.status !== 'blocked') {
+            return false;
+        }
+
+        const title = ticket.title.toLowerCase();
+        return title.startsWith('p1 blocked') || title.startsWith('[p1]') || title.startsWith('p1:' );
     }
 
     /**
@@ -384,6 +522,23 @@ export class OrchestratorService {
     }
 
     /**
+     * Register listener to refresh queue when TicketDb changes.
+     *
+     * **Simple explanation**: If tickets change, we refresh the queue list.
+     */
+    private registerQueueRefreshListener(): void {
+        try {
+            onTicketChange(() => {
+                void this.refreshQueueFromTickets();
+            });
+            logInfo('Queue refresh listener registered');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Failed to register queue refresh listener: ${message}`);
+        }
+    }
+
+    /**
      * Handle manual mode ticket updates
      *
      * Checks the latest ticket and sets it to pending if manual mode is enabled.
@@ -470,8 +625,15 @@ export class OrchestratorService {
         // Step 6: Add to pickedTasks for timeout tracking
         this.pickedTasks.push(task);
 
+        // Step 6b: Track last picked task for UI
+        this.lastPickedTaskTitle = task.title;
+        this.lastPickedTaskAt = now;
+
         // Step 7: Log task pickup
         logInfo(`Task picked atomically: ${task.id} - ${task.title}`);
+
+        // Step 7b: Notify UI listeners
+        this.emitQueueChange();
 
         // Step 8: Return task
         return task;
@@ -756,10 +918,12 @@ export class OrchestratorService {
 
             // Step 5: Log count
             logInfo(`Loaded ${tasks.length} tasks from tickets`);
+            this.emitQueueChange();
         } catch (err) {
             // If TicketDb fails, log error and start with empty queue
             logError(`Failed to load tasks from tickets: ${err}`);
             this.taskQueue = [];
+            this.emitQueueChange();
         }
     }
 
@@ -811,7 +975,7 @@ export class OrchestratorService {
                 // Create P1 (high-priority) ticket in TicketDb
                 try {
                     await createTicket({
-                        title: `BLOCKED: ${task.title}`,
+                        title: `P1 BLOCKED: ${task.title}`,
                         status: 'blocked',
                         description: `Task idle for ${Math.round(idleTimeSeconds)}s (timeout: ${this.taskTimeoutSeconds}s)`
                     });
@@ -827,6 +991,9 @@ export class OrchestratorService {
                 } catch (err) {
                     logError(`Failed to create blocked ticket: ${err}`);
                 }
+
+                // Notify UI listeners after blocking
+                this.emitQueueChange();
             }
         }
     }
@@ -895,6 +1062,8 @@ export class OrchestratorService {
         this.pickedTasks = [];
         this.context = null;
         this.answerAgent = null;
+        this.lastPickedTaskTitle = null;
+        this.lastPickedTaskAt = null;
     }
 }
 

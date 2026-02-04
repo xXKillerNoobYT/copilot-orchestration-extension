@@ -60,5 +60,14 @@ describe('ConversationsTreeDataProvider', () => {
             expect(() => provider.refresh()).not.toThrow();
             expect(Logger.info).toHaveBeenCalledWith('[ConversationsTreeProvider] Refreshing...');
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should not log or fire events if refresh is called on an uninitialized provider', () => {
+            provider = undefined as unknown as ConversationsTreeDataProvider;
+
+            expect(() => provider.refresh()).toThrow();
+            expect(Logger.info).not.toHaveBeenCalled();
+            expect(mockEventEmitter.fire).not.toHaveBeenCalled();
+        });
     });
 });

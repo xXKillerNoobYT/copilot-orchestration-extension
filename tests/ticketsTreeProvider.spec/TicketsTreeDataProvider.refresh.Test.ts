@@ -47,5 +47,10 @@ describe('TicketsTreeDataProvider', () => {
             dataProvider.refresh();
             expect(Logger.debug).toHaveBeenCalledWith('Refresh method called, onDidChangeTreeData event fired.');
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should not throw any errors when refresh is called', () => {
+            expect(() => dataProvider.refresh()).not.toThrow();
+        });
     });
 });

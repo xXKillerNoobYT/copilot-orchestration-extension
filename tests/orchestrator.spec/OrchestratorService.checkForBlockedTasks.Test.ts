@@ -75,7 +75,7 @@ describe('OrchestratorService - checkForBlockedTasks', () => {
     expect(task.status).toBe('blocked');
     expect(orchestrator.pickedTasks).toHaveLength(0);
     expect(createTicket).toHaveBeenCalledWith({
-      title: `BLOCKED: ${task.title}`,
+      title: `P1 BLOCKED: ${task.title}`,
       status: 'blocked',
       description: `Task idle for 400s (timeout: 300s)`,
     });

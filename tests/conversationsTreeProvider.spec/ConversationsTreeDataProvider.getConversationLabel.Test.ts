@@ -24,12 +24,12 @@ describe('ConversationsTreeDataProvider', () => {
                 ],
             };
 
-            jest.spyOn(provider, 'truncateText').mockReturnValue('This is a user message that exceeds sixty charact...');
+            jest.spyOn(provider, 'truncateText' as keyof ConversationsTreeDataProvider).mockReturnValue('This is a user message that exceeds sixty charact...');
 
-            const result = provider.getConversationLabel(ticket, history);
+            const result = provider['getConversationLabel'](ticket, history);
 
             expect(result).toBe('User: This is a user message that exceeds sixty charact...');
-            expect(provider.truncateText).toHaveBeenCalledWith('This is a user message that exceeds sixty characters in length.', 60);
+            expect(provider['truncateText']).toHaveBeenCalledWith('This is a user message that exceeds sixty characters in length.', 60);
         });
 
         /** @aiContributed-2026-02-03 */
@@ -37,7 +37,7 @@ describe('ConversationsTreeDataProvider', () => {
             const ticket = { id: '123' };
             const history = { messages: [{ role: 'system', content: 'System message' }] };
 
-            const result = provider.getConversationLabel(ticket, history);
+            const result = provider['getConversationLabel'](ticket, history);
 
             expect(result).toBe('New chat (123)');
         });
@@ -46,7 +46,7 @@ describe('ConversationsTreeDataProvider', () => {
         it('should handle null or undefined history gracefully', () => {
             const ticket = { id: '123' };
 
-            const result = provider.getConversationLabel(ticket, null);
+            const result = provider['getConversationLabel'](ticket, null);
 
             expect(result).toBe('New chat (123)');
         });
@@ -56,7 +56,7 @@ describe('ConversationsTreeDataProvider', () => {
             const ticket = { id: '123' };
             const history = { messages: null };
 
-            const result = provider.getConversationLabel(ticket, history);
+            const result = provider['getConversationLabel'](ticket, history);
 
             expect(result).toBe('New chat (123)');
         });
@@ -66,7 +66,7 @@ describe('ConversationsTreeDataProvider', () => {
             const ticket = { id: '123' };
             const history = { messages: [] };
 
-            const result = provider.getConversationLabel(ticket, history);
+            const result = provider['getConversationLabel'](ticket, history);
 
             expect(result).toBe('New chat (123)');
         });
@@ -80,14 +80,24 @@ describe('ConversationsTreeDataProvider', () => {
                 ],
             };
 
-            jest.spyOn(provider, 'truncateText').mockImplementation(() => {
+            jest.spyOn(provider, 'truncateText' as keyof ConversationsTreeDataProvider).mockImplementation(() => {
                 throw new Error('Truncate error');
             });
 
-            const result = provider.getConversationLabel(ticket, history);
+            const result = provider['getConversationLabel'](ticket, history);
 
             expect(result).toBe('New chat (123)');
             expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should return "Chat" with ticket ID when messages is not an array', () => {
+            const ticket = { id: '123' };
+            const history = { messages: 'invalid' };
+
+            const result = provider['getConversationLabel'](ticket, history);
+
+            expect(result).toBe('Chat (123)');
         });
     });
 });

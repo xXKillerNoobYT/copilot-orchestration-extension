@@ -60,9 +60,10 @@ describe('TicketsTreeDataProvider', () => {
             ];
             (listTickets as jest.Mock).mockResolvedValueOnce(mockTickets);
 
-            jest.spyOn(provider as TicketsTreeDataProvider, 'createTicketItem').mockImplementation((ticket) => {
-                return new vscode.TreeItem(ticket.title);
-            });
+            jest.spyOn(provider as unknown as { createTicketItem: (ticket: { id: string; title: string; status: string; createdAt: string; updatedAt: string }) => vscode.TreeItem }, 'createTicketItem')
+                .mockImplementation((ticket) => {
+                    return new vscode.TreeItem(ticket.title);
+                });
 
             const result = await provider.getChildren();
 
@@ -93,14 +94,27 @@ describe('TicketsTreeDataProvider', () => {
             ];
             (listTickets as jest.Mock).mockResolvedValueOnce(mockTickets);
 
-            jest.spyOn(provider as TicketsTreeDataProvider, 'createTicketItem').mockImplementation((ticket) => {
-                return new vscode.TreeItem(ticket.title);
-            });
+            jest.spyOn(provider as unknown as { createTicketItem: (ticket: { id: string; title: string; status?: string; createdAt: string; updatedAt: string }) => vscode.TreeItem }, 'createTicketItem')
+                .mockImplementation((ticket) => {
+                    return new vscode.TreeItem(ticket.title);
+                });
 
             const result = await provider.getChildren();
 
             expect(result).toHaveLength(1);
             expect(result[0].label).toBe('Ticket 2');
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle an empty ticket list gracefully', async () => {
+            (listTickets as jest.Mock).mockResolvedValueOnce([]);
+
+            const result = await provider.getChildren();
+
+            expect(result).toHaveLength(1);
+            expect(result[0].label).toBe('No open tickets');
+            expect(result[0].iconPath).toBeInstanceOf(vscode.ThemeIcon);
+            expect(result[0].tooltip).toBe('All tickets are completed or no tickets exist');
         });
     });
 });

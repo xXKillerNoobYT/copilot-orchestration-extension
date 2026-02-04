@@ -8,6 +8,14 @@ jest.mock('vscode', () => ({
     TreeItem: jest.fn(),
 }));
 
+jest.mock('../../utils/logger', () => ({
+    ...jest.requireActual('../../utils/logger'),
+    Logger: {
+        debug: jest.fn(),
+        error: jest.fn(),
+    },
+}));
+
 /** @aiContributed-2026-02-03 */
 describe('TicketsTreeDataProvider', () => {
     let provider: TicketsTreeDataProvider;

@@ -3,7 +3,7 @@
 **Last Updated**: February 3, 2026  
 **Status**: In Progress - Stage 1  
 **Current Stage**: Stage 1 - Foundation & Core Infrastructure  
-**Overall Progress**: 8/352 tasks complete (2.3%)
+**Overall Progress**: 8/353 tasks complete (2.3%)
 
 ---
 
@@ -47,14 +47,14 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓░░░░░░░░░░░░░░░░░░░] 2.3% (8/352 tasks)
+[▓░░░░░░░░░░░░░░░░░░░] 2.3% (8/353 tasks)
 ```
 
 ### Stage Completion
 
 | Stage | Status | Tasks | Complete | Progress | Gate Status |
 |-------|--------|-------|----------|----------|-------------|
-| **Stage 1: Foundation** | 🔄 In Progress | 26 | 8/26 | 30.8% | 🔒 Locked |
+| **Stage 1: Foundation** | 🔄 In Progress | 26 | 8/27 | 30.8% | 🔒 Locked |
 | **Stage 2: Ticket System** | ⏳ Queued | 38 | 0/38 | 0% | 🔒 Locked |
 | **Stage 3: LLM Integration** | ⏳ Queued | 28 | 0/28 | 0% | 🔒 Locked |
 | **Stage 4: Agent Teams** | ⏳ Queued | 71 | 0/71 | 0% | 🔒 Locked |
@@ -119,7 +119,7 @@ _(Track your improvement over time)_
 
 ### Master Tickets
 
-#### MT-001: MCP Server & Tools [Area: MCP] (7 tasks)
+#### MT-001: MCP Server & Tools [Area: MCP] (11 tasks)
 **Source**: [05-MCP-API-Reference.md](05-MCP-API-Reference.md)  
 **Priority**: P0  
 **Dependencies**: None (starting point!)
@@ -186,6 +186,21 @@ _(Track your improvement over time)_
   - **Quality**: No hanging process listeners, safe repeated shutdown
   - **Verification**: ✅ `npm test -- mcpServer.test.ts` passes
   - **Dependencies**: MT-001.1 ✅
+
+- [ ] **MT-001.10**: Implement Config Schema & Validation (20 min) [actual: __ min] [Priority: P0] [depends: MT-001.1] 🔒
+  - **Files**: Create `src/config/schema.ts` with Zod schema + TypeScript interface
+  - **Tests**: Add tests to `tests/config/schema.spec.ts` covering happy path + invalid cases
+  - **Behavior**: Reads and validates `.coe/config.json` with defaults on missing values
+  - **Documentation**: Update [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md) with schema definition
+  - **Quality**: Invalid values log warning and use defaults, no crashes on malformed config
+  - **Verification**: Test with sample configs, verify invalid inputs handled gracefully
+  - **Dependencies**: MT-001.1 ✅
+  - **Required Fields**:
+    - `githubIssuesPath` (default: `github-issues`)
+    - `lmStudioTokenPollIntervalSeconds` (default: 30, min: 10, max: 120)
+    - `watcherDebounceMs` (default: 500)
+    - `llmRequestTimeoutSeconds` (default: 120)
+    - `auditLog.enabled` (default: true)
 
 #### MT-002: Error Registry & Handling [Area: Error Handling] (5 tasks)
 **Source**: [10-MCP-Error-Codes-Registry.md](10-MCP-Error-Codes-Registry.md)  

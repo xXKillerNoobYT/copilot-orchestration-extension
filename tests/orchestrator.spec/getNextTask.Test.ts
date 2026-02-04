@@ -83,7 +83,7 @@ describe('getNextTask', () => {
     await orchestrator.getNextTask();
 
     expect(createTicket).toHaveBeenCalledWith({
-      title: `BLOCKED: ${mockTask.title}`,
+      title: `P1 BLOCKED: ${mockTask.title}`,
       status: 'blocked',
       description: expect.stringContaining('Task idle for 31s'),
     });

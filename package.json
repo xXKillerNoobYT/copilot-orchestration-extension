@@ -33,6 +33,14 @@
                 "title": "COE: Refresh Conversations"
             },
             {
+                "command": "coe.refreshOrchestratorStatus",
+                "title": "COE: Refresh Orchestrator Status"
+            },
+            {
+                "command": "coe.showOrchestratorStatusDetails",
+                "title": "COE: Show Orchestrator Status Details"
+            },
+            {
                 "command": "coe.planTask",
                 "title": "COE: Plan Task"
             },
@@ -201,6 +209,13 @@
                     "when": "view == coe-conversations && viewItem == coe-conversation",
                     "group": "conversation@2"
                 }
+            ],
+            "view/title": [
+                {
+                    "command": "coe.refreshOrchestratorStatus",
+                    "when": "view == coe-agents-status",
+                    "group": "navigation@1"
+                }
             ]
         },
         "viewsContainers": {
@@ -216,8 +231,13 @@
             "coe-views": [
                 {
                     "id": "coe-agents",
-                    "name": "Agents",
+                    "name": "Agents List",
                     "icon": "$(organization)"
+                },
+                {
+                    "id": "coe-agents-status",
+                    "name": "Agents",
+                    "icon": "$(robot)"
                 },
                 {
                     "id": "coe-tickets",

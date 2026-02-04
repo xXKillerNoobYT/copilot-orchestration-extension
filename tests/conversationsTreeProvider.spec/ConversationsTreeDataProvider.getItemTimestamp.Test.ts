@@ -20,21 +20,28 @@ describe('ConversationsTreeDataProvider', () => {
         /** @aiContributed-2026-02-03 */
         it('should return the timestamp if it is a number', () => {
             const mockItem: { timestamp: number } = { timestamp: 1627849200000 };
-            const result = provider.getItemTimestamp(mockItem);
+            const result = provider['getItemTimestamp'](mockItem);
             expect(result).toBe(1627849200000);
         });
 
         /** @aiContributed-2026-02-03 */
         it('should return 0 if the timestamp is not a number', () => {
             const mockItem: { timestamp: string } = { timestamp: 'invalid' };
-            const result = provider.getItemTimestamp(mockItem);
+            const result = provider['getItemTimestamp'](mockItem);
             expect(result).toBe(0);
         });
 
         /** @aiContributed-2026-02-03 */
         it('should return 0 if the timestamp is undefined', () => {
             const mockItem: { timestamp?: number } = {};
-            const result = provider.getItemTimestamp(mockItem);
+            const result = provider['getItemTimestamp'](mockItem);
+            expect(result).toBe(0);
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should handle items without a timestamp property gracefully', () => {
+            const mockItem: Record<string, never> = {};
+            const result = provider['getItemTimestamp'](mockItem);
             expect(result).toBe(0);
         });
 
@@ -42,7 +49,7 @@ describe('ConversationsTreeDataProvider', () => {
         it('should log debug information during execution', () => {
             jest.spyOn(Logger, 'debug');
             const mockItem: { timestamp: number } = { timestamp: 1627849200000 };
-            provider.getItemTimestamp(mockItem);
+            provider['getItemTimestamp'](mockItem);
             expect(Logger.debug).toHaveBeenCalled();
         });
     });

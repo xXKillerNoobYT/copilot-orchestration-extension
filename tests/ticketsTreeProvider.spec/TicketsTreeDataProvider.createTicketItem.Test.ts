@@ -129,5 +129,23 @@ describe('TicketsTreeDataProvider', () => {
             expect(treeItem.tooltip).toBe(ticket.description);
             expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
         });
+
+        /** @aiContributed-2026-02-03 */
+        it('should assign the correct context value for pending tickets', () => {
+            const ticket = {
+                id: '6',
+                title: 'Pending Ticket',
+                status: 'pending',
+                createdAt: '2023-01-06T00:00:00Z',
+                description: 'This is a pending ticket.',
+            };
+
+            const mockGetIconForStatus = jest.spyOn(provider as unknown as { getIconForStatus: (status: string) => vscode.ThemeIcon }, 'getIconForStatus').mockReturnValue(new vscode.ThemeIcon('icon'));
+
+            const treeItem = (provider as unknown as { createTicketItem: (ticket: typeof ticket) => vscode.TreeItem }).createTicketItem(ticket);
+
+            expect(treeItem.contextValue).toBe('coe-pending-ticket');
+            expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
+        });
     });
 });

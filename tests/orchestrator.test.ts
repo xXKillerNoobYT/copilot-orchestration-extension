@@ -335,7 +335,7 @@ describe('Orchestrator Service', () => {
             mockTicketDb.listTickets.mockResolvedValue([mockTicket]);
             mockTicketDb.createTicket.mockResolvedValue({
                 id: 'TICKET-2',
-                title: 'BLOCKED: Long Running Task',
+                title: 'P1 BLOCKED: Long Running Task',
                 status: 'blocked',
                 createdAt: '2026-02-01T10:31:00Z',
                 updatedAt: '2026-02-01T10:31:00Z'
@@ -362,7 +362,7 @@ describe('Orchestrator Service', () => {
             expect(mockTicketDb.createTicket).toHaveBeenCalledWith(
                 expect.objectContaining({
                     status: 'blocked',
-                    title: expect.stringContaining('BLOCKED')
+                    title: expect.stringContaining('P1 BLOCKED')
                 })
             );
 
@@ -383,7 +383,7 @@ describe('Orchestrator Service', () => {
             mockTicketDb.listTickets.mockResolvedValue([mockTicket]);
             mockTicketDb.createTicket.mockResolvedValue({
                 id: 'TICKET-2',
-                title: 'BLOCKED: Task',
+                title: 'P1 BLOCKED: Task',
                 status: 'blocked',
                 createdAt: '2026-02-01T10:31:00Z',
                 updatedAt: '2026-02-01T10:31:00Z'

@@ -25,6 +25,7 @@ describe('ConversationsTreeDataProvider', () => {
 
         beforeEach(() => {
             provider = new ConversationsTreeDataProvider();
+            jest.clearAllMocks();
         });
 
         /** @aiContributed-2026-02-03 */
@@ -51,6 +52,19 @@ describe('ConversationsTreeDataProvider', () => {
             const mockTreeItem = new vscode.TreeItem('Test Item');
             provider.getTreeItem(mockTreeItem);
             expect(Logger.debug).toHaveBeenCalledWith('getTreeItem called with element:', mockTreeItem);
+        });
+
+        /** @aiContributed-2026-02-03 */
+        it('should not modify the TreeItem properties', () => {
+            const mockTreeItem = new vscode.TreeItem('Original Label');
+            mockTreeItem.tooltip = 'Original Tooltip';
+            mockTreeItem.description = 'Original Description';
+
+            const result = provider.getTreeItem(mockTreeItem);
+
+            expect(result.label).toBe('Original Label');
+            expect(result.tooltip).toBe('Original Tooltip');
+            expect(result.description).toBe('Original Description');
         });
     });
 });

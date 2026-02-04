@@ -50,8 +50,36 @@ describe('ConversationsTreeDataProvider - truncateText', () => {
     });
 
     /** @aiContributed-2026-02-03 */
-    it('should throw an error if text is null or undefined', () => {
-        expect(() => provider['truncateText'](null, 10)).toThrow();
-        expect(() => provider['truncateText'](undefined, 10)).toThrow();
+    it('should throw an error if text is null', () => {
+        expect(() => provider['truncateText'](null as unknown as string, 10)).toThrow();
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should throw an error if text is undefined', () => {
+        expect(() => provider['truncateText'](undefined as unknown as string, 10)).toThrow();
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle text with special characters', () => {
+        const text = 'Special!@#$%^&*()_+';
+        const maxLength = 10;
+        const result = provider['truncateText'](text, maxLength);
+        expect(result).toBe('Special!@#...');
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle text with whitespace only', () => {
+        const text = '          ';
+        const maxLength = 5;
+        const result = provider['truncateText'](text, maxLength);
+        expect(result).toBe('     ...');
+    });
+
+    /** @aiContributed-2026-02-03 */
+    it('should handle text with multibyte characters', () => {
+        const text = 'こんにちは世界'; // "Hello World" in Japanese
+        const maxLength = 5;
+        const result = provider['truncateText'](text, maxLength);
+        expect(result).toBe('こん...');
     });
 });
