@@ -91,6 +91,10 @@
             {
                 "command": "coe.processTicket",
                 "title": "Process This Ticket"
+            },
+            {
+                "command": "coe.approveTicket",
+                "title": "Approve & Process"
             }
         ],
         "configuration": {
@@ -147,18 +151,23 @@
                     "group": "processing@1"
                 },
                 {
+                    "command": "coe.approveTicket",
+                    "when": "view == coe-tickets && viewItem == coe-pending-ticket",
+                    "group": "processing@1"
+                },
+                {
                     "command": "coe.viewTicketProgress",
-                    "when": "view == coe-tickets && viewItem == ticket",
+                    "when": "view == coe-tickets && (viewItem == ticket || viewItem == coe-pending-ticket)",
                     "group": "navigation@2"
                 },
                 {
                     "command": "coe.updateTicketStatus",
-                    "when": "view == coe-tickets && viewItem == ticket",
+                    "when": "view == coe-tickets && (viewItem == ticket || viewItem == coe-pending-ticket)",
                     "group": "status@3"
                 },
                 {
                     "command": "coe.addTicketComment",
-                    "when": "view == coe-tickets && viewItem == ticket",
+                    "when": "view == coe-tickets && (viewItem == ticket || viewItem == coe-pending-ticket)",
                     "group": "comment@3"
                 },
                 {

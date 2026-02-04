@@ -26,7 +26,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { logInfo, logWarn, logError } from '../logger';
-import { listTickets, createTicket } from './ticketDb';
+import { listTickets, createTicket, onTicketChange, updateTicket } from './ticketDb';
 import { completeLLM, streamLLM } from './llmService';
 import { agentStatusTracker } from '../ui/agentStatusTracker';
 import { llmStatusBar } from '../ui/llmStatusBar';
@@ -134,8 +134,66 @@ export class OrchestratorService {
         // Step 2: Load initial tasks from TicketDb
         await this.loadTasksFromTickets();
 
+        // Step 2b: Register manual mode listener for new tickets
+        this.registerManualModeListener();
+
         // Step 3: Log initialization
         logInfo(`Orchestrator initialized with timeout: ${this.taskTimeoutSeconds}s`);
+    }
+
+    /**
+     * Register listener for new tickets in manual mode
+     *
+     * When manual mode is enabled (autoProcessTickets = false),
+     * newly created ai_to_human tickets are set to "pending" and
+     * skipped for auto-routing.
+     *
+     * **Simple explanation**: Manual mode is like putting tickets on
+     * a "waiting shelf" until the user approves them.
+     */
+    private registerManualModeListener(): void {
+        try {
+            onTicketChange(() => {
+                void this.handleManualModeTicketChange();
+            });
+            logInfo('Manual mode listener registered');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Failed to register manual mode listener: ${message}`);
+        }
+    }
+
+    /**
+     * Handle manual mode ticket updates
+     *
+     * Checks the latest ticket and sets it to pending if manual mode is enabled.
+     */
+    private async handleManualModeTicketChange(): Promise<void> {
+        try {
+            const config = vscode.workspace.getConfiguration('coe');
+            const autoProcessEnabled = config.get<boolean>('autoProcessTickets', false);
+
+            if (autoProcessEnabled) {
+                return;
+            }
+
+            const tickets = await listTickets();
+            if (tickets.length === 0) {
+                return;
+            }
+
+            const latestTicket = tickets[0];
+
+            if (latestTicket.type !== 'ai_to_human' || latestTicket.status !== 'open') {
+                return;
+            }
+
+            logInfo(`Manual mode: Ticket pending approval (${latestTicket.id})`);
+            await updateTicket(latestTicket.id, { status: 'pending' });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logError(`Manual mode pending update failed: ${message}`);
+        }
     }
 
     /**

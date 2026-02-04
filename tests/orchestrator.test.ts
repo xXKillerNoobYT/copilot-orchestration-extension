@@ -18,6 +18,7 @@ import {
     resetOrchestratorForTests
 } from '../src/services/orchestrator';
 import * as ticketDb from '../src/services/ticketDb';
+import * as vscode from 'vscode';
 import { completeLLM } from '../src/services/llmService';
 import { streamLLM } from '../src/services/llmService';
 import { OrchestratorService } from '../src/services/orchestrator';
@@ -67,6 +68,15 @@ describe('Orchestrator Service', () => {
 
         // Default: TicketDb has no tickets
         mockTicketDb.listTickets.mockResolvedValue([]);
+        mockTicketDb.onTicketChange.mockImplementation(() => { });
+        mockTicketDb.updateTicket.mockResolvedValue(null);
+
+        const configMock = {
+            get: jest.fn().mockReturnValue(true),
+            update: jest.fn()
+        };
+
+        (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(configMock);
     });
 
     afterEach(() => {
@@ -122,8 +132,85 @@ describe('Orchestrator Service', () => {
         });
     });
 
+    describe('manual mode ticket handling', () => {
+        it('Test 4: should set ai_to_human ticket to pending when manual mode enabled', async () => {
+            let changeListener: (() => void) | undefined;
+
+            mockTicketDb.onTicketChange.mockImplementation((listener) => {
+                changeListener = listener;
+            });
+
+            const manualModeConfig = {
+                get: jest.fn().mockReturnValue(false),
+                update: jest.fn()
+            };
+
+            (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(manualModeConfig);
+
+            const openTicket = {
+                id: 'TICKET-10',
+                title: 'Manual approval needed',
+                status: 'open' as const,
+                type: 'ai_to_human' as const,
+                createdAt: '2026-02-01T10:00:00Z',
+                updatedAt: '2026-02-01T10:00:00Z'
+            };
+
+            mockTicketDb.listTickets.mockResolvedValue([openTicket]);
+            mockTicketDb.updateTicket.mockResolvedValue({
+                ...openTicket,
+                status: 'pending'
+            });
+
+            await initializeOrchestrator(mockContext);
+
+            if (changeListener) {
+                changeListener();
+                await new Promise((resolve) => setImmediate(resolve));
+            }
+
+            expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-10', { status: 'pending' });
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Manual mode: Ticket pending approval'));
+        });
+
+        it('Test 5: should skip pending update when auto mode enabled', async () => {
+            let changeListener: (() => void) | undefined;
+
+            mockTicketDb.onTicketChange.mockImplementation((listener) => {
+                changeListener = listener;
+            });
+
+            const autoModeConfig = {
+                get: jest.fn().mockReturnValue(true),
+                update: jest.fn()
+            };
+
+            (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(autoModeConfig);
+
+            const openTicket = {
+                id: 'TICKET-11',
+                title: 'Auto route ticket',
+                status: 'open' as const,
+                type: 'ai_to_human' as const,
+                createdAt: '2026-02-01T10:00:00Z',
+                updatedAt: '2026-02-01T10:00:00Z'
+            };
+
+            mockTicketDb.listTickets.mockResolvedValue([openTicket]);
+
+            await initializeOrchestrator(mockContext);
+
+            if (changeListener) {
+                changeListener();
+                await new Promise((resolve) => setImmediate(resolve));
+            }
+
+            expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
+        });
+    });
+
     describe('queue ordering (FIFO)', () => {
-        it('Test 4: should return tasks in FIFO order', async () => {
+        it('Test 6: should return tasks in FIFO order', async () => {
             // Setup: create 3 mock tickets
             const mockTickets = [
                 {
@@ -165,7 +252,7 @@ describe('Orchestrator Service', () => {
             expect(task3?.id).toBe('TICKET-3');
         });
 
-        it('Test 5: should return null when queue is empty', async () => {
+        it('Test 7: should return null when queue is empty', async () => {
             // Setup: no tickets
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([]);
@@ -178,7 +265,7 @@ describe('Orchestrator Service', () => {
             expect(task).toBeNull();
         });
 
-        it('Test 6: should filter for open and in-progress tickets only', async () => {
+        it('Test 8: should filter for open and in-progress tickets only', async () => {
             // Setup: mix of ticket statuses
             const mockTickets = [
                 {
@@ -230,7 +317,7 @@ describe('Orchestrator Service', () => {
     });
 
     describe('timeout detection and blocking', () => {
-        it('Test 7: should create blocked ticket when task idle >30s (using fake timers)', async () => {
+        it('Test 9: should create blocked ticket when task idle >30s (using fake timers)', async () => {
             // Setup: one open task, and createTicket is mocked
             const mockTicket = {
                 id: 'TICKET-1',
@@ -278,7 +365,7 @@ describe('Orchestrator Service', () => {
             jest.useRealTimers();
         });
 
-        it('Test 8: should not create duplicate blocked tickets for same task', async () => {
+        it('Test 10: should not create duplicate blocked tickets for same task', async () => {
             // Setup: task with timeout
             const mockTicket = {
                 id: 'TICKET-1',
@@ -320,7 +407,7 @@ describe('Orchestrator Service', () => {
     });
 
     describe('edge cases', () => {
-        it('Test 10: should handle TicketDb errors gracefully', async () => {
+        it('Test 11: should handle TicketDb errors gracefully', async () => {
             // Setup: TicketDb throws error
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockRejectedValue(new Error('TicketDb connection failed'));
@@ -333,7 +420,7 @@ describe('Orchestrator Service', () => {
             expect(task).toBeNull();
         });
 
-        it('Test 11: should throw error if getNextTask called before initialization', async () => {
+        it('Test 12: should throw error if getNextTask called before initialization', async () => {
             // Setup: don't call initializeOrchestrator, just reset
             resetOrchestratorForTests();
 
@@ -341,7 +428,7 @@ describe('Orchestrator Service', () => {
             await expect(getNextTask()).rejects.toThrow('Orchestrator not initialized');
         });
 
-        it('Test 12: should prevent duplicate initialization', async () => {
+        it('Test 13: should prevent duplicate initialization', async () => {
             // Setup
             mockFs.existsSync.mockReturnValue(false);
             mockTicketDb.listTickets.mockResolvedValue([]);

@@ -24,7 +24,7 @@ import { logInfo, logWarn } from '../logger';
 export interface Ticket {
     id: string;           // Unique ID (e.g., "TICKET-001")
     title: string;        // Short description
-    status: 'open' | 'in-progress' | 'done' | 'blocked';
+    status: 'open' | 'in-progress' | 'done' | 'blocked' | 'pending';
     type?: 'ai_to_human' | 'human_to_ai' | 'answer_agent'; // Optional ticket type for routing
     createdAt: string;    // ISO timestamp (e.g., "2026-02-01T10:30:00Z")
     updatedAt: string;    // ISO timestamp

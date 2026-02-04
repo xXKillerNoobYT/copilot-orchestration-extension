@@ -143,6 +143,10 @@ export const workspace = {
     isDirty: false,
     isClosed: false,
   }),
+  getConfiguration: jest.fn().mockReturnValue({
+    get: jest.fn(),
+    update: jest.fn(),
+  }),
 };
 
 // Mock ExtensionContext

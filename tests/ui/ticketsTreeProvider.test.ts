@@ -579,7 +579,7 @@ describe('TicketsTreeDataProvider', () => {
     });
 
     describe('contextValue for context menus', () => {
-        it('should set contextValue to "ticket" on TreeItem when tickets exist', async () => {
+        it('Test 1: should set contextValue to "ticket" on TreeItem when tickets exist', async () => {
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -598,7 +598,7 @@ describe('TicketsTreeDataProvider', () => {
             expect(items[0].contextValue).toBe('ticket');
         });
 
-        it('should set contextValue on all ticket items', async () => {
+        it('Test 2: should set contextValue on all ticket items', async () => {
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -625,7 +625,25 @@ describe('TicketsTreeDataProvider', () => {
             expect(items[1].contextValue).toBe('ticket');
         });
 
-        it('should not set contextValue on placeholder item when no tickets', async () => {
+        it('Test 3: should set pending contextValue on pending tickets', async () => {
+            const mockTickets: ticketDb.Ticket[] = [
+                {
+                    id: 'TICKET-003',
+                    title: 'Pending ticket',
+                    status: 'pending',
+                    createdAt: '2026-02-01T12:00:00Z',
+                    updatedAt: '2026-02-01T12:00:00Z',
+                },
+            ];
+
+            mockListTickets.mockResolvedValue(mockTickets);
+
+            const items = await provider.getChildren();
+
+            expect(items[0].contextValue).toBe('coe-pending-ticket');
+        });
+
+        it('Test 4: should not set contextValue on placeholder item when no tickets', async () => {
             mockListTickets.mockResolvedValue([]);
 
             const items = await provider.getChildren();
