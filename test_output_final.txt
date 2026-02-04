@@ -1,0 +1,112 @@
+
+> copilot-orchestration-extension@0.0.1 test:once
+> jest orchestrator.test.ts
+
+FAIL tests/orchestrator.test.ts
+  Orchestrator Service
+    initialization
+      ΓêÜ Test 1: should initialize with default timeout when config missing (4 ms)
+      ΓêÜ Test 2: should read timeout from config.orchestrator.taskTimeoutSeconds
+      ΓêÜ Test 3: should fallback to llm.timeoutSeconds if orchestrator config missing (1 ms)
+    manual mode ticket handling
+      ΓêÜ Test 4: should set ai_to_human ticket to pending when manual mode enabled (3 ms)
+      ΓêÜ Test 5: should skip pending update when auto mode enabled (18 ms)
+    queue ordering (FIFO)
+      ΓêÜ Test 6: should return tasks in FIFO order (1 ms)
+      ΓêÜ Test 7: should return null when queue is empty
+      ΓêÜ Test 8: should filter for open and in-progress tickets only (1 ms)
+    timeout detection and blocking
+      ΓêÜ Test 9: should create blocked ticket when task idle >30s (using fake timers) (3 ms)
+      ΓêÜ Test 10: should not create duplicate blocked tickets for same task (2 ms)
+      ΓêÜ Test 17: should atomically update task status to in-progress on pickup
+      ΓêÜ Test 18: should return null if atomic DB update fails (race condition)
+      ΓêÜ Test 19: should create P1 blocked ticket with warning message (1 ms)
+      ΓêÜ Test 21: should verify JSON-RPC response schema for getNextTask (1 ms)
+      ΓêÜ Test 22: should return null when queue is empty (verify null vs undefined)
+      ΓêÜ Test 23: should handle concurrent getNextTask calls safely (1 ms)
+    JSON-RPC schema compliance
+      ├ù Test 24: should verify complete JSON-RPC Task schema for getNextTask (2 ms)
+      ΓêÜ Test 25: should return null (not undefined) when no tasks pending (1 ms)
+      ├ù Test 26: should handle empty queue gracefully between task picks
+    edge cases
+      ΓêÜ Test 11: should handle TicketDb errors gracefully
+      ΓêÜ Test 12: should throw error if getNextTask called before initialization (12 ms)
+      ΓêÜ Test 13: should prevent duplicate initialization
+      ΓêÜ Test 14: should fallback to default when config has negative timeout (1 ms)
+      ΓêÜ Test 15: should fallback to default when config has zero timeout
+      ΓêÜ Test 16: should fallback to default when config timeout is not a number (1 ms)
+      ΓêÜ Test 20: should handle malformed config JSON gracefully (1 ms)
+    routeQuestionToAnswer
+      ΓêÜ should call LLM with question and return response (1 ms)
+      ΓêÜ should include Answer agent system prompt
+      ΓêÜ should handle LLM failure and return fallback message (1 ms)
+      ΓêÜ should not create duplicate ticket on LLM failure
+      ΓêÜ should log question routing and response
+    routeToPlanningAgent
+      ΓêÜ should log chunks and accumulate full plan (1 ms)
+      ΓêÜ should handle empty response gracefully (1 ms)
+      ΓêÜ should truncate long plans in logs
+    routeToVerificationAgent
+      ΓêÜ should call completeLLM with verification system prompt (1 ms)
+      ΓêÜ should parse PASS response and avoid ticket creation (1 ms)
+      ΓêÜ should parse FAIL response and create blocked ticket (1 ms)
+      ΓêÜ should default to FAIL on ambiguous response (1 ms)
+      ΓêÜ should truncate long explanations in logs
+      ΓêÜ should fail fast when code diff is empty (1 ms)
+      ΓêÜ should handle LLM errors without creating duplicate tickets (1 ms)
+    Planning Agent
+      ΓêÜ should stream plan chunks to logs via callback (1 ms)
+      ΓêÜ should handle empty plan response (1 ms)
+      ΓêÜ should handle planning timeout by returning fallback message (1 ms)
+    Answer Agent
+      ΓêÜ should call completeLLM and log response (1 ms)
+      ΓêÜ should create ticket when response contains "ticket" keyword (1 ms)
+      ΓêÜ should create ticket when response contains "create" keyword
+      ΓêÜ should not create ticket for normal response without action keywords (1 ms)
+      ΓêÜ should warn and return early for empty question (1 ms)
+      ΓêÜ should warn and return early for whitespace-only question
+      ΓêÜ should truncate long response in logs (>500 chars) (1 ms)
+      ΓêÜ should handle case-insensitive keyword detection
+      ΓêÜ should handle completeLLM timeout error gracefully
+      ΓêÜ should handle empty LLM response (1 ms)
+      ΓêÜ should create ticket with truncated question in title
+
+  ΓùÅ Orchestrator Service ΓÇ║ JSON-RPC schema compliance ΓÇ║ Test 24: should verify complete JSON-RPC Task schema for getNextTask
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "TICKET-JSONRPC-001"
+    Received: undefined
+
+      617 |             // Verify all required JSON-RPC fields are present and correct type
+      618 |             expect(task).toBeDefined();
+    > 619 |             expect(task?.id).toBe('TICKET-JSONRPC-001');
+          |                              ^
+      620 |             expect(task?.ticketId).toBe('TICKET-JSONRPC-001');
+      621 |             expect(task?.title).toBe('Complete Schema Test');
+      622 |             expect(task?.status).toBe('picked');
+
+      at Object.<anonymous> (tests/orchestrator.test.ts:619:30)
+
+  ΓùÅ Orchestrator Service ΓÇ║ JSON-RPC schema compliance ΓÇ║ Test 26: should handle empty queue gracefully between task picks
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "TICKET-EMPTY-001"
+    Received: undefined
+
+      658 |             // First call gets the task
+      659 |             const task1 = await getNextTask();
+    > 660 |             expect(task1?.id).toBe('TICKET-EMPTY-001');
+          |                               ^
+      661 |
+      662 |             // Second call should return null (queue empty)
+      663 |             const task2 = await getNextTask();
+
+      at Object.<anonymous> (tests/orchestrator.test.ts:660:31)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 53 passed, 55 total
+Snapshots:   0 total
+Time:        1.935 s, estimated 4 s
+Ran all test suites matching orchestrator.test.ts.
