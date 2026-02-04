@@ -72,7 +72,7 @@ describe('LLM Service', () => {
             await initializeLLMService(mockContext);
 
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Config file not found'));
-            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('http://192.168.1.205:1234/v1'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('http://127.0.0.1:1234/v1'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('ministral-3-14b-reasoning'));
         });
 
