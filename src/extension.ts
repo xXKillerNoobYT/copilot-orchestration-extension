@@ -546,6 +546,22 @@ export async function activate(context: vscode.ExtensionContext) {
      * Clears both in-memory and persisted history while keeping ticket open
      * @param treeItem The TreeItem selected in context menu
      */
+    async function removeConversationFromView(chatId: string): Promise<void> {
+        // Clear in-memory history in AnswerAgent
+        const orchestrator = getOrchestratorInstance();
+        orchestrator.getAnswerAgent().clearHistory(chatId);
+
+        // Update ticket in DB to remove conversation history and type
+        // This hides the conversation from the Conversations view.
+        await updateTicket(chatId, {
+            conversationHistory: undefined,
+            type: undefined
+        });
+
+        // Refresh Conversations tree view to show updated state
+        conversationsProvider.refresh();
+    }
+
     const clearConversationHistoryCommand = vscode.commands.registerCommand(
         'coe.clearConversationHistory',
         async (treeItem: vscode.TreeItem) => {
@@ -560,16 +576,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
 
                 logInfo(`[ClearHistory] Clearing history for chat ${chatId}`);
-
-                // Clear in-memory history in AnswerAgent
-                const orchestrator = getOrchestratorInstance();
-                orchestrator.getAnswerAgent().clearHistory(chatId);
-
-                // Update ticket in DB with empty conversation history
-                await updateTicket(chatId, { conversationHistory: '[]' });
-
-                // Refresh Conversations tree view to show updated state
-                conversationsProvider.refresh();
+                await removeConversationFromView(chatId);
 
                 logInfo(`[ClearHistory] Successfully cleared history for chat ${chatId}`);
                 vscode.window.showInformationMessage(`Conversation history cleared for ${chatId}`);
@@ -577,6 +584,36 @@ export async function activate(context: vscode.ExtensionContext) {
                 const message = error instanceof Error ? error.message : String(error);
                 logError(`[ClearHistory] Error: ${message}`);
                 vscode.window.showErrorMessage(`Failed to clear conversation history: ${message}`);
+            }
+        }
+    );
+
+    /**
+     * Command: coe.removeConversation
+     * Context menu command to remove a conversation from the sidebar
+     * @param treeItem The TreeItem selected in context menu
+     */
+    const removeConversationCommand = vscode.commands.registerCommand(
+        'coe.removeConversation',
+        async (treeItem: vscode.TreeItem) => {
+            try {
+                const chatId = treeItem.command?.arguments?.[0] as string | undefined;
+
+                if (!chatId) {
+                    logWarn('[RemoveConversation] No chat ID found in TreeItem');
+                    vscode.window.showWarningMessage('No conversation selected');
+                    return;
+                }
+
+                logInfo(`[RemoveConversation] Removing conversation ${chatId}`);
+                await removeConversationFromView(chatId);
+
+                logInfo(`[RemoveConversation] Successfully removed conversation ${chatId}`);
+                vscode.window.showInformationMessage(`Conversation removed for ${chatId}`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`[RemoveConversation] Error: ${message}`);
+                vscode.window.showErrorMessage(`Failed to remove conversation: ${message}`);
             }
         }
     );
@@ -963,6 +1000,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(updateTicketStatusCommand);
     context.subscriptions.push(addTicketCommentCommand);
     context.subscriptions.push(clearConversationHistoryCommand);
+    context.subscriptions.push(removeConversationCommand);
     context.subscriptions.push(researchWithAgentCommand);
 
     logInfo('Extension fully activated');

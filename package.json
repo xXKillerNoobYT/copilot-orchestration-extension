@@ -65,6 +65,10 @@
                 "title": "Clear Conversation History"
             },
             {
+                "command": "coe.removeConversation",
+                "title": "Remove Conversation"
+            },
+            {
                 "command": "coe.researchWithAgent",
                 "title": "COE: Research with Agent"
             },
@@ -174,6 +178,11 @@
                     "command": "coe.clearConversationHistory",
                     "when": "view == coe-conversations && viewItem == coe-conversation",
                     "group": "conversation@1"
+                },
+                {
+                    "command": "coe.removeConversation",
+                    "when": "view == coe-conversations && viewItem == coe-conversation",
+                    "group": "conversation@2"
                 }
             ]
         },

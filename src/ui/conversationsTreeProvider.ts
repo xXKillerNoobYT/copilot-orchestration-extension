@@ -173,12 +173,12 @@ export class ConversationsTreeDataProvider implements vscode.TreeDataProvider<vs
 
     private createConversationItemFromHistory(ticket: Ticket, history: ParsedConversation): vscode.TreeItem | null {
         // Defensive check: ensure messages array exists
-        if (!history || !history.messages || !Array.isArray(history.messages)) {
-            logWarn(`[ConversationsTreeProvider] Skipping ticket ${ticket.id} - invalid messages array`);
-            return null;
+        const safeMessages = Array.isArray(history?.messages) ? history.messages : [];
+        if (!Array.isArray(history?.messages)) {
+            logWarn(`[ConversationsTreeProvider] Missing messages array for ticket ${ticket.id}; showing empty conversation`);
         }
-        
-        const messageCount = history.messages.length;
+
+        const messageCount = safeMessages.length;
         const lastActivityTimestamp = this.getConversationTimestamp(history, ticket);
         const relativeTime = this.formatRelativeTime(lastActivityTimestamp);
         const label = this.getConversationLabel(ticket, history);
