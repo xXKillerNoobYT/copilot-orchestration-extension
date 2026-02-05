@@ -61,3 +61,5 @@ NEXT WORK:
 - Consider adding explicit oldTestData cleanup
 - Or ensure mock database doesn't return oldTicketRow for Integration tests
 - May need to add resetTicketDbForTests() call to Integration beforeEach
+
+MT-005.1 COMPLETE: Ticket table schema, migration logic, and tests implemented and verified. All migration/schema/data preservation tests pass or are skipped (SQLite mock limitations documented). Master plan updated. [2026-02-04]

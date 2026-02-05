@@ -168,12 +168,18 @@ describe('Orchestrator Service', () => {
             (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(manualModeConfig);
 
             const openTicket = {
-                id: 'TICKET-10',
+                id: 'TICKET-1',
                 title: 'Manual approval needed',
                 status: 'open' as const,
                 type: 'ai_to_human' as const,
                 createdAt: '2026-02-01T10:00:00Z',
-                updatedAt: '2026-02-01T10:00:00Z'
+                updatedAt: '2026-02-01T10:00:00Z',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             };
 
             mockTicketDb.listTickets.mockResolvedValue([openTicket]);
@@ -189,7 +195,7 @@ describe('Orchestrator Service', () => {
             }
             await new Promise((resolve) => setImmediate(resolve));
 
-            expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-10', { status: 'pending' });
+            expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-1', { status: 'pending' });
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Manual mode: Ticket pending approval'));
         });
 
@@ -213,7 +219,13 @@ describe('Orchestrator Service', () => {
                 status: 'open' as const,
                 type: 'ai_to_human' as const,
                 createdAt: '2026-02-01T10:00:00Z',
-                updatedAt: '2026-02-01T10:00:00Z'
+                updatedAt: '2026-02-01T10:00:00Z',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             };
 
             mockTicketDb.listTickets.mockResolvedValue([openTicket]);
@@ -238,21 +250,39 @@ describe('Orchestrator Service', () => {
                     title: 'First Task',
                     status: 'open' as const,
                     createdAt: '2026-02-01T10:00:00Z',
-                    updatedAt: '2026-02-01T10:00:00Z'
+                    updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
                 {
                     id: 'TICKET-2',
                     title: 'Second Task',
                     status: 'open' as const,
                     createdAt: '2026-02-01T10:01:00Z',
-                    updatedAt: '2026-02-01T10:01:00Z'
+                    updatedAt: '2026-02-01T10:01:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
                 {
                     id: 'TICKET-3',
                     title: 'Third Task',
                     status: 'open' as const,
                     createdAt: '2026-02-01T10:02:00Z',
-                    updatedAt: '2026-02-01T10:02:00Z'
+                    updatedAt: '2026-02-01T10:02:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 }
             ];
 
@@ -293,28 +323,52 @@ describe('Orchestrator Service', () => {
                     title: 'Open Task',
                     status: 'open' as const,
                     createdAt: '2026-02-01T10:00:00Z',
-                    updatedAt: '2026-02-01T10:00:00Z'
+                    updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
                 {
                     id: 'TICKET-2',
                     title: 'In Progress Task',
                     status: 'in-progress' as const,
                     createdAt: '2026-02-01T10:01:00Z',
-                    updatedAt: '2026-02-01T10:01:00Z'
+                    updatedAt: '2026-02-01T10:01:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
                 {
                     id: 'TICKET-3',
                     title: 'Done Task (should be ignored)',
                     status: 'done' as const,
                     createdAt: '2026-02-01T10:02:00Z',
-                    updatedAt: '2026-02-01T10:02:00Z'
+                    updatedAt: '2026-02-01T10:02:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
                 {
                     id: 'TICKET-4',
                     title: 'Blocked Task (should be ignored)',
                     status: 'blocked' as const,
                     createdAt: '2026-02-01T10:03:00Z',
-                    updatedAt: '2026-02-01T10:03:00Z'
+                    updatedAt: '2026-02-01T10:03:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 }
             ];
 
@@ -344,7 +398,13 @@ describe('Orchestrator Service', () => {
                 title: 'Long Running Task',
                 status: 'open' as const,
                 createdAt: '2026-02-01T10:00:00Z',
-                updatedAt: '2026-02-01T10:00:00Z'
+                updatedAt: '2026-02-01T10:00:00Z',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             };
 
             mockFs.existsSync.mockReturnValue(false);
@@ -354,7 +414,13 @@ describe('Orchestrator Service', () => {
                 title: 'P1 BLOCKED: Long Running Task',
                 status: 'blocked',
                 createdAt: '2026-02-01T10:31:00Z',
-                updatedAt: '2026-02-01T10:31:00Z'
+                updatedAt: '2026-02-01T10:31:00Z',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             });
 
             // Execute: use fake timers to test timeout
@@ -392,7 +458,13 @@ describe('Orchestrator Service', () => {
                 title: 'Task',
                 status: 'open' as const,
                 createdAt: '2026-02-01T10:00:00Z',
-                updatedAt: '2026-02-01T10:00:00Z'
+                updatedAt: '2026-02-01T10:00:00Z',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             };
 
             mockFs.existsSync.mockReturnValue(false);
@@ -402,7 +474,13 @@ describe('Orchestrator Service', () => {
                 title: 'P1 BLOCKED: Task',
                 status: 'blocked',
                 createdAt: '2026-02-01T10:31:00Z',
-                updatedAt: '2026-02-01T10:31:00Z'
+                updatedAt: '2026-02-01T10:31:00Z',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             });
 
             // Execute: use fake timers

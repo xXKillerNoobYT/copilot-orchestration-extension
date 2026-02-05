@@ -28,6 +28,15 @@ export interface AskQuestionResponse {
 
 const DEFAULT_TIMEOUT_MS = 45_000;
 
+const defaultTicketFields = {
+    priority: 2,
+    creator: 'system',
+    assignee: 'Clarity Agent',
+    taskId: null,
+    version: 1,
+    resolution: null
+};
+
 /**
  * Validate askQuestion parameters
  *
@@ -93,7 +102,8 @@ Question:
 ${question}
 
 Chat ID: ${chatId || 'none'}`,
-                type: 'human_to_ai'
+                type: 'human_to_ai',
+                ...defaultTicketFields
             });
 
             return {

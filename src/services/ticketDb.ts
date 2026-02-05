@@ -32,13 +32,19 @@ export interface TicketThreadMessage {
 export interface Ticket {
     id: string;           // Unique ID (e.g., "TICKET-001")
     title: string;        // Short description
-    status: 'open' | 'in-progress' | 'done' | 'blocked' | 'pending';
+    status: 'open' | 'in-progress' | 'done' | 'blocked' | 'pending' | 'in_review' | 'resolved' | 'rejected' | 'escalated';
     type?: 'ai_to_human' | 'human_to_ai' | 'answer_agent'; // Optional ticket type for routing
     createdAt: string;    // ISO timestamp (e.g., "2026-02-01T10:30:00Z")
     updatedAt: string;    // ISO timestamp
     description?: string; // Optional long description
     conversationHistory?: string; // Optional serialized Answer Agent history (JSON)
     thread?: TicketThreadMessage[]; // Optional threaded conversation messages
+    priority: number;      // Priority level (e.g., 1-5)
+    creator: string;      // Creator of the ticket
+    assignee: string | null; // Assignee of the ticket
+    taskId: string | null; // Task ID
+    version: number;      // Version of the ticket
+    resolution: string | null; // Resolution of the ticket
 }
 
 // Database abstraction - works with SQLite OR in-memory
@@ -95,7 +101,14 @@ class TicketDatabase {
                     thread TEXT,
                     createdAt TEXT NOT NULL,
                     updatedAt TEXT NOT NULL,
-                    description TEXT
+                    description TEXT,
+                    conversationHistory TEXT,
+                    priority INTEGER DEFAULT 2,
+                    creator TEXT DEFAULT 'system',
+                    assignee TEXT DEFAULT 'Clarity Agent',
+                    taskId TEXT,
+                    version INTEGER DEFAULT 1,
+                    resolution TEXT
                 )
             `);
 
@@ -146,6 +159,91 @@ class TicketDatabase {
                 logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
             }
 
+            // Migration: Add priority column
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasPriorityColumn = columns.some((col: any) => col.name === 'priority');
+
+                if (!hasPriorityColumn) {
+                    logInfo('Migrating tickets table: adding priority column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN priority INTEGER DEFAULT 2');
+                    logInfo('Migration complete: priority column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            // Migration: Add creator column
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasCreatorColumn = columns.some((col: any) => col.name === 'creator');
+
+                if (!hasCreatorColumn) {
+                    logInfo('Migrating tickets table: adding creator column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN creator TEXT DEFAULT "system"');
+                    logInfo('Migration complete: creator column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            // Migration: Add assignee column
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasAssigneeColumn = columns.some((col: any) => col.name === 'assignee');
+
+                if (!hasAssigneeColumn) {
+                    logInfo('Migrating tickets table: adding assignee column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN assignee TEXT DEFAULT "Clarity Agent"');
+                    logInfo('Migration complete: assignee column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            // Migration: Add taskId column
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasTaskIdColumn = columns.some((col: any) => col.name === 'taskId');
+
+                if (!hasTaskIdColumn) {
+                    logInfo('Migrating tickets table: adding taskId column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN taskId TEXT');
+                    logInfo('Migration complete: taskId column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            // Migration: Add version column
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasVersionColumn = columns.some((col: any) => col.name === 'version');
+
+                if (!hasVersionColumn) {
+                    logInfo('Migrating tickets table: adding version column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN version INTEGER DEFAULT 1');
+                    logInfo('Migration complete: version column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            // Migration: Add resolution column
+            try {
+                const columns = await this.querySQL("PRAGMA table_info(tickets)");
+                const hasResolutionColumn = columns.some((col: any) => col.name === 'resolution');
+
+                if (!hasResolutionColumn) {
+                    logInfo('Migrating tickets table: adding resolution column');
+                    await this.runSQL('ALTER TABLE tickets ADD COLUMN resolution TEXT');
+                    logInfo('Migration complete: resolution column added');
+                }
+            } catch (migrationErr) {
+                logWarn(`Migration check failed (${migrationErr}), continuing anyway`);
+            }
+
+            await this.ensureTicketSchema();
             logInfo(`Ticket DB initialized: SQLite at ${this.dbPath}`);
             this.isInMemoryMode = false;
         } catch (err) {
@@ -200,6 +298,29 @@ class TicketDatabase {
         });
     }
 
+    /**
+     * Ensures the tickets table schema is up-to-date, adding missing columns as needed.
+     *
+     * **Simple explanation**: Checks the database for missing fields and adds them if needed, so the table always has the right columns.
+     */
+    private async ensureTicketSchema(): Promise<void> {
+        const columns = await this.querySQL("PRAGMA table_info(tickets)");
+        const migrations = [
+            { name: 'priority', type: 'INTEGER', default: '2' },
+            { name: 'creator', type: 'TEXT', default: "'system'" },
+            { name: 'assignee', type: 'TEXT', default: "'Clarity Agent'" },
+            { name: 'taskId', type: 'TEXT', default: null },
+            { name: 'version', type: 'INTEGER', default: '1' },
+            { name: 'resolution', type: 'TEXT', default: null }
+        ];
+        for (const { name, type, default: def } of migrations) {
+            if (!columns.some((col: any) => col.name === name)) {
+                const defClause = def !== null ? ` DEFAULT ${def}` : '';
+                await this.runSQL(`ALTER TABLE tickets ADD COLUMN ${name} ${type}${defClause}`);
+            }
+        }
+    }
+
     async createTicket(data: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>): Promise<Ticket> {
         const now = new Date().toISOString();
         const id = `TICKET-${Date.now()}`; // Simple ID generation
@@ -214,14 +335,20 @@ class TicketDatabase {
             thread: data.thread,
             createdAt: now,
             updatedAt: now,
+            priority: data.priority || 2,
+            creator: data.creator || 'system',
+            assignee: data.assignee || 'Clarity Agent',
+            taskId: data.taskId || null,
+            version: data.version || 1,
+            resolution: data.resolution || null,
         };
 
         if (this.isInMemoryMode) {
             this.inMemoryStore!.set(id, ticket);
         } else {
             await this.runSQL(
-                `INSERT INTO tickets (id, title, status, type, description, conversationHistory, thread, createdAt, updatedAt)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO tickets (id, title, status, type, description, conversationHistory, thread, createdAt, updatedAt, priority, creator, assignee, taskId, version, resolution)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     ticket.id,
                     ticket.title,
@@ -231,7 +358,13 @@ class TicketDatabase {
                     ticket.conversationHistory || null,
                     ticket.thread ? JSON.stringify(ticket.thread) : null,
                     ticket.createdAt,
-                    ticket.updatedAt
+                    ticket.updatedAt,
+                    ticket.priority || 2,
+                    ticket.creator || 'system',
+                    ticket.assignee || 'Clarity Agent',
+                    ticket.taskId || null,
+                    ticket.version || 1,
+                    ticket.resolution || null,
                 ]
             );
         }
@@ -334,6 +467,12 @@ class TicketDatabase {
             description: row.description || undefined,
             conversationHistory: row.conversationHistory || undefined,
             thread: parsedThread,
+            priority: row.priority || 2,
+            creator: row.creator || 'system',
+            assignee: row.assignee || 'Clarity Agent',
+            taskId: row.taskId || null,
+            version: row.version || 1,
+            resolution: row.resolution || null,
         };
     }
 
@@ -396,6 +535,13 @@ export function onTicketChange(listener: () => void): void {
         throw new Error('TicketDb not initialized');
     }
     dbInstance.onTicketChange(listener);
+}
+
+// TEST-ONLY: Expose querySQL for migration/schema tests
+export function _test_querySQL(sql: string, params: any[] = []): Promise<any[]> {
+    if (!dbInstance) throw new Error('TicketDb not initialized');
+    // @ts-ignore
+    return dbInstance.querySQL(sql, params);
 }
 
 export function resetTicketDbForTests(): void {

@@ -91,7 +91,7 @@ export async function pruneCacheLRU(
 
         // Calculate how much to delete
         let currentSize = index.totalSizeBytes;
-        let itemsToDelete: CacheIndexItem[] = [];
+        const itemsToDelete: CacheIndexItem[] = [];
 
         for (const item of sortedItems) {
             // Always keep minimum number of items

@@ -1,6 +1,6 @@
-# Claude Code Instructions for COE
+# Agent Instructions for COE
 
-> This file provides Claude Code with context about the Copilot Orchestration Extension (COE) project.
+> This file is mirrored across CLAUDE.md, copilot-instructions.md, AGENTS.md, and GEMINI.md so the same instructions load in any AI environment.
 
 ## Project Overview
 
@@ -9,9 +9,13 @@
 **Current Status**: Stage 1 - Foundation & Core Infrastructure (33.3% complete, 9/27 tasks)
 **Master Plan**: `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md`
 
+---
+
 ## The 3-Layer Architecture
 
-COE follows a separation of concerns that maximizes reliability:
+You operate within a 3-layer architecture that separates concerns to maximize reliability. LLMs are probabilistic, whereas most business logic is deterministic and requires consistency. This system fixes that mismatch.
+
+**Why this works:** If you do everything yourself, errors compound. 90% accuracy per step = 59% success over 5 steps. The solution is push complexity into deterministic code. That way you just focus on decision-making.
 
 ```
 Layer 1: Directive (What to do)
@@ -19,13 +23,15 @@ Layer 1: Directive (What to do)
 ├── Architecture: Docs/This Program's Plans/01-Architecture-Document.md
 ├── Agent Roles: Docs/This Program's Plans/02-Agent-Role-Definitions.md
 ├── Workflows: Docs/This Program's Plans/03-Workflow-Orchestration.md
-└── MCP Spec: Docs/This Program's Plans/05-MCP-API-Reference.md
+├── MCP Spec: Docs/This Program's Plans/05-MCP-API-Reference.md
+└── Skills: .github/skills/ (patterns, conventions, checklists)
 
 Layer 2: Orchestration (Decision making - YOU)
 ├── Read directives and understand requirements
 ├── Call execution tools in the right order
-├── Handle errors and update directives with learnings
-└── Reference skills in .github/skills/ for patterns
+├── Handle errors and ask for clarification when needed
+├── Update directives with learnings
+└── You're the glue between intent and execution
 
 Layer 3: Execution (Doing the work)
 ├── src/services/ - Core singleton services
@@ -35,26 +41,27 @@ Layer 3: Execution (Doing the work)
 └── src/config/ - Configuration with Zod validation
 ```
 
-**Why this works:** LLMs are probabilistic; business logic is deterministic. By pushing complexity into tested TypeScript code, you focus on decision-making while execution remains reliable.
+---
 
 ## Operating Principles
 
-### 1. Check existing code first
-Before writing new code, check if patterns exist in `src/` or are documented in `.github/skills/`. Only create new files if none exist.
+### 1. Check for existing code/patterns first
+Before writing new code, check if patterns exist in `src/` or are documented in `.github/skills/`. Only create new files if none exist. This is your directive.
 
 ### 2. Self-anneal when things break
 - Read error message and stack trace
 - Fix the code and test it again
 - Update relevant docs with what you learned (API limits, edge cases, timing)
 - Example: Hit an API rate limit → investigate → find batch endpoint → rewrite → test → update directive
+- System is now stronger
 
-### 3. Update docs as you learn
-When you discover constraints, better approaches, or common errors:
+### 3. Update directives as you learn
+Directives are **living documents**. When you discover API constraints, better approaches, common errors, or timing expectations—update the directive:
 - Update the relevant skill in `.github/skills/`
 - Add notes to the master plan if it affects task estimates
-- Don't overwrite directives without asking unless explicitly told to
-- This makes the system stronger over time
-- Use the skills as a checklist for every task you do It helps ensure code quality.
+- Don't create or overwrite directives without asking unless explicitly told to
+- Directives are your instruction set and must be preserved (and improved upon over time, not extemporaneously used and then discarded)
+- Use the skills as a checklist for every task you do—it helps ensure code quality
 
 ## Project Structure
 
@@ -213,12 +220,27 @@ See `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md` for full task 
 
 ## Self-Annealing Loop
 
-When something breaks:
+Errors are learning opportunities. When something breaks:
 1. Fix the code
 2. Update tests
 3. Verify tests pass
 4. Update skill docs or directives with new learnings
 5. System is now stronger
+
+---
+
+## File Organization
+
+**Directory structure:**
+- `src/` - TypeScript source (the deterministic execution layer)
+- `tests/` - Jest test suites
+- `out/` - Compiled JavaScript (intermediate, regenerated)
+- `coverage/` - Test coverage reports (intermediate)
+- `.coe/config.json` - Configuration (like .env for this project)
+- `Docs/This Program's Plans/` - Directives (SOPs, architecture docs)
+- `.github/skills/` - Patterns and checklists
+
+**Key principle:** Local temp files are only for processing. Everything in `out/` and `coverage/` can be deleted and regenerated.
 
 ---
 

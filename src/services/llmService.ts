@@ -310,7 +310,13 @@ export async function completeLLM(
         await createTicket({
             title: `LLM FAILURE: ${prompt.substring(0, 50)}`,
             status: 'blocked',
-            description: `Error: ${error.message}\n\nOriginal prompt:\n${prompt}`
+            description: `Error: ${error.message}\n\nOriginal prompt:\n${prompt}`,
+            priority: 2,
+            creator: 'system',
+            assignee: 'Clarity Agent',
+            taskId: null,
+            version: 1,
+            resolution: null
         });
 
         // Provide specific error messages based on error type
@@ -542,7 +548,13 @@ export async function streamLLM(
         await createTicket({
             title: `LLM STREAMING FAILURE: ${prompt.substring(0, 50)}`,
             status: 'blocked',
-            description: `Error: ${error.message}\nAbort Reason: ${abortReason || 'N/A'}\nElapsed: ${timeElapsed}ms\n\nOriginal prompt:\n${prompt}`
+            description: `Error: ${error.message}\nAbort Reason: ${abortReason || 'N/A'}\nElapsed: ${timeElapsed}ms\n\nOriginal prompt:\n${prompt}`,
+            priority: 2,
+            creator: 'system',
+            assignee: 'Clarity Agent',
+            taskId: null,
+            version: 1,
+            resolution: null
         });
 
         // Provide specific error messages based on error type
