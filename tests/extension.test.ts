@@ -1646,7 +1646,13 @@ describe('Extension Helpers', () => {
             status: 'open',
             type: 'human_to_ai',
             description: 'User question submitted: New question',
-            thread: expect.any(Array)
+            thread: expect.any(Array),
+            priority: 2,
+            creator: 'system',
+            assignee: 'Clarity Agent',
+            taskId: null,
+            version: 1,
+            resolution: null
         });
     });
 
