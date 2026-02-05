@@ -319,11 +319,25 @@ class TicketDatabase {
                 await this.runSQL(`ALTER TABLE tickets ADD COLUMN ${name} ${type}${defClause}`);
             }
         }
+
+        // Performance Indexes
+        // These indexes accelerate common query patterns used by the sidebar and ticket filtering:
+        // - idx_tickets_status_type: Speeds up filtering by status and type (e.g., "show all open ai_to_human tickets")
+        // - idx_tickets_updatedAt: Speeds up sorting by recency (e.g., "show most recently updated tickets")
+        // - idx_tickets_priority: Speeds up priority-based queries and sorting
+        // - idx_tickets_creator: Speeds up filtering by creator (e.g., "show tickets created by Planning Agent")
+        // CREATE INDEX IF NOT EXISTS ensures idempotent initialization (safe to call multiple times)
+        await this.runSQL('CREATE INDEX IF NOT EXISTS idx_tickets_status_type ON tickets(status, type)');
+        await this.runSQL('CREATE INDEX IF NOT EXISTS idx_tickets_updatedAt ON tickets(updatedAt DESC)');
+        await this.runSQL('CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority)');
+        await this.runSQL('CREATE INDEX IF NOT EXISTS idx_tickets_creator ON tickets(creator)');
     }
 
     async createTicket(data: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>): Promise<Ticket> {
         const now = new Date().toISOString();
-        const id = `TICKET-${Date.now()}`; // Simple ID generation
+        // Use timestamp + random suffix to avoid collisions when creating multiple tickets rapidly
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const id = `TICKET-${Date.now()}-${randomSuffix}`;
 
         const ticket: Ticket = {
             id,
@@ -400,10 +414,11 @@ class TicketDatabase {
         if (this.isInMemoryMode) {
             this.inMemoryStore!.set(id, updated);
         } else {
-            // SQLite UPDATE SET query
+            // SQLite UPDATE SET query - includes ALL fields for complete updates
             await this.runSQL(
                 `UPDATE tickets
-                 SET title = ?, status = ?, description = ?, type = ?, conversationHistory = ?, thread = ?, updatedAt = ?
+                 SET title = ?, status = ?, description = ?, type = ?, conversationHistory = ?, thread = ?, 
+                     updatedAt = ?, priority = ?, creator = ?, assignee = ?, taskId = ?, version = ?, resolution = ?
                  WHERE id = ?`,
                 [
                     updated.title,
@@ -413,6 +428,12 @@ class TicketDatabase {
                     updated.conversationHistory || null,
                     updated.thread ? JSON.stringify(updated.thread) : null,
                     updated.updatedAt,
+                    updated.priority,
+                    updated.creator,
+                    updated.assignee,
+                    updated.taskId || null,
+                    updated.version,
+                    updated.resolution || null,
                     id
                 ]
             );
@@ -424,11 +445,16 @@ class TicketDatabase {
         return updated;
     }
 
-    // onTicketChange = register a listener that gets called when tickets change (create/update)
+    // onTicketChange = register a listener that gets called when tickets change (create/update/delete)
     onTicketChange(listener: () => void): void {
         this._changeEmitter.on('change', listener);
     }
 
+    /**
+     * Get a single ticket by ID.
+     * 
+     * **Simple explanation**: Looks up one ticket from the database using its unique ID.
+     */
     async getTicket(id: string): Promise<Ticket | null> {
         if (this.isInMemoryMode) {
             return this.inMemoryStore!.get(id) || null;
@@ -438,13 +464,91 @@ class TicketDatabase {
         }
     }
 
-    async listTickets(): Promise<Ticket[]> {
+    /**
+     * List tickets with optional filtering and pagination.
+     * 
+     * **Simple explanation**: Gets a list of tickets, optionally filtered by status/type and with pagination.
+     * 
+     * @param filter - Optional filter criteria: status, type, limit, offset
+     * @returns Array of matching tickets, sorted by updatedAt DESC
+     */
+    async listTickets(filter?: { status?: string; type?: string; limit?: number; offset?: number }): Promise<Ticket[]> {
         if (this.isInMemoryMode) {
-            return Array.from(this.inMemoryStore!.values());
+            let tickets = Array.from(this.inMemoryStore!.values());
+
+            // Apply filters
+            if (filter?.status) {
+                tickets = tickets.filter(t => t.status === filter.status);
+            }
+            if (filter?.type) {
+                tickets = tickets.filter(t => t.type === filter.type);
+            }
+
+            // Sort by updatedAt DESC
+            tickets.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+            // Apply pagination
+            if (filter?.offset !== undefined || filter?.limit !== undefined) {
+                const start = filter.offset || 0;
+                const end = filter.limit !== undefined ? start + filter.limit : undefined;
+                tickets = tickets.slice(start, end);
+            }
+
+            return tickets;
         } else {
-            const rows = await this.querySQL(`SELECT * FROM tickets ORDER BY createdAt DESC`);
+            // Build dynamic SQL query with filters
+            let sql = 'SELECT * FROM tickets WHERE 1=1';
+            const params: any[] = [];
+
+            if (filter?.status) {
+                sql += ' AND status = ?';
+                params.push(filter.status);
+            }
+            if (filter?.type) {
+                sql += ' AND type = ?';
+                params.push(filter.type);
+            }
+
+            sql += ' ORDER BY updatedAt DESC';
+
+            if (filter?.limit !== undefined) {
+                sql += ' LIMIT ?';
+                params.push(filter.limit);
+            }
+            if (filter?.offset !== undefined) {
+                sql += ' OFFSET ?';
+                params.push(filter.offset);
+            }
+
+            const rows = await this.querySQL(sql, params);
             return rows.map(r => this.rowToTicket(r));
         }
+    }
+
+    /**
+     * Delete a ticket by ID.
+     * 
+     * **Simple explanation**: Permanently removes a ticket from the database and notifies listeners.
+     * 
+     * @param id - Ticket ID to delete
+     * @throws Error if ticket not found
+     */
+    async deleteTicket(id: string): Promise<void> {
+        // Verify ticket exists first
+        const existing = await this.getTicket(id);
+        if (!existing) {
+            throw new Error(`Cannot delete ticket ${id}: ticket not found`);
+        }
+
+        if (this.isInMemoryMode) {
+            this.inMemoryStore!.delete(id);
+        } else {
+            await this.runSQL('DELETE FROM tickets WHERE id = ?', [id]);
+        }
+
+        logInfo(`Deleted ticket: ${id}`);
+        logInfo('Emitting change event to refresh sidebar');
+        this._changeEmitter.emit('change'); // Notify listeners of deletion
     }
 
     private rowToTicket(row: any): Ticket {
@@ -514,11 +618,11 @@ export async function getTicket(id: string): Promise<Ticket | null> {
 }
 
 // List all tickets
-export async function listTickets(): Promise<Ticket[]> {
+export async function listTickets(filter?: { status?: string; type?: string; limit?: number; offset?: number }): Promise<Ticket[]> {
     if (!dbInstance) {
         throw new Error('TicketDb not initialized');
     }
-    return dbInstance.listTickets();
+    return dbInstance.listTickets(filter);
 }
 
 // Update ticket with partial changes
@@ -527,6 +631,14 @@ export async function updateTicket(id: string, updates: Partial<Omit<Ticket, 'id
         throw new Error('TicketDb not initialized');
     }
     return dbInstance.updateTicket(id, updates);
+}
+
+// Delete ticket by ID
+export async function deleteTicket(id: string): Promise<void> {
+    if (!dbInstance) {
+        throw new Error('TicketDb not initialized');
+    }
+    return dbInstance.deleteTicket(id);
 }
 
 // Register listener for ticket changes (create/update events)
