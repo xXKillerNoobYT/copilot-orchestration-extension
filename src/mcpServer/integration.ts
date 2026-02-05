@@ -23,6 +23,10 @@ const REGISTERED_TOOLS: MCPToolRegistration[] = [
     {
         name: 'askQuestion',
         description: 'Ask the Answer Agent a question with timeout handling'
+    },
+    {
+        name: 'getErrors',
+        description: 'Get quality gate diagnostics (TypeScript errors, skipped tests, coverage warnings)'
     }
 ];
 

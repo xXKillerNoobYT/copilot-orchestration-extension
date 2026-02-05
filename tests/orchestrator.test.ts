@@ -26,6 +26,7 @@ import { OrchestratorService } from '../src/services/orchestrator';
 import { logInfo, logWarn, logError } from '../src/logger';
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
+import { initializeConfig, resetConfigForTests } from '../src/config';
 
 // Mock TicketDb module
 jest.mock('../src/services/ticketDb');
@@ -53,16 +54,22 @@ jest.mock('../src/logger', () => ({
 describe('Orchestrator Service', () => {
     let mockContext: ExtensionContext;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         // Clear all mocks before each test
         jest.clearAllMocks();
         jest.useRealTimers(); // Ensure we're not in fake timer mode
 
+        // Reset config singleton for clean test state
+        resetConfigForTests();
+
+        // Create mock context (must be set before initializeConfig)
+        mockContext = new ExtensionContext('/mock/extension/path');
+
+        // Initialize config before any service that uses it
+        await initializeConfig(mockContext);
+
         // Reset orchestrator singleton
         resetOrchestratorForTests();
-
-        // Create mock context
-        mockContext = new ExtensionContext('/mock/extension/path');
 
         // Default: config file doesn't exist (use defaults)
         mockFs.existsSync.mockReturnValue(false);

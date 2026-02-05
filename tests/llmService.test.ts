@@ -7,6 +7,7 @@
 import { initializeLLMService, completeLLM, streamLLM } from '../src/services/llmService';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import { initializeConfig, resetConfigForTests } from '../src/config';
 
 // Mock dependencies
 jest.mock('../src/services/ticketDb', () => ({
@@ -35,14 +36,20 @@ import { llmStatusBar } from '../src/ui/llmStatusBar';
 describe('LLM Service', () => {
     let mockContext: vscode.ExtensionContext;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         // Clear all mocks before each test
         jest.clearAllMocks();
 
-        // Mock extension context
+        // Reset config singleton for clean test state
+        resetConfigForTests();
+
+        // Mock extension context (must be set before initializeConfig)
         mockContext = {
             extensionPath: '/mock/extension/path'
         } as any;
+
+        // Initialize config before any service that uses it
+        await initializeConfig(mockContext);
 
         // Mock global fetch
         global.fetch = jest.fn();

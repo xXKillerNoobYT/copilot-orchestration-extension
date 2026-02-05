@@ -7,6 +7,7 @@ import { routeToPlanningAgent, routeToVerificationAgent, routeToAnswerAgent } fr
 import { handleGetNextTask, validateGetNextTaskParams } from './tools/getNextTask';
 import { handleReportTaskDone, validateReportTaskDoneParams } from './tools/reportTaskDone';
 import { handleAskQuestion, validateAskQuestionParams } from './tools/askQuestion';
+import { handleGetErrors, validateGetErrorsParams } from './tools/getErrors';
 import { logRegisteredTools } from './integration';
 import { JsonRpcRequest, JsonRpcResponse, parseJsonRpcMessage } from './jsonrpc';
 
@@ -156,6 +157,8 @@ export class MCPServer extends EventEmitter {
                 void this.handleReportTaskDone(request);
             } else if (request.method === 'askQuestion') {
                 void this.handleAskQuestion(request);
+            } else if (request.method === 'getErrors') {
+                void this.handleGetErrors(request);
             } else if (request.method === 'callCOEAgent') {
                 void this.handleCallCOEAgent(request);
             } else {
@@ -237,6 +240,31 @@ export class MCPServer extends EventEmitter {
             this.sendResponse(request.id || null, response);
         } else {
             const errorMessage = response.error?.message || 'Failed to get answer';
+            this.sendError(request.id || null, -32603, errorMessage);
+        }
+    }
+
+    /**
+     * Handle getErrors tool call
+     *
+     * **Simple explanation**: Get quality gate diagnostics - TypeScript errors, skipped tests, and coverage warnings.
+     */
+    private async handleGetErrors(request: JsonRpcRequest): Promise<void> {
+        const params = request.params;
+        if (params) {
+            const validation = validateGetErrorsParams(params);
+            if (!validation.isValid) {
+                this.sendError(request.id || null, -32602, `Invalid parameters: ${validation.error}`);
+                return;
+            }
+        }
+
+        const response = await handleGetErrors(params);
+
+        if (response.success) {
+            this.sendResponse(request.id || null, response.diagnostics);
+        } else {
+            const errorMessage = response.error?.message || 'Failed to get errors';
             this.sendError(request.id || null, -32603, errorMessage);
         }
     }

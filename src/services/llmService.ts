@@ -203,45 +203,9 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
         throw new Error('Node.js 18+ required for LLM integration. Please upgrade Node.js or install node-fetch as a polyfill.');
     }
 
-    // Read config from .coe/config.json
-    const configPath = path.join(context.extensionPath, '.coe', 'config.json');
-    let config = { ...DEFAULT_CONFIG }; // Start with defaults
-
-    if (fs.existsSync(configPath)) {
-        try {
-            const fileContent = fs.readFileSync(configPath, 'utf-8');
-            const fileConfig = JSON.parse(fileContent);
-
-            // Merge LLM config if it exists
-            if (fileConfig.llm) {
-                config = { ...config, ...fileConfig.llm };
-            }
-        } catch (error: any) {
-            logWarn(`Failed to read config file: ${error.message}. Using defaults.`);
-        }
-    } else {
-        logWarn(`Config file not found at ${configPath}. Using defaults.`);
-    }
-
-    // Validate timeoutSeconds (must be a positive number)
-    if (typeof config.timeoutSeconds !== 'number' || config.timeoutSeconds <= 0) {
-        logWarn(`Invalid timeoutSeconds: ${config.timeoutSeconds}, using default: 60`);
-        config.timeoutSeconds = 60;
-    }
-
-    // Validate maxTokens (must be a positive number)
-    if (typeof config.maxTokens !== 'number' || config.maxTokens <= 0) {
-        logWarn(`Invalid maxTokens: ${config.maxTokens}, using default: 2048`);
-        config.maxTokens = 2048;
-    }
-
-    // Validate startupTimeoutSeconds (must be a positive number)
-    if (typeof config.startupTimeoutSeconds !== 'number' || config.startupTimeoutSeconds <= 0) {
-        logWarn(`Invalid startupTimeoutSeconds: ${config.startupTimeoutSeconds}, using default: 300`);
-        config.startupTimeoutSeconds = 300;
-    }
-
-    // Store validated config
+    // Now using central config system
+    const configInstance = getConfigInstance();
+    const config = configInstance.llm;
     llmServiceInstance.setConfig(config);
     logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model})`);
 }

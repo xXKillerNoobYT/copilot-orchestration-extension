@@ -2,7 +2,7 @@
 
 This directory contains specialized GitHub Copilot skills for developing the **Copilot Orchestration Extension (COE)**. These skills teach Copilot about COE-specific patterns, conventions, and best practices discovered through comprehensive codebase analysis.
 
-## 📚 Skill Index
+## 📚 Skill Index (28 Skills Total)
 
 ### Core Architecture (01-02)
 - **[01-coe-architecture.md](01-coe-architecture.md)** - 3-layer architecture, singleton pattern, event-driven updates
@@ -33,6 +33,25 @@ This directory contains specialized GitHub Copilot skills for developing the **C
 - **[14-common-pitfalls.md](14-common-pitfalls.md)** - Mistakes to avoid, performance tips
 - **[15-dev-workflows.md](15-dev-workflows.md)** - Build, test, debug, LLM setup
 
+### Advanced Management (16-22)
+- **[16-orchestrator-agent.md](16-orchestrator-agent.md)** - Project manager role, task breakdown, progress tracking
+- **[17-document-updater.md](17-document-updater.md)** - Keep documentation current, find gaps, support new developers
+- **[18-skill-updater.md](18-skill-updater.md)** - Maintain skill library, create new skills, version management
+- **[19-prd-maintenance.md](19-prd-maintenance.md)** - Maintain Product Requirements Document, feature status tracking
+- **[20-noob-proofing.md](20-noob-proofing.md)** - Make COE accessible for new developers, clear error messages
+- **[21-copilot-instructions-updater.md](21-copilot-instructions-updater.md)** - Keep copilot-instructions.md current
+- **[22-test-fixer.md](22-test-fixer.md)** - Fix tests properly after code updates, prevent regressions
+
+### Quality Control & Verification (23-26, 28)
+- **[23-plan-drift-detection.md](23-plan-drift-detection.md)** - Detect when code deviates from plan, inform team immediately
+- **[24-observation-skill.md](24-observation-skill.md)** - Observe patterns, behavior, detect issues early
+- **[25-fixing-plan-drift.md](25-fixing-plan-drift.md)** - Correct deviations, restore alignment between code and plan
+- **[26-safety-checklist.md](26-safety-checklist.md)** - Pre-flight safety checks before committing code
+- **[28-user-request-validation.md](28-user-request-validation.md)** - Validate user requests, stop work on blocked tasks and unsafe operations
+
+### Project Tracking (27)
+- **[27-project-breakdown-maintenance.md](27-project-breakdown-maintenance.md)** - Keep PROJECT-BREAKDOWN & TODO List.md accurate and current
+
 ## 🎯 Quick Reference Guide
 
 ### When working on...
@@ -41,14 +60,27 @@ This directory contains specialized GitHub Copilot skills for developing the **C
 |------|-----------|
 | **Creating a new service** | 02, 10, 11 |
 | **Adding a TreeView** | 05, 09 |
-| **Writing tests** | 03, 14 |
+| **Writing tests** | 03, 14, 22 |
 | **LLM integration** | 06, 07, 10 |
 | **MCP tools** | 08, 09 |
-| **Agent coordination** | 12, 02 |
+| **Agent coordination** | 12, 16, 02 |
 | **Database operations** | 13, 11 |
-| **Documentation** | 04 |
-| **Debugging issues** | 14, 15 |
-| **Understanding architecture** | 01, 02, 12 |
+| **Documentation** | 04, 17, 21 |
+| **Debugging issues** | 14, 15, 22 |
+| **Understanding architecture** | 01, 02, 12, 16 |
+| **New developer onboarding** | 20, 01, 02, 03 |
+| **Fixing test failures** | 22, 03, 14 |
+| **Maintaining skills library** | 18, 17, 04 |
+| **Project management** | 16, 19, 18 |
+| **Setting up COE instructions** | 21, 16, 20 |
+| **Detecting plan drift** | 23, 24, 25 |
+| **Fixing drift and realignment** | 25, 23, 26 |
+| **Quality assurance** | 26, 23, 24, 22 |
+| **Monitoring and observation** | 24, 23, 14 |
+| **Pre-commit safety checks** | 26, 03, 22, 14 |
+| **Updating project checklist** | 27, 19, 23, 24 |
+| **Validating user requests** | 28, 23, 26, 27 |
+| **Stopping blocked/unsafe work** | 28, 23, 26 |
 
 ## 🚀 How GitHub Copilot Uses These Skills
 
@@ -71,7 +103,10 @@ Skills are numbered for progressive learning:
 2. **03-05**: UI and testing fundamentals
 3. **06-09**: External integrations (LLM, MCP, VS Code)
 4. **10-13**: Core implementation patterns
-5. **14-15**: Advanced (troubleshooting, workflows)
+5. **14-15**: Advanced workflows (troubleshooting, development)
+6. **16-22**: Management and maintenance (orchestration, documentation, team support)
+7. **23-26, 28**: Quality control and verification (drift detection, observation, safety checks, request validation)
+8. **27**: Project tracking (master checklist maintenance)
 
 Each skill includes:
 - ✅ Real code examples from COE codebase
@@ -82,6 +117,7 @@ Each skill includes:
 ## 🔄 Maintenance
 
 **Last Updated**: February 4, 2026  
+**Total Skills**: 28 (covering all COE patterns)  
 **Coverage**: 50+ source files, 30+ test files, 10+ architecture documents  
 **Maintained By**: COE Development Team
 

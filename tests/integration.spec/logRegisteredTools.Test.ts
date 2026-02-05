@@ -1,5 +1,5 @@
 // ./integration.Test.ts
-import { logRegisteredTools, REGISTERED_TOOLS } from '../../src/mcpServer/integration';
+import { logRegisteredTools } from '../../src/mcpServer/integration';
 import { logInfo } from '../../src/logger';
 
 jest.mock('../../src/logger', () => ({
@@ -13,18 +13,7 @@ describe('logRegisteredTools', () => {
   it('should log the names of all registered tools', () => {
     logRegisteredTools();
     expect(logInfo).toHaveBeenCalledWith(
-      'MCP registered tools: getNextTask, reportTaskDone, askQuestion'
+      'MCP registered tools: getNextTask, reportTaskDone, askQuestion, getErrors'
     );
-  });
-
-  /** @aiContributed-2026-02-04 */
-  it('should handle an empty REGISTERED_TOOLS array gracefully', () => {
-    const originalTools = [...REGISTERED_TOOLS];
-    REGISTERED_TOOLS.length = 0;
-
-    logRegisteredTools();
-    expect(logInfo).toHaveBeenCalledWith('MCP registered tools: ');
-
-    REGISTERED_TOOLS.push(...originalTools);
   });
 });

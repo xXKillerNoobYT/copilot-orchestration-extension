@@ -8,6 +8,7 @@ import { initializeTicketDb, createTicket, getTicket, listTickets, updateTicket,
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { initializeConfig, resetConfigForTests } from '../src/config';
 
 // Mock fs module
 jest.mock('fs', () => ({
@@ -27,11 +28,14 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 describe('TicketDb', () => {
     let mockContext: ExtensionContext;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.clearAllMocks();
         mockContext = new ExtensionContext('/mock/extension/path');
 
         resetTicketDbForTests();
+
+        // Reset config singleton for clean test state
+        resetConfigForTests();
 
         // Mock config file
         mockFs.existsSync.mockReturnValue(true);
@@ -40,6 +44,9 @@ describe('TicketDb', () => {
                 dbPath: './.coe/tickets.db'
             }
         }));
+
+        // Initialize config after setting up mocks
+        await initializeConfig(mockContext);
     });
 
     describe('initialization', () => {
@@ -63,6 +70,10 @@ describe('TicketDb', () => {
 
     describe('CRUD operations (in-memory)', () => {
         beforeEach(async () => {
+            // Reset config singleton for clean test state
+            resetConfigForTests();
+            // Initialize config before initializing ticketDb
+            await initializeConfig(mockContext);
             await initializeTicketDb(mockContext);
         });
 
@@ -271,10 +282,14 @@ describe('TicketDb', () => {
             };
         }
 
-        beforeEach(() => {
+        beforeEach(async () => {
             jest.clearAllMocks();
-            jest.resetModules(); // Clear module cache
+            // Note: Removed jest.resetModules() to preserve config singleton
             mockContext = new ExtensionContext('/mock/extension/path');
+
+            // Initialize config before any service initialization
+            resetConfigForTests();
+            await initializeConfig(mockContext);
 
             // Unmock sqlite3 to allow per-test mocking
             jest.unmock('sqlite3');
@@ -298,7 +313,11 @@ describe('TicketDb', () => {
             }));
 
             // Act: Import with successful sqlite3 mock
-            const { initializeTicketDb: init } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init, initializeConfig } = require('../src/services/ticketDb');
+
+            // Initialize config in the dynamically imported context
+            await initializeConfig(mockContext);
+
             await init(mockContext);
 
             // Assert: Verify SQLite mode was used (not in-memory fallback)
@@ -344,7 +363,11 @@ describe('TicketDb', () => {
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: init2, createTicket: create2 } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init2, createTicket: create2, initializeConfig: initConfig2 } = require('../src/services/ticketDb');
+
+            // Initialize config in the dynamically imported context
+            await initConfig2(mockContext);
+
             await init2(mockContext);
 
             // Act
@@ -396,7 +419,11 @@ describe('TicketDb', () => {
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: init3, listTickets: list3 } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init3, listTickets: list3, initializeConfig: initConfig3 } = require('../src/services/ticketDb');
+
+            // Initialize config in the dynamically imported context
+            await initConfig3(mockContext);
+
             await init3(mockContext);
 
             // Act
@@ -415,7 +442,7 @@ describe('TicketDb', () => {
     describe('updateTicket', () => {
         beforeEach(async () => {
             jest.clearAllMocks();
-            jest.resetModules(); // Reset to prevent module contamination from SQLite tests
+            // Note: Removed jest.resetModules() to preserve config singleton
 
             // Re-mock sqlite3 to throw (for in-memory mode)
             jest.doMock('sqlite3', () => {
@@ -423,6 +450,10 @@ describe('TicketDb', () => {
             });
 
             mockContext = new ExtensionContext('/mock/extension/path');
+
+            // Initialize config before any service initialization
+            resetConfigForTests();
+            await initializeConfig(mockContext);
 
             // Setup default in-memory mock
             mockFs.existsSync.mockReturnValue(true);
@@ -489,7 +520,11 @@ describe('TicketDb', () => {
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: init4, updateTicket: update4 } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init4, updateTicket: update4, initializeConfig: initConfig4 } = require('../src/services/ticketDb');
+
+            // Initialize config in the dynamically imported context
+            await initConfig4(mockContext);
+
             await init4(mockContext);
 
             // Act: Update ticket
@@ -540,11 +575,15 @@ describe('TicketDb', () => {
     // ========== Phase 3: Migration & Compatibility ==========
 
     describe('Migration & Backward Compatibility', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
             jest.clearAllMocks();
-            jest.resetModules();
+            // Note: Removed jest.resetModules() to preserve config singleton
             jest.unmock('sqlite3');
             mockContext = new ExtensionContext('/mock/extension/path');
+
+            // Initialize config before any service initialization
+            resetConfigForTests();
+            await initializeConfig(mockContext);
         });
 
         it('should migrate SQLite table without type column', async () => {
@@ -664,14 +703,19 @@ describe('TicketDb', () => {
     // ========== Phase 4: Integration Tests ==========
 
     describe('Integration: Full CRUD Flow', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
             jest.clearAllMocks();
-            jest.resetModules();
+            // Note: Removed jest.resetModules() to preserve config singleton
             // Re-mock sqlite3 to throw (for in-memory mode)
             jest.doMock('sqlite3', () => {
                 throw new Error('sqlite3 module not found (simulated)');
             });
             mockContext = new ExtensionContext('/mock/extension/path');
+
+            // Initialize config before any service initialization
+            resetConfigForTests();
+            await initializeConfig(mockContext);
+
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
         });
@@ -775,7 +819,7 @@ describe('TicketDb', () => {
     describe('Error Handling', () => {
         beforeEach(() => {
             jest.clearAllMocks();
-            jest.resetModules();
+            // Note: Removed jest.resetModules() to preserve config singleton
             jest.unmock('sqlite3');
             mockContext = new ExtensionContext('/mock/extension/path');
         });
