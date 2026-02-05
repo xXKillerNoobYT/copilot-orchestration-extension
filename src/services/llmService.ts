@@ -202,9 +202,19 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
     }
 
     // Get config from central config system (already validated by Zod)
-    const configInstance = getConfigInstance();
-    const config = configInstance.llm;
+    const centralConfig = getConfigInstance();
+    const llmConfig = centralConfig.llm;
 
+    // Map central config to LLMConfig interface
+    const config: LLMConfig = {
+        endpoint: llmConfig.endpoint,
+        model: llmConfig.model,
+        timeoutSeconds: llmConfig.timeoutSeconds,
+        maxTokens: llmConfig.maxTokens,
+        startupTimeoutSeconds: llmConfig.startupTimeoutSeconds,
+    };
+
+    // Store validated config
     llmServiceInstance.setConfig(config);
     logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model})`);
 }
@@ -300,7 +310,13 @@ export async function completeLLM(
         await createTicket({
             title: `LLM FAILURE: ${prompt.substring(0, 50)}`,
             status: 'blocked',
-            description: `Error: ${error.message}\n\nOriginal prompt:\n${prompt}`
+            description: `Error: ${error.message}\n\nOriginal prompt:\n${prompt}`,
+            priority: 2,
+            creator: 'system',
+            assignee: 'Clarity Agent',
+            taskId: null,
+            version: 1,
+            resolution: null
         });
 
         // Provide specific error messages based on error type
@@ -532,7 +548,13 @@ export async function streamLLM(
         await createTicket({
             title: `LLM STREAMING FAILURE: ${prompt.substring(0, 50)}`,
             status: 'blocked',
-            description: `Error: ${error.message}\nAbort Reason: ${abortReason || 'N/A'}\nElapsed: ${timeElapsed}ms\n\nOriginal prompt:\n${prompt}`
+            description: `Error: ${error.message}\nAbort Reason: ${abortReason || 'N/A'}\nElapsed: ${timeElapsed}ms\n\nOriginal prompt:\n${prompt}`,
+            priority: 2,
+            creator: 'system',
+            assignee: 'Clarity Agent',
+            taskId: null,
+            version: 1,
+            resolution: null
         });
 
         // Provide specific error messages based on error type

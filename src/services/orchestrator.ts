@@ -268,7 +268,7 @@ export class OrchestratorService {
         }
 
         const title = ticket.title.toLowerCase();
-        return title.startsWith('p1 blocked') || title.startsWith('[p1]') || title.startsWith('p1:' );
+        return title.startsWith('p1 blocked') || title.startsWith('[p1]') || title.startsWith('p1:');
     }
 
     /**
@@ -721,7 +721,13 @@ export class OrchestratorService {
             await createTicket({
                 title: `VERIFICATION FAILED: ${taskDescription || 'Unknown Task'}`,
                 status: 'blocked',
-                description: `Explanation: ${explanation}\n\nCode diff:\n${codeDiff}`
+                description: `Explanation: ${explanation}\n\nCode diff:\n${codeDiff}`,
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             });
             return { passed: false, explanation };
         }
@@ -769,7 +775,13 @@ export class OrchestratorService {
                 await createTicket({
                     title: `VERIFICATION FAILED: ${taskDescription || 'Unknown Task'}`,
                     status: 'blocked',
-                    description: `Explanation: ${explanation}\n\nCode diff:\n${codeDiff}`
+                    description: `Explanation: ${explanation}\n\nCode diff:\n${codeDiff}`,
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 });
             }
 
@@ -838,7 +850,13 @@ export class OrchestratorService {
                 await createTicket({
                     title: ticketTitle,
                     status: 'blocked',
-                    description: fullAnswer
+                    description: fullAnswer,
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 });
                 logInfo(`[Answer] Created ticket for action: ${ticketTitle}`);
             }
@@ -949,16 +967,22 @@ export class OrchestratorService {
                     await createTicket({
                         title: `P1 BLOCKED: ${task.title}`,
                         status: 'blocked',
-                        description: `Task idle for ${Math.round(idleTimeSeconds)}s (timeout: ${this.taskTimeoutSeconds}s)`
+                        description: `Task idle for ${Math.round(idleTimeSeconds)}s (timeout: ${this.taskTimeoutSeconds}s)`,
+                        priority: 2,
+                        creator: 'system',
+                        assignee: 'Clarity Agent',
+                        taskId: null,
+                        version: 1,
+                        resolution: null
                     });
-                    
+
                     // Show P1 notification in status bar for immediate DevOps visibility
                     llmStatusBar.start();
                     vscode.window.showWarningMessage(
                         `⚠️ P1 BLOCKED: ${task.title} (idle ${Math.round(idleTimeSeconds)}s)`,
                         'Review'
                     );
-                    
+
                     logWarn(`Created P1 blocked ticket for task: ${task.id}`);
                 } catch (err) {
                     logError(`Failed to create blocked ticket: ${err}`);

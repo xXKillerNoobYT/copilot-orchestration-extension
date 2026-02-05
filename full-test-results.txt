@@ -1,0 +1,2660 @@
+
+> copilot-orchestration-extension@0.0.1 test:once
+> jest
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.807Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.963Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.974Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.977Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.980Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.981Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.990Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.993Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:13.995Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.006Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.013Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.020Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.023Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.043Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.046Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.048Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.050Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.053Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.055Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.101Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.123Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.126Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.129Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.131Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.133Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.151Z Cleaned up 1 temp file(s)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.161Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.163Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.164Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.166Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.168Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.169Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.173Z Saved payload 290abf64e10a9c9fe856f277b1661b395782a0947bc136ce305b55331b1a5286 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.177Z Loaded payload 290abf64e10a9c9fe856f277b1661b395782a0947bc136ce305b55331b1a5286 from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.184Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.186Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.188Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.200Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.202Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.203Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.206Z Saved payload 1b2d5ef06214e4b523e0d9a31d72d71f2145c01c0e51fb19924be08eea7e0b71 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.210Z Payload 1b2d5ef06214e4b523e0d9a31d72d71f2145c01c0e51fb19924be08eea7e0b71 already cached, skipping
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.218Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.220Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.221Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.223Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.225Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.226Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.228Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.230Z Deleted payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.235Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.237Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.238Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.249Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.251Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.252Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.254Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.261Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.262Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.264Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.266Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.268Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.269Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.271Z Saved payload 015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.273Z Saved payload 0ab1a6d394cd30195f0642b67ae1180c375ffadf5dd7f39c390668b5fdb6da93 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.279Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.281Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.283Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.285Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.286Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.288Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.293Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.296Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.299Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.300Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.302Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.303Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.314Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.317Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.318Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.320Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.333Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.334Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.337Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from llm (type: response)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.338Z Loaded payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.339Z Added e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b to cache index
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.348Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.350Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.352Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.353Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.356Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.357Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.361Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.363Z Loaded payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.364Z Added e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b to cache index
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.403Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.407Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.411Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.413Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.427Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.428Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.431Z Saved payload 015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862 from llm (type: response)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.433Z Saved payload 0ab1a6d394cd30195f0642b67ae1180c375ffadf5dd7f39c390668b5fdb6da93 from github (type: issue)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.461Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.463Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.464Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.466Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.468Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.469Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.471Z Saved payload 1c1a39e1e23a7e42e9eaa400a8045e356704ce7421deaf3576ad1c2697a8e796 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.478Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.481Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.482Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.486Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.489Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.493Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.497Z Starting retention policy cleanup (retention period: 7 days)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.501Z No items exceeded retention period
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.532Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.534Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.536Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.538Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.542Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.544Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.550Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.556Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.564Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.565Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.567Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.569Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.571Z Cache size (NaN undefined) exceeds threshold (1000 B), starting LRU pruning
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.573Z No items to delete (minimum count reached)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.579Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.581Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.583Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.585Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.586Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.588Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.594Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.595Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.611Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.613Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.615Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.616Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.621Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.623Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.625Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.627Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.630Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.631Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.677Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.679Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.681Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.683Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.685Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.686Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.688Z Saved payload a39cc2a7cc07de8dde84e4b10ca219aa5488eea3d882a39b430c58142cd08565 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.696Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.698Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.700Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.701Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.703Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.704Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.713Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.715Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.717Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.718Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.720Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.721Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.727Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.729Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.731Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.733Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.735Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.736Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.744Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.748Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.751Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.753Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.755Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.756Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.767Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.769Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.771Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.772Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.775Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.777Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.783Z Scanning 1 tracked file(s) for changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.787Z File changed: C:\Users\weird\OneDrive\Documents\GitHub\copilot-orchestration-extension\tests\cache\__test_cache__\test.txt
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.789Z Change detection complete: 1 file(s) changed, 1 cache entries invalidated
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.816Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.823Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.827Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.829Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.831Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.833Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.844Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.848Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.853Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.855Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.857Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.859Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.error
+    [ERROR] 2026-02-05T04:18:14.862Z Failed to load cache index: Unexpected token 'c', "corrupted {{{ json" is not valid JSON
+
+    [0m [90m 83 |[39m     [36mconst[39m line [33m=[39m [32m`[ERROR] ${new Date().toISOString()} ${msg}`[39m[33m;[39m
+     [90m 84 |[39m     getOutputChannel()[33m.[39mappendLine(line)[33m;[39m
+    [31m[1m>[22m[39m[90m 85 |[39m     console[33m.[39merror(line)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 86 |[39m }
+     [90m 87 |[39m[0m
+
+      at logError (src/logger.ts:85:13)
+      at loadCacheIndex (src/services/cache/index.ts:125:17)
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:556:41)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.872Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.874Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.877Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.879Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.881Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:14.882Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+FAIL tests/cache/cacheManagement.spec.ts (6.364 s)
+  Cache Management
+    Structure - MT-004.1
+      ΓêÜ Test 1: should create all required directories (191 ms)
+      ΓêÜ Test 2: should handle existing directories gracefully (52 ms)
+      ΓêÜ Test 3: should validate cache structure (57 ms)
+      ΓêÜ Test 4: should clean up old temp files (61 ms)
+    Storage - MT-004.2
+      ΓêÜ Test 5: should save and load payloads (23 ms)
+      ΓêÜ Test 6: should detect duplicate payloads (35 ms)
+      ΓêÜ Test 7: should delete payloads (17 ms)
+      ΓêÜ Test 8: should calculate payload size (25 ms)
+      ΓêÜ Test 9: should list all payloads (19 ms)
+      ΓêÜ Test 10: should generate consistent hashes (13 ms)
+    Index - MT-004.3
+      ΓêÜ Test 11: should load and save cache index (21 ms)
+      ΓêÜ Test 12: should search index with filters (34 ms)
+      ΓêÜ Test 13: should update last accessed time (54 ms)
+      ├ù Test 14: should calculate cache statistics (36 ms)
+    Retention - MT-004.4
+      ΓêÜ Test 15: should identify expired items (17 ms)
+      ΓêÜ Test 16: should apply retention policy (48 ms)
+      ΓêÜ Test 17: should format item age correctly (22 ms)
+    Pruning - MT-004.5
+      ΓêÜ Test 18: should prune when size exceeds threshold (30 ms)
+      ΓêÜ Test 19: should preserve minimum items (14 ms)
+      ΓêÜ Test 20: should format bytes correctly (28 ms)
+      ├ù Test 21: should get cache size info (16 ms)
+    Auto-Refresh - MT-004.6
+      ΓêÜ Test 22: should identify stale items (19 ms)
+      ΓêÜ Test 23: should calculate refresh priority (16 ms)
+      ΓêÜ Test 24: should sort items by priority (14 ms)
+    Change Detection - MT-004.7
+      ΓêÜ Test 25: should compute file hash (16 ms)
+      ΓêÜ Test 26: should register file hash (24 ms)
+      ΓêÜ Test 27: should detect file changes (33 ms)
+      ΓêÜ Test 28: should untrack files (41 ms)
+    Error Recovery
+      ΓêÜ Test 29: should handle corrupted index gracefully (29 ms)
+      ΓêÜ Test 30: should handle missing files during deletion (14 ms)
+
+  ΓùÅ Cache Management ΓÇ║ Index - MT-004.3 ΓÇ║ Test 14: should calculate cache statistics
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: undefined
+
+      315 |
+      316 |             const stats = getCacheStats(mockContext);
+    > 317 |             expect(stats.totalItems).toBe(0); // Not added to index yet
+          |                                      ^
+      318 |         });
+      319 |     });
+      320 |
+
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:317:38)
+
+  ΓùÅ Cache Management ΓÇ║ Pruning - MT-004.5 ΓÇ║ Test 21: should get cache size info
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: undefined
+
+      391 |         it('Test 21: should get cache size info', () => {
+      392 |             const info = getCacheSizeInfo(mockContext);
+    > 393 |             expect(info.totalBytes).toBe(0);
+          |                                     ^
+      394 |             expect(info.itemCount).toBe(0);
+      395 |         });
+      396 |     });
+
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:393:37)
+
+PASS tests/mcpServer.test.ts (6.996 s)
+  MCP Server
+    Server Lifecycle
+      ΓêÜ should start the server successfully (22 ms)
+      ΓêÜ should stop the server successfully
+      ΓêÜ should not start the server twice (1 ms)
+    JSON-RPC Request Handling
+      ΓêÜ should handle valid getNextTask request (123 ms)
+      ΓêÜ should handle invalid JSON with parse error (71 ms)
+      ΓêÜ should handle unknown method with method not found error (70 ms)
+      ΓêÜ should handle invalid JSON-RPC version (65 ms)
+      ΓêÜ should handle orchestrator error gracefully (67 ms)
+    Edge Cases
+      ΓêÜ should handle request without id (76 ms)
+      ΓêÜ should handle empty response from orchestrator (81 ms)
+    COE Agent Tool
+      ΓêÜ should route "plan" command to planning agent (71 ms)
+      ΓêÜ should route "verify" command and format result as PASS/FAIL (58 ms)
+      ΓêÜ should format FAIL verification result correctly (58 ms)
+      ΓêÜ should route "ask" command to answer agent (62 ms)
+      ΓêÜ should return error for invalid command (58 ms)
+      ΓêÜ should return error for missing task arg in plan command (58 ms)
+      ΓêÜ should return error for missing code arg in verify command (78 ms)
+      ΓêÜ should return error for missing question arg in ask command (61 ms)
+      ΓêÜ should return error for missing args object (62 ms)
+      ΓêÜ should handle orchestrator errors gracefully (61 ms)
+      ΓêÜ should use default task description for verify when not provided (67 ms)
+
+PASS tests/orchestrator.test.ts
+  Orchestrator Service
+    initialization
+      ΓêÜ Test 1: should initialize with default timeout when config missing (3 ms)
+      ΓêÜ Test 2: should read timeout from config.orchestrator.taskTimeoutSeconds (7 ms)
+      ΓêÜ Test 3: should fallback to llm.timeoutSeconds if orchestrator config missing (1 ms)
+    manual mode ticket handling
+      ΓêÜ Test 4: should set ai_to_human ticket to pending when manual mode enabled (3 ms)
+      ΓêÜ Test 5: should skip pending update when auto mode enabled (2 ms)
+    queue ordering (FIFO)
+      ΓêÜ Test 6: should return tasks in FIFO order (1 ms)
+      ΓêÜ Test 7: should return null when queue is empty (1 ms)
+      ΓêÜ Test 8: should filter for open and in-progress tickets only (1 ms)
+    timeout detection and blocking
+      ΓêÜ Test 9: should create blocked ticket when task idle >30s (using fake timers) (6 ms)
+      ΓêÜ Test 10: should not create duplicate blocked tickets for same task (2 ms)
+    edge cases
+      ΓêÜ Test 11: should handle TicketDb errors gracefully (2 ms)
+      ΓêÜ Test 12: should throw error if getNextTask called before initialization (41 ms)
+      ΓêÜ Test 13: should prevent duplicate initialization
+    routeQuestionToAnswer
+      ΓêÜ should call LLM with question and return response (2 ms)
+      ΓêÜ should include Answer agent system prompt (1 ms)
+      ΓêÜ should handle LLM failure and return fallback message (1 ms)
+      ΓêÜ should not create duplicate ticket on LLM failure (2 ms)
+      ΓêÜ should log question routing and response (1 ms)
+    routeToPlanningAgent
+      ΓêÜ should log chunks and accumulate full plan (2 ms)
+      ΓêÜ should handle empty response gracefully (1 ms)
+      ΓêÜ should truncate long plans in logs (1 ms)
+    routeToVerificationAgent
+      ΓêÜ should call completeLLM with verification system prompt (3 ms)
+      ΓêÜ should parse PASS response and avoid ticket creation (2 ms)
+      ΓêÜ should parse FAIL response and create blocked ticket (1 ms)
+      ΓêÜ should default to FAIL on ambiguous response (1 ms)
+      ΓêÜ should truncate long explanations in logs (1 ms)
+      ΓêÜ should fail fast when code diff is empty (1 ms)
+      ΓêÜ should handle LLM errors without creating duplicate tickets (1 ms)
+    Planning Agent
+      ΓêÜ should stream plan chunks to logs via callback (1 ms)
+      ΓêÜ should handle empty plan response
+      ΓêÜ should handle planning timeout by returning fallback message
+    Answer Agent
+      ΓêÜ should call completeLLM and log response (3 ms)
+      ΓêÜ should create ticket when response contains "ticket" keyword (4 ms)
+      ΓêÜ should create ticket when response contains "create" keyword
+      ΓêÜ should not create ticket for normal response without action keywords (2 ms)
+      ΓêÜ should warn and return early for empty question (1 ms)
+      ΓêÜ should warn and return early for whitespace-only question (1 ms)
+      ΓêÜ should truncate long response in logs (>500 chars) (1 ms)
+      ΓêÜ should handle case-insensitive keyword detection (1 ms)
+      ΓêÜ should handle completeLLM timeout error gracefully (2 ms)
+      ΓêÜ should handle empty LLM response (1 ms)
+      ΓêÜ should create ticket with truncated question in title (3 ms)
+  getOrchestratorInstance
+    ΓêÜ should return an instance of OrchestratorService after initialization (2 ms)
+    ΓêÜ should throw an error if the orchestrator is not initialized (20 ms)
+    ΓêÜ should return the same instance on multiple calls after initialization (1 ms)
+    ΓêÜ should log a warning if initializeOrchestrator is called multiple times
+    ΓêÜ should throw an error if getOrchestratorInstance is called after reset (1 ms)
+  initializeOrchestrator
+    ΓêÜ should initialize orchestrator using centralized config system (1 ms)
+    ΓêÜ should read timeout from centralized config system (5 ms)
+    ΓêÜ should use validated config from centralized system (validation handled by Zod) (3 ms)
+    ΓêÜ should load tasks from TicketDb during initialization (1 ms)
+    ΓêÜ should handle errors when loading tasks from TicketDb (1 ms)
+    ΓêÜ should warn if orchestrator is already initialized (2 ms)
+    ΓêÜ should use taskTimeoutSeconds from centralized config system (6 ms)
+    ΓêÜ should use default timeout from centralized config (30s) (2 ms)
+    ΓêÜ should register manual mode listener during initialization (6 ms)
+    ΓêÜ should register conversation thread listener during initialization
+    ΓêÜ should use validated config from centralized config system
+
+ts-jest[config] (WARN) message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+PASS tests/index.test.ts
+  getMCPServerInstance
+    ΓêÜ should return null if the MCP server is not initialized (1 ms)
+    ΓêÜ should return the MCP server instance after initialization (2 ms)
+    ΓêÜ should return the same instance if called multiple times after initialization
+    ΓêÜ should return null after the MCP server is reset (1 ms)
+    ΓêÜ should not initialize a new MCP server if one already exists
+    ΓêÜ should log appropriate messages during initialization (1 ms)
+  initializeMCPServer
+    ΓêÜ should initialize and start the MCP server if not already initialized (1 ms)
+    ΓêÜ should not initialize a new MCP server if one already exists
+    ΓêÜ should handle resetting the MCP server for tests (1 ms)
+    ΓêÜ should handle multiple calls to resetMCPServerForTests gracefully
+    ΓêÜ should return null if MCP server is not initialized
+    ΓêÜ should return the MCP server instance if initialized
+    ΓêÜ should log appropriate messages when MCP server is initialized in standalone mode
+  resetMCPServerForTests
+    ΓêÜ should stop and reset the MCP server instance if it exists (1 ms)
+    ΓêÜ should do nothing if no MCP server instance exists
+
+ts-jest[config] (WARN) message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+  console.log
+    [INFO] 2026-02-05T04:18:18.398Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.255Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.263Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.error
+    [ERROR] 2026-02-05T04:18:19.309Z Failed to subscribe to ticket changes: Error: Subscription failed
+
+    [0m [90m 83 |[39m     [36mconst[39m line [33m=[39m [32m`[ERROR] ${new Date().toISOString()} ${msg}`[39m[33m;[39m
+     [90m 84 |[39m     getOutputChannel()[33m.[39mappendLine(line)[33m;[39m
+    [31m[1m>[22m[39m[90m 85 |[39m     console[33m.[39merror(line)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 86 |[39m }
+     [90m 87 |[39m[0m
+
+      at logError (src/logger.ts:85:13)
+      at new TicketsTreeDataProvider (src/ui/ticketsTreeProvider.ts:36:21)
+      at tests/ui/ticketsTreeProvider.test.ts:47:26
+      at Object.<anonymous> (node_modules/expect/build/index.js:1824:9)
+      at Object.throwingMatcher [as toThrow] (node_modules/expect/build/index.js:2235:93)
+      at Object.<anonymous> (tests/ui/ticketsTreeProvider.test.ts:47:61)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.318Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.433Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+PASS tests/agents/answerAgent.test.ts
+  AnswerAgent
+    createChatId
+      ΓêÜ should generate unique chat IDs (1 ms)
+      ΓêÜ should generate chat IDs with expected format (1 ms)
+    AnswerAgent.ask() - Single Turn
+      ΓêÜ should answer a question and return the response (2 ms)
+      ΓêÜ should store question and answer in history after first ask (1 ms)
+      ΓêÜ should persist conversation history after each ask (1 ms)
+      ΓêÜ should generate new chatId if none provided (1 ms)
+    AnswerAgent.ask() - Multi-Turn
+      ΓêÜ should include previous Q&A in messages for follow-up (1 ms)
+      ΓêÜ should maintain separate histories for different chatIds (1 ms)
+      ΓêÜ should trim history to MAX_HISTORY_EXCHANGES when exceeded (1 ms)
+      ΓêÜ should pass complete message history to LLM on each turn (1 ms)
+    AnswerAgent.getHistory()
+      ΓêÜ should return undefined for non-existent chatId
+      ΓêÜ should return empty array equivalent (via getHistory) for new chatId (1 ms)
+    AnswerAgent.getActiveConversations()
+      ΓêÜ should return active conversation metadata
+    AnswerAgent.clearHistory()
+      ΓêÜ should remove history for specified chatId
+      ΓêÜ should not affect other chatIds when clearing one (1 ms)
+    AnswerAgent Error Handling
+      ΓêÜ should handle LLM errors gracefully (151 ms)
+      ΓêÜ should log error when LLM fails (1 ms)
+    Message Format Validation
+      ΓêÜ should send messages in correct OpenAI format (1 ms)
+      ΓêÜ should always include system prompt as first message
+    Edge Cases
+      ΓêÜ should handle empty question string
+      ΓêÜ should handle very long question text (1 ms)
+      ΓêÜ should handle exactly MAX_HISTORY_EXCHANGES exchanges without trimming
+    Auto-close inactive conversations
+      ΓêÜ should close conversations inactive for >30 days (1 ms)
+      ΓêÜ should NOT close conversations active within 30 days (1 ms)
+      ΓêÜ should handle exactly 30 days (boundary condition) (1 ms)
+      ΓêÜ should handle cleanup with no conversations (1 ms)
+      ΓêÜ should handle multiple chats (old and new) (2 ms)
+      ΓêÜ should handle cleanup errors gracefully (2 ms)
+      ΓêÜ should update lastActivityAt on each ask (2 ms)
+      ΓêÜ should log each deleted conversation with details (2 ms)
+    Persistence
+      ΓêÜ should serialize history into JSON strings (1 ms)
+      ΓêÜ should deserialize history back into the Map (1 ms)
+      ΓêÜ should support save/load cycle across instances (1 ms)
+      ΓêÜ should restore context after reload simulation (1 ms)
+      ΓêÜ should warn and skip invalid JSON entries (1 ms)
+      ΓêÜ should truncate oversized histories and warn (9 ms)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.530Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.533Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.619Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.error
+    [ERROR] 2026-02-05T04:18:19.635Z Failed to load tickets: Error: Database connection failed
+
+    [0m [90m 83 |[39m     [36mconst[39m line [33m=[39m [32m`[ERROR] ${new Date().toISOString()} ${msg}`[39m[33m;[39m
+     [90m 84 |[39m     getOutputChannel()[33m.[39mappendLine(line)[33m;[39m
+    [31m[1m>[22m[39m[90m 85 |[39m     console[33m.[39merror(line)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 86 |[39m }
+     [90m 87 |[39m[0m
+
+      at logError (src/logger.ts:85:13)
+      at TicketsTreeDataProvider.getChildren (src/ui/ticketsTreeProvider.ts:79:21)
+      at Object.<anonymous> (tests/ui/ticketsTreeProvider.test.ts:147:27)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.639Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.644Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.647Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.683Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.686Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.696Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.705Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.712Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.721Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.727Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.730Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+PASS tests/extension.test.ts
+  Extension Commands
+    ΓêÜ should register the COE: Plan Task command (5 ms)
+    ΓêÜ should register the COE: Verify Task command (2 ms)
+    ΓêÜ should register the COE: Ask Answer Agent command (3 ms)
+    ΓêÜ should register the COE: Open Ticket command (2 ms)
+    ΓêÜ should open a ticket with description when clicked (2 ms)
+    ΓêÜ should show fallback content when ticket has no description (2 ms)
+    ΓêÜ should show warning when ticket not found (2 ms)
+    Orchestration Flow
+      ΓêÜ should register the COE: Verify Last Ticket command (3 ms)
+      ΓêÜ should handle verify last ticket with PASS result (4 ms)
+      ΓêÜ should handle verify last ticket with FAIL result (2 ms)
+      ΓêÜ should show info message when no open ticket exists (3 ms)
+      ΓêÜ should setup auto-planning listener on startup (2 ms)
+    Context Menu Commands
+      ΓêÜ should register the COE: View Ticket Progress command (5 ms)
+      ΓêÜ should register the COE: Update Ticket Status command (52 ms)
+      ΓêÜ should register the COE: Add Ticket Comment command (2 ms)
+      ΓêÜ should register the COE: Reply Conversation command (3 ms)
+      ΓêÜ should execute openTicket when viewTicketProgress is called (2 ms)
+      ΓêÜ should show warning when viewTicketProgress called with no ticket ID (5 ms)
+      ΓêÜ should update ticket status when updateTicketStatus called with selection (50 ms)
+      ΓêÜ should handle user cancellation in updateTicketStatus (4 ms)
+      ΓêÜ should show warning when updateTicketStatus ticket not found (3 ms)
+      ΓêÜ should add comment to ticket when addTicketComment called (61 ms)
+      ΓêÜ should validate comment length in addTicketComment (6 ms)
+      ΓêÜ should handle user cancellation in addTicketComment (2 ms)
+      ΓêÜ should show warning when addTicketComment ticket not found (2 ms)
+    coe.processTicket command
+      ΓêÜ should register the COE: Process Ticket command (6 ms)
+      ΓêÜ should process ticket by calling planning agent (3 ms)
+      ΓêÜ should handle ticket not found error (1 ms)
+      ΓêÜ should handle processing errors gracefully (1 ms)
+    coe.researchWithAgent command
+      ΓêÜ should register the COE: Research with Agent command (2 ms)
+      ΓêÜ should show info message when Research Agent is disabled in settings (25 ms)
+      ΓêÜ should abort silently when no query is provided (1 ms)
+      ΓêÜ should abort silently when empty query is provided (1 ms)
+  Extension Helpers
+    ΓêÜ should update the status bar text and tooltip (5 ms)
+    ΓêÜ should auto-plan for new ai_to_human tickets (6 ms)
+    ΓêÜ should skip auto-planning when autoProcessTickets is false (Manual mode) (30 ms)
+    ΓêÜ should run Ask Answer Agent continue with active chat (4 ms)
+    ΓêÜ should warn when continuing without an active chat (2 ms)
+    ΓêÜ should show error when opening a ticket fails (3 ms)
+    ΓêÜ should refresh agents and tickets via commands (4 ms)
+    ΓêÜ should run Ask Answer Agent with a new question (2 ms)
+    ΓêÜ should show error when verify last ticket fails (3 ms)
+  Answer Agent Persistence
+    ΓêÜ should restore Answer Agent history on activate (11 ms)
+    ΓêÜ should warn and continue if persistence fails on deactivate (4 ms)
+    coe.enableAgent command
+      ΓêÜ should register the COE: Enable Agent command (5 ms)
+      ΓêÜ should enable a disabled agent and refresh tree view (2 ms)
+      ΓêÜ should handle missing tree item gracefully (14 ms)
+    coe.disableAgent command
+      ΓêÜ should register the COE: Disable Agent command (2 ms)
+      ΓêÜ should disable an enabled agent and refresh tree view (5 ms)
+      ΓêÜ should handle errors when updating settings (10 ms)
+    coe.toggleAutoProcessing command
+      ΓêÜ should register the COE: Toggle Auto Processing command (2 ms)
+      ΓêÜ should toggle from Manual to Auto mode (36 ms)
+      ΓêÜ should toggle from Auto to Manual mode (1 ms)
+      ΓêÜ should handle errors when updating settings (3 ms)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.734Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.820Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.822Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.836Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+PASS tests/errors/errorHandling.spec.ts
+  Error Handling
+    Validation Errors
+      Missing Parameter
+        ΓêÜ Test 1: should create error with correct code and message (1 ms)
+        ΓêÜ Test 2: should throw with formatted message (18 ms)
+      Invalid Type
+        ΓêÜ Test 3: should create error with type details (3 ms)
+        ΓêÜ Test 4: should throw with type information (1 ms)
+      Out of Range
+        ΓêÜ Test 5: should create error with range details (1 ms)
+        ΓêÜ Test 6: should throw with range information (2 ms)
+      Invalid Enum
+        ΓêÜ Test 7: should create error with allowed values
+      Require Helpers
+        ΓêÜ Test 8: requireParam should return value if present (2 ms)
+        ΓêÜ Test 9: requireParam should throw for null/undefined (3 ms)
+        ΓêÜ Test 10: requireNonEmptyString should reject empty strings (3 ms)
+        ΓêÜ Test 11: requireInRange should validate numeric ranges (2 ms)
+    Timeout and Rate Limit Errors
+      Timeout
+        ΓêÜ Test 12: should create timeout error with retry suggestion (1 ms)
+        ΓêÜ Test 13: should cap retry delay at 5 minutes (1 ms)
+        ΓêÜ Test 14: should throw with retry suggestion (7 ms)
+      Rate Limit
+        ΓêÜ Test 15: should create rate limit error with default wait
+        ΓêÜ Test 16: should respect custom retry delay
+      LLM-Specific Timeout
+        ΓêÜ Test 17: should create LLM startup timeout with context (1 ms)
+        ΓêÜ Test 18: should provide different suggestions for each phase
+      Backoff Calculation
+        ΓêÜ Test 19: should calculate exponential backoff correctly (1 ms)
+        ΓêÜ Test 20: should cap at maximum delay
+      Error Detection
+        ΓêÜ Test 21: should detect timeout errors (1 ms)
+        ΓêÜ Test 22: should detect rate limit errors
+        ΓêÜ Test 23: should extract retry delay from error message (1 ms)
+    State Conflict Errors
+      Task In Progress
+        ΓêÜ Test 24: should create task in progress error with steps (1 ms)
+        ΓêÜ Test 25: should throw with task ID (7 ms)
+      Invalid State Transition
+        ΓêÜ Test 26: should create transition error with allowed states (1 ms)
+        ΓêÜ Test 27: should list allowed transitions in resolution (1 ms)
+      Resource Locked
+        ΓêÜ Test 28: should create locked error with holder info
+        ΓêÜ Test 29: should work without lock holder
+      Ticket Conflict
+        ΓêÜ Test 30: should create conflict error with version info
+      Ticket State Machine
+        ΓêÜ Test 31: should define valid transitions
+        ΓêÜ Test 32: should validate allowed transitions (18 ms)
+      Error Detection
+        ΓêÜ Test 33: should detect state conflict errors (1 ms)
+    Cross-Category
+      ΓêÜ Test 34: all errors should have distinct error codes (6 ms)
+      ΓêÜ Test 35: all errors should be instances of Error when thrown (14 ms)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.887Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.917Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.919Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.941Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.948Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.951Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.955Z Ticket change event received, refreshing tree view
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.966Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.973Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:19.979Z Ticket change event received, refreshing tree view
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:20.006Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:20.016Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:20.033Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:18:20.035Z TicketsTreeProvider subscribing to ticket changes
+
+      at logInfo (src/logger.ts:69:17)
+
+PASS tests/ui/ticketsTreeProvider.test.ts (10.735 s)
+  TicketsTreeDataProvider
+    constructor
+      ΓêÜ should subscribe to ticket changes (792 ms)
+      ΓêÜ should handle subscription errors gracefully (73 ms)
+    getChildren
+      ΓêÜ should return ticket items for open tickets (116 ms)
+      ΓêÜ should filter out done tickets (96 ms)
+      ΓêÜ should show placeholder when no open tickets (4 ms)
+      ΓêÜ should show placeholder when all tickets are done (85 ms)
+      ΓêÜ should handle database errors gracefully (19 ms)
+      ΓêÜ should return empty array when element is provided (no children) (4 ms)
+      ΓêÜ should set correct descriptions with status and date (2 ms)
+      ΓêÜ should include full ticket description in tooltip for hover-to-read (1 ms)
+      ΓêÜ should use correct icons for different statuses (37 ms)
+    getTreeItem
+      ΓêÜ should return the element unchanged (9 ms)
+    plan preview extraction from description
+      ΓêÜ should extract plan preview from ticket.description (6 ms)
+      ΓêÜ should truncate plan preview to 200 characters (7 ms)
+      ΓêÜ should handle exactly 200 character plan without ellipsis (6 ms)
+      ΓêÜ should clean whitespace in plan preview (5 ms)
+      ΓêÜ should show "ΓÇö" when no description (2 ms)
+      ΓêÜ should show "ΓÇö" when description is empty string (3 ms)
+      ΓêÜ should set tooltip to full description for hover-to-read (78 ms)
+      ΓêÜ should set tooltip to "No plan stored yet" when no description (11 ms)
+      ΓêÜ should handle multiple tickets with different plan lengths (13 ms)
+    TreeItem command for clickable tickets
+      ΓêÜ should set command property on TreeItem to make it clickable (50 ms)
+      ΓêÜ should pass correct ticket ID to command arguments (29 ms)
+    refresh
+      ΓêÜ should fire onDidChangeTreeData event (3 ms)
+    onDidChangeTreeData
+      ΓêÜ should expose event emitter (18 ms)
+      ΓêÜ should trigger listeners when fired (9 ms)
+    auto-refresh on ticket changes
+      ΓêÜ should call refresh when ticket change event fires (18 ms)
+      ΓêÜ should fire onDidChangeTreeData when ticket change event received (39 ms)
+    contextValue for context menus
+      ΓêÜ Test 1: should set contextValue to "ticket" on TreeItem when tickets exist (9 ms)
+      ΓêÜ Test 2: should set contextValue on all ticket items (16 ms)
+      ΓêÜ Test 3: should set pending contextValue on pending tickets (3 ms)
+      ΓêÜ Test 4: should not set contextValue on placeholder item when no tickets (1 ms)
+
+PASS tests/ui/agentStatusTracker.test.ts
+  AgentStatusTracker
+    Singleton Instance
+      ΓêÜ should return same instance on multiple calls (4 ms)
+      ΓêÜ should initialize all agents to Idle status (1 ms)
+    setAgentStatus
+      ΓêÜ should set agent status to Active with result (3 ms)
+      ΓêÜ should set agent status without result (undefined) (1 ms)
+      ΓêÜ should update existing agent status (1 ms)
+      ΓêÜ should set agent to Failed status with error message (1 ms)
+      ΓêÜ should log agent status update
+      ΓêÜ should truncate result in logs to 50 chars
+      ΓêÜ should not include result in log if undefined
+      ΓêÜ should handle empty string result
+      ΓêÜ should update timestamp on each call (22 ms)
+    getAgentStatus
+      ΓêÜ should return agent status when it exists
+      ΓêÜ should return undefined for non-existent agent (1 ms)
+      ΓêÜ should return Idle status initially for all agents
+      ΓêÜ should return same reference after multiple gets (1 ms)
+    resetAll
+      ΓêÜ should reset all agents to Idle status
+      ΓêÜ should clear lastResult on reset (3 ms)
+      ΓêÜ should log reset action (7 ms)
+      ΓêÜ should reset only to Idle, not remove agents (1 ms)
+      ΓêÜ should handle reset when agents already Idle
+      ΓêÜ should reset multiple times independently
+    getAllStatuses
+      ΓêÜ should return map of all agent statuses (2 ms)
+      ΓêÜ should return copy of internal map (not reference) (13 ms)
+      ΓêÜ should include all four agents with initial Idle status (4 ms)
+      ΓêÜ should include updated statuses after set operations
+      ΓêÜ should include timestamp in all statuses after setAgentStatus (1 ms)
+      ΓêÜ should reflect state after resetAll (2 ms)
+    Complex Workflows
+      ΓêÜ should handle planning workflow: Idle ΓåÆ Active ΓåÆ Waiting (1 ms)
+      ΓêÜ should handle verification workflow: Idle ΓåÆ Active ΓåÆ Waiting with result (1 ms)
+      ΓêÜ should handle error workflow: Idle ΓåÆ Active ΓåÆ Failed
+      ΓêÜ should track multiple agents independently (1 ms)
+    Edge Cases
+      ΓêÜ should handle very long result strings (1 ms)
+      ΓêÜ should handle special characters in result (1 ms)
+      ΓêÜ should handle all valid status types (1 ms)
+      ΓêÜ should handle rapid status updates (1 ms)
+      ΓêÜ should handle getting status for all agent names (1 ms)
+    currentTask field
+      ΓêÜ should set currentTask via setAgentTask
+      ΓêÜ should preserve currentTask when setAgentStatus is called without clearing it (1 ms)
+      ΓêÜ should clear currentTask when set to undefined
+      ΓêÜ should update timestamp when setting currentTask (11 ms)
+      ΓêÜ should log currentTask changes (8 ms)
+      ΓêÜ should truncate currentTask in logs to 50 chars (2 ms)
+      ΓêÜ should handle setting task for non-existent agent gracefully (14 ms)
+      ΓêÜ should clear currentTask on resetAll (1 ms)
+    event emission
+      ΓêÜ should expose onStatusChange event emitter (2 ms)
+      ΓêÜ should fire event when setAgentStatus is called (1 ms)
+      ΓêÜ should fire event when setAgentTask is called (1 ms)
+      ΓêÜ should fire events for each agent on resetAll (2 ms)
+      ΓêÜ should allow multiple listeners to subscribe (1 ms)
+      ΓêÜ should not notify disposed listeners
+
+ts-jest[config] (WARN) message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+PASS tests/mcpServer/tools/getNextTask.spec.ts
+  getNextTask Tool
+    Parameter Validation
+      ΓêÜ Test 1: should accept undefined parameters (1 ms)
+      ΓêÜ Test 2: should accept null parameters (1 ms)
+      ΓêÜ Test 3: should accept empty object
+      ΓêÜ Test 4: should accept valid filter: ready
+      ΓêÜ Test 5: should accept valid filter: blocked (1 ms)
+      ΓêÜ Test 6: should accept valid filter: all
+      ΓêÜ Test 7: should reject invalid filter
+      ΓêÜ Test 8: should accept boolean includeContext (1 ms)
+      ΓêÜ Test 9: should reject non-boolean includeContext
+      ΓêÜ Test 10: should reject non-object parameters (1 ms)
+    Task Retrieval
+      ΓêÜ Test 11: should return task when queue has items (1 ms)
+      ΓêÜ Test 12: should return null task when queue is empty
+      ΓêÜ Test 13: should include full context by default
+      ΓêÜ Test 14: should exclude context when includeContext is false (1 ms)
+    Filter Handling
+      ΓêÜ Test 15: should handle "ready" filter (default behavior)
+      ΓêÜ Test 16: should return empty for "blocked" filter (1 ms)
+      ΓêÜ Test 17: should reject invalid filter
+    Error Handling
+      ΓêÜ Test 18: should handle orchestrator not initialized error (1 ms)
+      ΓêÜ Test 19: should handle generic orchestrator errors (2 ms)
+      ΓêÜ Test 20: should handle non-Error exceptions (1 ms)
+    Edge Cases
+      ΓêÜ Test 21: should handle all blocked tasks scenario (1 ms)
+      ΓêÜ Test 22: should work with default parameters (no params provided)
+      ΓêÜ Test 23: should handle task with minimal fields (1 ms)
+
+PASS tests/conversationWebview.test.ts
+  ConversationWebviewPanel
+    createOrShow
+      ΓêÜ should reveal an existing panel if it already exists (1 ms)
+      ΓêÜ should create a new panel if none exists for the chatId (5 ms)
+      ΓêÜ should handle undefined initialMessages gracefully (1 ms)
+      ΓêÜ should throw an error if globalState update fails (29 ms)
+      ΓêÜ should log info when a new panel is created
+    disposeAll
+      ΓêÜ should dispose all panels and clear the panels map
+      ΓêÜ should handle empty panels map gracefully
+      ΓêÜ should handle errors during panel disposal (28 ms)
+    getOpenPanels
+      ΓêÜ should return an empty array when no panels are open (1 ms)
+      ΓêÜ should return all open panels
+      ΓêÜ should handle concurrent modifications to the panels map (1 ms)
+      ΓêÜ should return panels in insertion order
+      ΓêÜ should not mutate the original panels map (1 ms)
+    restoreLastActive
+      ΓêÜ should return null if no lastActiveChatId is found
+      ΓêÜ should return null and log a warning if getConversationHistory throws an error
+      ΓêÜ should call createOrShow and return a ConversationWebviewPanel instance on success (1 ms)
+
+PASS tests/ui/agentsTreeProvider.test.ts
+  AgentsTreeDataProvider (Dynamic Status)
+    constructor
+      ΓêÜ should subscribe to ticket changes on instantiation (2 ms)
+      ΓêÜ should handle subscription errors gracefully (1 ms)
+    getChildren with dynamic status
+      ΓêÜ should return 6 items: 1 toggle + 5 agents (2 ms)
+      ΓêÜ should display Manual mode toggle when autoProcessTickets is false (1 ms)
+      ΓêÜ should display Auto mode toggle when autoProcessTickets is true (1 ms)
+      ΓêÜ should set command on toggle item to trigger toggleAutoProcessing (1 ms)
+      ΓêÜ should display Idle when status is undefined (1 ms)
+      ΓêÜ should display Active status with truncated result (1 ms)
+      ΓêÜ should use spinning icon for Active agent (1 ms)
+      ΓêÜ should use check icon for Waiting agent (1 ms)
+      ΓêÜ should use error icon for Failed agent (1 ms)
+      ΓêÜ should include timestamp in tooltip (1 ms)
+      ΓêÜ should handle result truncation to 50 chars (1 ms)
+      ΓêÜ should display all agents with different statuses (5 ms)
+      ΓêÜ should not include "Last:" in description when no result (7 ms)
+      ΓêÜ should display currentTask in description when available (7 ms)
+      ΓêÜ should prioritize currentTask over lastResult in description (7 ms)
+      ΓêÜ should truncate currentTask to 50 chars (8 ms)
+      ΓêÜ should include currentTask in tooltip (3 ms)
+      ΓêÜ should include both currentTask and lastResult in tooltip (5 ms)
+      ΓêÜ should show "Idle" with no extra info when agent has no task or result (4 ms)
+      ΓêÜ should handle Failed agent with error message in tooltip (1 ms)
+      ΓêÜ should display "Disabled" and gray icon for disabled agents
+      ΓêÜ should set contextValue to coe-agent-enabled for enabled agents
+      ΓêÜ should set contextValue to coe-agent-disabled for disabled agents (1 ms)
+      ΓêÜ should include right-click hint in tooltip for enabled agents (5 ms)
+      ΓêÜ should include right-click hint in tooltip for disabled agents (1 ms)
+      ΓêÜ should check correct setting key for each agent (2 ms)
+    tree refresh on ticket change
+      ΓêÜ should trigger refresh when listener called (1 ms)
+      ΓêÜ should fire onDidChangeTreeData when refresh called (5 ms)
+    real-time updates on agent status change
+      ΓêÜ should subscribe to agentStatusTracker.onStatusChange on construction (3 ms)
+      ΓêÜ should refresh tree when agent status changes (1 ms)
+    getTreeItem
+      ΓêÜ should return item unchanged (3 ms)
+    getChildren with element
+      ΓêÜ should return empty array for no children (1 ms)
+    edge cases and comprehensive coverage
+      ΓêÜ should handle agent with no timestamp gracefully (1 ms)
+      ΓêÜ should show all 4 agents with different icons simultaneously (1 ms)
+      ΓêÜ should handle very long currentTask and lastResult both present (3 ms)
+      ΓêÜ should handle status change subscription error gracefully (2 ms)
+      ΓêÜ should format timestamp correctly in tooltip (20 ms)
+      ΓêÜ should handle empty string currentTask (5 ms)
+      ΓêÜ should handle empty string lastResult (2 ms)
+
+PASS tests/mcpServer/tools/askQuestion.spec.ts
+  askQuestion Tool
+    Parameter Validation
+      ΓêÜ Test 1: should reject non-object params (1 ms)
+      ΓêÜ Test 2: should require non-empty question (1 ms)
+      ΓêÜ Test 3: should reject non-string chatId
+      ΓêÜ Test 4: should accept valid parameters (1 ms)
+    Answer Handling
+      ΓêÜ Test 5: should return answer on success
+      ΓêÜ Test 6: should create ticket on timeout (1 ms)
+      ΓêÜ Test 7: should return internal error on failure
+
+PASS tests/mcpServer/tools/reportTaskDone.spec.ts
+  reportTaskDone Tool
+    Parameter Validation
+      ΓêÜ Test 1: should reject non-object params (1 ms)
+      ΓêÜ Test 2: should require taskId (1 ms)
+      ΓêÜ Test 3: should require valid status (1 ms)
+      ΓêÜ Test 4: should accept valid params
+    Task Reporting
+      ΓêÜ Test 5: should return error when task not found (1 ms)
+      ΓêÜ Test 6: should update ticket to done (1 ms)
+      ΓêÜ Test 7: should append notes to description (1 ms)
+      ΓêÜ Test 8: should map failed to blocked
+    Verification Trigger
+      ΓêÜ Test 9: should trigger verification when done with codeDiff (1 ms)
+      ΓêÜ Test 10: should mark blocked if verification fails
+    Error Handling
+      ΓêÜ Test 11: should return internal error on exception (1 ms)
+
+PASS tests/config/schema.test.ts
+  Config Schema Tests
+    Schema Validation (Happy Path)
+      ΓêÜ Test 1: should parse valid config with all fields (4 ms)
+      ΓêÜ Test 2: should apply defaults for missing optional fields (2 ms)
+      ΓêÜ Test 3: should use defaults for completely empty config object (1 ms)
+    Schema Validation (Edge Cases)
+      ΓêÜ Test 4: should reject invalid enum value for logLevel (20 ms)
+      ΓêÜ Test 5: should reject negative timeoutSeconds (1 ms)
+      ΓêÜ Test 6: should reject zero for positive-only fields (1 ms)
+      ΓêÜ Test 7: should reject string for numeric field (2 ms)
+      ΓêÜ Test 8: should reject tokenPollIntervalSeconds below min (10) (1 ms)
+      ΓêÜ Test 9: should reject tokenPollIntervalSeconds above max (120) (1 ms)
+      ΓêÜ Test 10: should reject invalid URL for endpoint (1 ms)
+      ΓêÜ Test 11: should accept valid URL with custom IP (1 ms)
+      ΓêÜ Test 12: should accept boolean true for auditLog.enabled
+      ΓêÜ Test 13: should reject non-boolean for auditLog.enabled (1 ms)
+      ΓêÜ Test 14: should handle deep partial config merge (1 ms)
+      ΓêÜ Test 15: should accept min boundary for tokenPollIntervalSeconds (10) (1 ms)
+      ΓêÜ Test 16: should accept max boundary for tokenPollIntervalSeconds (120)
+    Config Immutability
+      ΓêÜ Test 17: returned config should be readonly (TypeScript type level) (1 ms)
+    DEFAULT_CONFIG constant
+      ΓêÜ Test 18: DEFAULT_CONFIG should match schema defaults (1 ms)
+      ΓêÜ Test 19: DEFAULT_CONFIG should have all required sections (1 ms)
+
+ts-jest[config] (WARN) message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+PASS tests/answerAgent.spec/AnswerAgent.clearHistory.web.spec.ts
+  AnswerAgent - clearHistory
+    ΓêÜ should delete the conversation history for the given chatId and log the action (1 ms)
+    ΓêÜ should not log anything if the chatId does not exist in the conversation history
+
+PASS tests/config/loader.test.ts
+  Config Loader Tests
+    File I/O (Happy Path)
+      ΓêÜ Test 1: should load valid config file successfully (8 ms)
+      ΓêÜ Test 2: should handle missing config file gracefully (1 ms)
+      ΓêÜ Test 3: should merge partial config with defaults (1 ms)
+    File I/O (Error Handling)
+      ΓêÜ Test 4: should handle malformed JSON gracefully (1 ms)
+      ΓêÜ Test 5: should handle file read errors (2 ms)
+      ΓêÜ Test 6: should handle validation error with partial valid data (3 ms)
+    Config Access Patterns
+      ΓêÜ Test 7: should return config with readonly typing (2 ms)
+      ΓêÜ Test 8: should preserve offline LLM endpoint with custom IP (2 ms)
+    Coverage for All Config Sections
+      ΓêÜ Test 9: should validate and merge all config sections (1 ms)
+
+PASS tests/ui/conversationsTreeProvider.test.ts
+  ConversationsTreeDataProvider
+    constructor
+      ΓêÜ should subscribe to ticket changes on instantiation (1 ms)
+      ΓêÜ should handle subscription errors gracefully (1 ms)
+    getTreeItem
+      ΓêÜ should return the element as-is (1 ms)
+    getChildren
+      ΓêÜ should return empty array when element is provided (flat list)
+      ΓêÜ should return placeholder when no conversations exist (1 ms)
+      ΓêÜ should create TreeItem for a valid conversation ticket (14 ms)
+      ΓêÜ should skip tickets with invalid JSON and show placeholder (1 ms)
+      ΓêÜ should fall back to message count when timestamps are missing
+      ΓêÜ should ignore tickets with empty conversation arrays
+      ΓêÜ should include answer_agent tickets even when type is set (2 ms)
+      ΓêÜ should show empty answer_agent tickets as new chats (2 ms)
+      ΓêÜ should skip unexpected conversation formats (2 ms)
+      ΓêÜ should handle database errors gracefully (1 ms)
+    auto-refresh on ticket changes
+      ΓêÜ should refresh when ticket change event fires (1 ms)
+    refresh
+      ΓêÜ should fire onDidChangeTreeData event (1 ms)
+      ΓêÜ should log info message when refreshing (1 ms)
+    onDidChangeTreeData
+      ΓêÜ should expose the event emitter (1 ms)
+    contextValue and command integration
+      ΓêÜ should set contextValue on all conversation items
+      ΓêÜ should include command with chatId for context menu handlers (1 ms)
+
+PASS tests/config/index.test.ts
+  Config Singleton Service Tests
+    Initialization
+      ΓêÜ Test 1: should initialize config on first call (8 ms)
+      ΓêÜ Test 2: should prevent re-initialization (singleton contract) (10 ms)
+      ΓêÜ Test 3: should propagate loader errors (9 ms)
+    Access & Retrieval
+      ΓêÜ Test 4: should throw if getConfigInstance called before init (1 ms)
+      ΓêÜ Test 5: should return config instance after init
+      ΓêÜ Test 6: should return same instance on multiple calls (singleton) (1 ms)
+    Test Reset for Isolation
+      ΓêÜ Test 7: should allow re-initialization after reset
+
+FAIL tests/ticketDb.test.ts (12.968 s)
+  TicketDb
+    initialization
+      ΓêÜ should initialize in-memory mode when sqlite3 fails (56 ms)
+      ΓêÜ should create .coe directory if missing (2 ms)
+    CRUD operations (in-memory)
+      ΓêÜ should create a ticket (235 ms)
+      ΓêÜ should create a ticket with ai_to_human type (3 ms)
+      ΓêÜ should retrieve ticket with type field (37 ms)
+      ΓêÜ should handle ticket without type (backward compatibility) (2 ms)
+      ΓêÜ should retrieve a ticket by ID (6 ms)
+      ΓêÜ should return null for non-existent ticket (1 ms)
+      ΓêÜ should list all tickets (3 ms)
+      ΓêÜ should throw error if methods called before init (246 ms)
+    SQLite Mode Operations
+      ΓêÜ should initialize with SQLite when module loads successfully (305 ms)
+      ├ù should create ticket in SQLite mode (27 ms)
+      ├ù should retrieve all tickets from SQLite (136 ms)
+    updateTicket
+      ├ù should update ticket in in-memory mode (342 ms)
+      ├ù should update ticket in SQLite mode (34 ms)
+      ΓêÜ should return null for non-existent ticket (319 ms)
+      ΓêÜ should emit change event on update (376 ms)
+    Migration & Backward Compatibility
+      ├ù should migrate SQLite table without type column (2 ms)
+      ├ù should read old tickets without type field as undefined (39 ms)
+    Integration: Full CRUD Flow
+      ├ù should complete full CRUD lifecycle: create ΓåÆ read ΓåÆ update ΓåÆ read (236 ms)
+      ├ù should handle concurrent updates on same ticket (275 ms)
+      ΓêÜ should gracefully fall back to in-memory when SQLite fails (5 ms)
+    Error Handling
+      ├ù should handle createTicket error in SQLite mode (9 ms)
+      ├ù should handle getAllTickets error in SQLite mode (64 ms)
+      ├ù should handle getTicket error in SQLite mode (2 ms)
+      ├ù should warn when initialize is called twice (2 ms)
+
+  ΓùÅ TicketDb ΓÇ║ SQLite Mode Operations ΓÇ║ should create ticket in SQLite mode
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      399 |
+      400 |             // Assert
+    > 401 |             expect(mockRunSpy).toHaveBeenCalled();
+          |                                ^
+      402 |             expect(mockRunSpy.mock.calls.some((call: any[]) => call[0]?.includes('INSERT INTO'))).toBe(true);
+      403 |             expect(ticket.title).toBe('SQLite Test');
+      404 |         });
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:401:32)
+
+  ΓùÅ TicketDb ΓÇ║ SQLite Mode Operations ΓÇ║ should retrieve all tickets from SQLite
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      456 |
+      457 |             // Assert
+    > 458 |             expect(mockAllSpy).toHaveBeenCalled();
+          |                                ^
+      459 |             expect(tickets).toHaveLength(2);
+      460 |             expect(tickets[0].title).toBe('First');
+      461 |             expect(tickets[1].title).toBe('Second');
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:458:32)
+
+  ΓùÅ TicketDb ΓÇ║ updateTicket ΓÇ║ should update ticket in in-memory mode
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "2026-02-05T04:18:20.038Z"
+    Received: null
+
+      505 |             expect(updated?.title).toBe('Updated Title');
+      506 |             expect(updated?.status).toBe('done');
+    > 507 |             expect(updated?.createdAt).toBe(created.createdAt); // createdAt unchanged
+          |                                        ^
+      508 |             expect(updated?.updatedAt).not.toBe(created.updatedAt); // updatedAt changed
+      509 |         });
+      510 |
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:507:40)
+
+  ΓùÅ TicketDb ΓÇ║ updateTicket ΓÇ║ should update ticket in SQLite mode
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      561 |
+      562 |             // Assert: Verify db.run was called with UPDATE SQL
+    > 563 |             expect(mockRunSpy).toHaveBeenCalled();
+          |                                ^
+      564 |             const updateCall = mockRunSpy.mock.calls.find((call: any[]) =>
+      565 |                 typeof call[0] === 'string' && call[0].includes('UPDATE tickets')
+      566 |             );
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:563:32)
+
+  ΓùÅ TicketDb ΓÇ║ Migration & Backward Compatibility ΓÇ║ should migrate SQLite table without type column
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      664 |
+      665 |             // Assert: Verify ALTER TABLE was called to add type column
+    > 666 |             expect(mockRunSpy).toHaveBeenCalled();
+          |                                ^
+      667 |             const alterCall = mockRunSpy.mock.calls.find((call: any[]) =>
+      668 |                 typeof call[0] === 'string' && call[0].includes('ALTER TABLE') && call[0].includes('ADD COLUMN type')
+      669 |             );
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:666:32)
+
+  ΓùÅ TicketDb ΓÇ║ Migration & Backward Compatibility ΓÇ║ should read old tickets without type field as undefined
+
+    expect(received).not.toBeNull()
+
+    Received: null
+
+      723 |
+      724 |             // Assert: Old ticket should have type: undefined (backward compatibility)
+    > 725 |             expect(ticket).not.toBeNull();
+          |                                ^
+      726 |             expect(ticket?.id).toBe('OLD-001');
+      727 |             expect(ticket?.title).toBe('Old Ticket');
+      728 |             expect(ticket?.type).toBeUndefined(); // No type = undefined (not 'ai_to_human')
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:725:32)
+
+  ΓùÅ TicketDb ΓÇ║ Integration: Full CRUD Flow ΓÇ║ should complete full CRUD lifecycle: create ΓåÆ read ΓåÆ update ΓåÆ read
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "2026-02-05T04:18:21.097Z"
+    Received: null
+
+      785 |             expect(updated?.title).toBe('Updated Integration Test');
+      786 |             expect(updated?.status).toBe('done');
+    > 787 |             expect(updated?.createdAt).toBe(created.createdAt); // Unchanged
+          |                                        ^
+      788 |             expect(updated?.updatedAt).not.toBe(created.updatedAt); // Changed
+      789 |
+      790 |             // Step 4: READ again (verify update persisted)
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:787:40)
+
+  ΓùÅ TicketDb ΓÇ║ Integration: Full CRUD Flow ΓÇ║ should handle concurrent updates on same ticket
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Update 2"
+    Received: "Concurrent Test"
+
+      814 |             // Final state should be last update (Update 2) since in-memory is synchronous
+      815 |             const final = await getConc(ticket.id);
+    > 816 |             expect(final?.title).toBe('Update 2');
+          |                                  ^
+      817 |             expect(final?.status).toBe('done');
+      818 |         });
+      819 |
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:816:34)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should handle createTicket error in SQLite mode
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: {"conversationHistory": undefined, "createdAt": "2026-02-05T04:18:21.490Z", "description": undefined, "id": "TICKET-1770265101490", "status": "open", "thread": undefined, "title": "Test", "type": undefined, "updatedAt": "2026-02-05T04:18:21.490Z"}
+
+      920 |
+      921 |             // Act & Assert: createTicket should throw/reject due to DB error
+    > 922 |             await expect(createErr({ title: 'Test', status: 'open' }))
+          |                   ^
+      923 |                 .rejects.toThrow();
+      924 |         });
+      925 |
+
+      at expect (node_modules/expect/build/index.js:2116:15)
+      at Object.<anonymous> (tests/ticketDb.test.ts:922:19)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should handle getAllTickets error in SQLite mode
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: [{"conversationHistory": undefined, "createdAt": "2026-02-05T04:18:21.486Z", "description": undefined, "id": "TICKET-1770265101486", "status": "open", "thread": undefined, "title": "Fallback Test", "type": undefined, "updatedAt": "2026-02-05T04:18:21.486Z"}, {"conversationHistory": undefined, "createdAt": "2026-02-05T04:18:21.490Z", "description": undefined, "id": "TICKET-1770265101490", "status": "open", "thread": undefined, "title": "Test", "type": undefined, "updatedAt": "2026-02-05T04:18:21.490Z"}]
+
+      938 |
+      939 |             // Act & Assert: listTickets should throw/reject due to DB error
+    > 940 |             await expect(listErr()).rejects.toThrow();
+          |                   ^
+      941 |         });
+      942 |
+      943 |         it('should handle getTicket error in SQLite mode', async () => {
+
+      at expect (node_modules/expect/build/index.js:2116:15)
+      at Object.<anonymous> (tests/ticketDb.test.ts:940:19)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should handle getTicket error in SQLite mode
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: null
+
+      955 |
+      956 |             // Act & Assert: getTicket should throw/reject due to DB error
+    > 957 |             await expect(getErr('TICKET-001')).rejects.toThrow();
+          |                   ^
+      958 |         });
+      959 |
+      960 |         it('should warn when initialize is called twice', async () => {
+
+      at expect (node_modules/expect/build/index.js:2116:15)
+      at Object.<anonymous> (tests/ticketDb.test.ts:957:19)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should warn when initialize is called twice
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      983 |
+      984 |             // Assert: Warning should be logged
+    > 985 |             expect(mockLogWarn).toHaveBeenCalled();
+          |                                 ^
+      986 |             const warnCalls = mockLogWarn.mock.calls.map((call: any[]) => call[0]);
+      987 |             expect(warnCalls.some((msg: string) => msg.includes('already initialized'))).toBe(true);
+      988 |         });
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:985:33)
+
+  console.log
+    [INFO] 2026-02-05T04:18:22.053Z Test info message
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.warn
+    [WARN] 2026-02-05T04:18:22.155Z Test warning message
+
+    [0m [90m 75 |[39m         [36mconst[39m line [33m=[39m [32m`[WARN] ${new Date().toISOString()} ${message}`[39m[33m;[39m
+     [90m 76 |[39m         getOutputChannel()[33m.[39mappendLine(line)[33m;[39m
+    [31m[1m>[22m[39m[90m 77 |[39m         console[33m.[39mwarn(line)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 78 |[39m     }
+     [90m 79 |[39m }
+     [90m 80 |[39m[0m
+
+      at logWarn (src/logger.ts:77:17)
+      at tests/logger.test.ts:118:16
+      at Object.<anonymous> (node_modules/expect/build/index.js:1824:9)
+      at Object.throwingMatcher [as toThrow] (node_modules/expect/build/index.js:2235:93)
+      at Object.<anonymous> (tests/logger.test.ts:119:14)
+
+  console.error
+    [ERROR] 2026-02-05T04:18:22.166Z Test error message
+
+    [0m [90m 83 |[39m     [36mconst[39m line [33m=[39m [32m`[ERROR] ${new Date().toISOString()} ${msg}`[39m[33m;[39m
+     [90m 84 |[39m     getOutputChannel()[33m.[39mappendLine(line)[33m;[39m
+    [31m[1m>[22m[39m[90m 85 |[39m     console[33m.[39merror(line)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 86 |[39m }
+     [90m 87 |[39m[0m
+
+      at logError (src/logger.ts:85:13)
+      at tests/logger.test.ts:130:17
+      at Object.<anonymous> (node_modules/expect/build/index.js:1824:9)
+      at Object.throwingMatcher [as toThrow] (node_modules/expect/build/index.js:2235:93)
+      at Object.<anonymous> (tests/logger.test.ts:131:14)
+
+  console.error
+    [ERROR] 2026-02-05T04:18:22.171Z Test error object
+
+    [0m [90m 83 |[39m     [36mconst[39m line [33m=[39m [32m`[ERROR] ${new Date().toISOString()} ${msg}`[39m[33m;[39m
+     [90m 84 |[39m     getOutputChannel()[33m.[39mappendLine(line)[33m;[39m
+    [31m[1m>[22m[39m[90m 85 |[39m     console[33m.[39merror(line)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 86 |[39m }
+     [90m 87 |[39m[0m
+
+      at logError (src/logger.ts:85:13)
+      at tests/logger.test.ts:142:17
+      at Object.<anonymous> (node_modules/expect/build/index.js:1824:9)
+      at Object.throwingMatcher [as toThrow] (node_modules/expect/build/index.js:2235:93)
+      at Object.<anonymous> (tests/logger.test.ts:143:14)
+
+PASS tests/logger.test.ts
+  Logger
+    initializeLogger
+      ΓêÜ should initialize without throwing errors when config file does not exist (2 ms)
+      ΓêÜ should initialize with default log level when config file is missing
+      ΓêÜ should read log level from config file when it exists (1 ms)
+      ΓêÜ should handle invalid JSON in config file gracefully (1 ms)
+    logInfo
+      ΓêÜ should log info messages (99 ms)
+    logWarn
+      ΓêÜ should log warning messages (13 ms)
+    logError
+      ΓêÜ should log error messages as strings (5 ms)
+      ΓêÜ should log Error objects (7 ms)
+
+PASS tests/getErrors.spec/handleGetErrors.test.ts
+  handleGetErrors
+    ΓêÜ Test 1: should return empty diagnostics when file does not exist (1 ms)
+    ΓêÜ Test 2: should return diagnostics successfully when file exists with valid data (1 ms)
+    ΓêÜ Test 3: should handle invalid JSON in diagnostics file (1 ms)
+    ΓêÜ Test 4: should handle missing required fields in diagnostics file (1 ms)
+    ΓêÜ Test 5: should handle file read errors (1 ms)
+    ΓêÜ Test 6: should handle empty diagnostics file correctly (1 ms)
+    ΓêÜ Test 7: should handle params being undefined (1 ms)
+    ΓêÜ Test 8: should handle params being empty object (1 ms)
+
+PASS tests/ui/orchestratorStatusTreeProvider.test.ts
+  OrchestratorStatusTreeDataProvider
+    ΓêÜ Test 1: should return three status items with correct labels (2 ms)
+    ΓêÜ Test 2: should show Idle when no last picked task (1 ms)
+    ΓêÜ Test 3: should refresh when queue change event fires (1 ms)
+    ΓêÜ Test 4: should assign click command for details (1 ms)
+
+PASS tests/mcpServer/jsonrpc.spec.ts
+  JSON-RPC Helpers
+    ΓêÜ Test 1: should parse a valid single request (2 ms)
+    ΓêÜ Test 2: should return parse error on invalid JSON
+    ΓêÜ Test 3: should reject invalid request objects
+    ΓêÜ Test 4: should handle batch requests (1 ms)
+    ΓêÜ Test 5: should report invalid request inside batch (1 ms)
+    ΓêÜ Test 6: should reject empty batch
+    ΓêÜ Test 7: should build error response (1 ms)
+
+PASS tests/errors/errorCodes.spec.ts
+  ErrorCode Enum
+    ΓêÜ Test 1: should define key error codes (1 ms)
+    ΓêÜ Test 2: should include drift-related error codes
+    ΓêÜ Test 3: should have unique values (4 ms)
+
+PASS tests/ui/llmStatusBar.test.ts
+  LlmStatusBarManager
+    ΓêÜ shows spinner on first start and hides after debounce (2 ms)
+    ΓêÜ keeps spinner for concurrent calls (1 ms)
+    ΓêÜ cancels pending hide when a new call starts (1 ms)
+
+PASS tests/integration.spec/logRegisteredTools.test.ts
+  logRegisteredTools
+    ΓêÜ should log the names of all registered tools (6 ms)
+
+PASS tests/getErrors.spec/validateGetErrorsParams.test.ts
+  validateGetErrorsParams
+    ΓêÜ Test 1: should validate undefined params as valid (8 ms)
+    ΓêÜ Test 2: should validate null params as valid (1 ms)
+    ΓêÜ Test 3: should validate empty object as valid (1 ms)
+    ΓêÜ Test 4: should validate object with properties as valid
+    ΓêÜ Test 5: should reject non-object params (string) (1 ms)
+    ΓêÜ Test 6: should reject non-object params (number)
+    ΓêÜ Test 7: should reject non-object params (boolean)
+    ΓêÜ Test 8: should reject non-object params (array)
+
+PASS tests/example.test.ts
+  ΓêÜ hello world! (1 ms)
+
+PASS tests/integration.spec/initializeMCPServer.web.spec.ts
+  MCP Tool Registration
+    ΓêÜ Test 1: should register at least three MCP tools (1 ms)
+    ΓêÜ Test 2: should include required tool names (1 ms)
+
+PASS tests/integration.spec/getRegisteredTools.test.ts
+  getRegisteredTools
+    ΓêÜ should return a copy of the registered tools array (1 ms)
+    ΓêÜ should not allow modifications to the original registered tools
+
+ts-jest[config] (WARN) message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+PASS tests/agents/researchAgent.test.ts
+  ResearchAgent
+    runResearch()
+      ΓêÜ should generate a markdown report with query, timestamp, and content (36 ms)
+      ΓêÜ should call completeLLM with correct system prompt and temperature (6 ms)
+      ΓêÜ should simulate 10-minute delay before calling LLM (10 ms)
+      ΓêÜ should handle LLM errors gracefully and return error MD report (3 ms)
+      ΓêÜ should handle non-Error thrown values (2 ms)
+      ΓêÜ should truncate long queries in logs to prevent overflow (4 ms)
+      ΓêÜ should log completion with content length (8 ms)
+      ΓêÜ should include helpful troubleshooting tips in error reports (2 ms)
+
+PASS tests/llmService.test.ts (17.354 s)
+  LLM Service
+    initializeLLMService
+      ΓêÜ should throw error if fetch is not available (Node <18) (310 ms)
+      ΓêÜ should use config from centralized config system (1 ms)
+      ΓêÜ should read LLM config from centralized config system (1 ms)
+      ΓêÜ should use validated config values from centralized config (validation handled by Zod) (1 ms)
+      ΓêÜ should use maxTokens from centralized config (validation handled by Zod) (1 ms)
+      ΓêÜ should initialize successfully with centralized config (1 ms)
+    completeLLM
+      ΓêÜ should make successful LLM request (2 ms)
+      ΓêÜ should include system prompt if provided (1 ms)
+      ΓêÜ should handle network errors and create blocked ticket (2 ms)
+      ΓêÜ should handle HTTP error responses (41 ms)
+      ΓêÜ should handle timeout with AbortError (2 ms)
+      ΓêÜ should handle ECONNREFUSED error specifically (2 ms)
+    streamLLM
+      ΓêÜ should stream chunks and accumulate response (6 ms)
+      ΓêÜ should skip malformed SSE lines gracefully (4 ms)
+      ΓêÜ should abort on inactivity timeout (2098 ms)
+      ΓêÜ should handle streaming network errors (2 ms)
+      ΓêÜ should handle HTTP error in streaming (1 ms)
+      ΓêÜ should abort on startup timeout (631 ms)
+      ΓêÜ should abort on inactivity timeout after first chunk (2084 ms)
+      ΓêÜ should not double-abort if startup and inactivity timeouts overlap (2055 ms)
+    token management
+      token estimation
+        ΓêÜ should estimate tokens for empty string as 0 (1 ms)
+        ΓêÜ should estimate tokens with reasonable accuracy (2 ms)
+        ΓêÜ should estimate longer text with ┬▒20% variance tolerance (2 ms)
+      message trimming
+        ΓêÜ should not trim messages under 80% of maxTokens (1 ms)
+        ΓêÜ should trim oldest messages when over 80% of maxTokens (1 ms)
+        ΓêÜ should preserve system message even if it exceeds limit (1 ms)
+        ΓêÜ should keep system message + last 3 exchanges minimum (1 ms)
+      integration with completeLLM
+        ΓêÜ should apply trimming before calling LLM (3 ms)
+        ΓêÜ should work with legacy mode (prompt + systemPrompt) (1 ms)
+      integration with streamLLM
+        ΓêÜ should apply trimming before streaming (2 ms)
+
+Summary of all failing tests
+FAIL tests/cache/cacheManagement.spec.ts (6.364 s)
+  ΓùÅ Cache Management ΓÇ║ Index - MT-004.3 ΓÇ║ Test 14: should calculate cache statistics
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: undefined
+
+      315 |
+      316 |             const stats = getCacheStats(mockContext);
+    > 317 |             expect(stats.totalItems).toBe(0); // Not added to index yet
+          |                                      ^
+      318 |         });
+      319 |     });
+      320 |
+
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:317:38)
+
+  ΓùÅ Cache Management ΓÇ║ Pruning - MT-004.5 ΓÇ║ Test 21: should get cache size info
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: undefined
+
+      391 |         it('Test 21: should get cache size info', () => {
+      392 |             const info = getCacheSizeInfo(mockContext);
+    > 393 |             expect(info.totalBytes).toBe(0);
+          |                                     ^
+      394 |             expect(info.itemCount).toBe(0);
+      395 |         });
+      396 |     });
+
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:393:37)
+
+FAIL tests/ticketDb.test.ts (12.968 s)
+  ΓùÅ TicketDb ΓÇ║ SQLite Mode Operations ΓÇ║ should create ticket in SQLite mode
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      399 |
+      400 |             // Assert
+    > 401 |             expect(mockRunSpy).toHaveBeenCalled();
+          |                                ^
+      402 |             expect(mockRunSpy.mock.calls.some((call: any[]) => call[0]?.includes('INSERT INTO'))).toBe(true);
+      403 |             expect(ticket.title).toBe('SQLite Test');
+      404 |         });
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:401:32)
+
+  ΓùÅ TicketDb ΓÇ║ SQLite Mode Operations ΓÇ║ should retrieve all tickets from SQLite
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      456 |
+      457 |             // Assert
+    > 458 |             expect(mockAllSpy).toHaveBeenCalled();
+          |                                ^
+      459 |             expect(tickets).toHaveLength(2);
+      460 |             expect(tickets[0].title).toBe('First');
+      461 |             expect(tickets[1].title).toBe('Second');
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:458:32)
+
+  ΓùÅ TicketDb ΓÇ║ updateTicket ΓÇ║ should update ticket in in-memory mode
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "2026-02-05T04:18:20.038Z"
+    Received: null
+
+      505 |             expect(updated?.title).toBe('Updated Title');
+      506 |             expect(updated?.status).toBe('done');
+    > 507 |             expect(updated?.createdAt).toBe(created.createdAt); // createdAt unchanged
+          |                                        ^
+      508 |             expect(updated?.updatedAt).not.toBe(created.updatedAt); // updatedAt changed
+      509 |         });
+      510 |
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:507:40)
+
+  ΓùÅ TicketDb ΓÇ║ updateTicket ΓÇ║ should update ticket in SQLite mode
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      561 |
+      562 |             // Assert: Verify db.run was called with UPDATE SQL
+    > 563 |             expect(mockRunSpy).toHaveBeenCalled();
+          |                                ^
+      564 |             const updateCall = mockRunSpy.mock.calls.find((call: any[]) =>
+      565 |                 typeof call[0] === 'string' && call[0].includes('UPDATE tickets')
+      566 |             );
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:563:32)
+
+  ΓùÅ TicketDb ΓÇ║ Migration & Backward Compatibility ΓÇ║ should migrate SQLite table without type column
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      664 |
+      665 |             // Assert: Verify ALTER TABLE was called to add type column
+    > 666 |             expect(mockRunSpy).toHaveBeenCalled();
+          |                                ^
+      667 |             const alterCall = mockRunSpy.mock.calls.find((call: any[]) =>
+      668 |                 typeof call[0] === 'string' && call[0].includes('ALTER TABLE') && call[0].includes('ADD COLUMN type')
+      669 |             );
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:666:32)
+
+  ΓùÅ TicketDb ΓÇ║ Migration & Backward Compatibility ΓÇ║ should read old tickets without type field as undefined
+
+    expect(received).not.toBeNull()
+
+    Received: null
+
+      723 |
+      724 |             // Assert: Old ticket should have type: undefined (backward compatibility)
+    > 725 |             expect(ticket).not.toBeNull();
+          |                                ^
+      726 |             expect(ticket?.id).toBe('OLD-001');
+      727 |             expect(ticket?.title).toBe('Old Ticket');
+      728 |             expect(ticket?.type).toBeUndefined(); // No type = undefined (not 'ai_to_human')
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:725:32)
+
+  ΓùÅ TicketDb ΓÇ║ Integration: Full CRUD Flow ΓÇ║ should complete full CRUD lifecycle: create ΓåÆ read ΓåÆ update ΓåÆ read
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "2026-02-05T04:18:21.097Z"
+    Received: null
+
+      785 |             expect(updated?.title).toBe('Updated Integration Test');
+      786 |             expect(updated?.status).toBe('done');
+    > 787 |             expect(updated?.createdAt).toBe(created.createdAt); // Unchanged
+          |                                        ^
+      788 |             expect(updated?.updatedAt).not.toBe(created.updatedAt); // Changed
+      789 |
+      790 |             // Step 4: READ again (verify update persisted)
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:787:40)
+
+  ΓùÅ TicketDb ΓÇ║ Integration: Full CRUD Flow ΓÇ║ should handle concurrent updates on same ticket
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Update 2"
+    Received: "Concurrent Test"
+
+      814 |             // Final state should be last update (Update 2) since in-memory is synchronous
+      815 |             const final = await getConc(ticket.id);
+    > 816 |             expect(final?.title).toBe('Update 2');
+          |                                  ^
+      817 |             expect(final?.status).toBe('done');
+      818 |         });
+      819 |
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:816:34)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should handle createTicket error in SQLite mode
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: {"conversationHistory": undefined, "createdAt": "2026-02-05T04:18:21.490Z", "description": undefined, "id": "TICKET-1770265101490", "status": "open", "thread": undefined, "title": "Test", "type": undefined, "updatedAt": "2026-02-05T04:18:21.490Z"}
+
+      920 |
+      921 |             // Act & Assert: createTicket should throw/reject due to DB error
+    > 922 |             await expect(createErr({ title: 'Test', status: 'open' }))
+          |                   ^
+      923 |                 .rejects.toThrow();
+      924 |         });
+      925 |
+
+      at expect (node_modules/expect/build/index.js:2116:15)
+      at Object.<anonymous> (tests/ticketDb.test.ts:922:19)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should handle getAllTickets error in SQLite mode
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: [{"conversationHistory": undefined, "createdAt": "2026-02-05T04:18:21.486Z", "description": undefined, "id": "TICKET-1770265101486", "status": "open", "thread": undefined, "title": "Fallback Test", "type": undefined, "updatedAt": "2026-02-05T04:18:21.486Z"}, {"conversationHistory": undefined, "createdAt": "2026-02-05T04:18:21.490Z", "description": undefined, "id": "TICKET-1770265101490", "status": "open", "thread": undefined, "title": "Test", "type": undefined, "updatedAt": "2026-02-05T04:18:21.490Z"}]
+
+      938 |
+      939 |             // Act & Assert: listTickets should throw/reject due to DB error
+    > 940 |             await expect(listErr()).rejects.toThrow();
+          |                   ^
+      941 |         });
+      942 |
+      943 |         it('should handle getTicket error in SQLite mode', async () => {
+
+      at expect (node_modules/expect/build/index.js:2116:15)
+      at Object.<anonymous> (tests/ticketDb.test.ts:940:19)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should handle getTicket error in SQLite mode
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: null
+
+      955 |
+      956 |             // Act & Assert: getTicket should throw/reject due to DB error
+    > 957 |             await expect(getErr('TICKET-001')).rejects.toThrow();
+          |                   ^
+      958 |         });
+      959 |
+      960 |         it('should warn when initialize is called twice', async () => {
+
+      at expect (node_modules/expect/build/index.js:2116:15)
+      at Object.<anonymous> (tests/ticketDb.test.ts:957:19)
+
+  ΓùÅ TicketDb ΓÇ║ Error Handling ΓÇ║ should warn when initialize is called twice
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      983 |
+      984 |             // Assert: Warning should be logged
+    > 985 |             expect(mockLogWarn).toHaveBeenCalled();
+          |                                 ^
+      986 |             const warnCalls = mockLogWarn.mock.calls.map((call: any[]) => call[0]);
+      987 |             expect(warnCalls.some((msg: string) => msg.includes('already initialized'))).toBe(true);
+      988 |         });
+
+      at Object.<anonymous> (tests/ticketDb.test.ts:985:33)
+
+
+Test Suites: 2 failed, 31 passed, 33 total
+Tests:       14 failed, 582 passed, 596 total
+Snapshots:   0 total
+Time:        20.159 s
+Ran all test suites.

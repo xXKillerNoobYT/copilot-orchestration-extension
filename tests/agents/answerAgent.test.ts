@@ -13,6 +13,15 @@ jest.mock('../../src/services/ticketDb', () => ({
 const mockCompleteLLM = llmService.completeLLM as jest.MockedFunction<typeof llmService.completeLLM>;
 const mockUpdateTicket = updateTicket as jest.MockedFunction<typeof updateTicket>;
 
+const defaultTicketFields = {
+    priority: 2,
+    creator: 'system',
+    assignee: 'Clarity Agent',
+    taskId: null,
+    version: 1,
+    resolution: null
+};
+
 describe('AnswerAgent', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -21,7 +30,8 @@ describe('AnswerAgent', () => {
             title: 'Mock Ticket',
             status: 'open',
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            ...defaultTicketFields
         });
     });
 

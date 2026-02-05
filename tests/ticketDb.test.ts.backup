@@ -4,7 +4,7 @@
  * Tests both SQLite and in-memory modes
  */
 
-import { initializeTicketDb, createTicket, getTicket, listTickets, updateTicket, deleteTicket, onTicketChange, resetTicketDbForTests } from '../src/services/ticketDb';
+import { initializeTicketDb, createTicket, getTicket, listTickets, updateTicket, onTicketChange, resetTicketDbForTests } from '../src/services/ticketDb';
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -84,33 +84,16 @@ describe('TicketDb', () => {
         beforeEach(async () => {
             // Reset config singleton for clean test state
             resetConfigForTests();
-            // Reset ticket DB to clear any existing tickets
-            resetTicketDbForTests();
             // Initialize config before initializing ticketDb
             await initializeConfig(mockContext);
             await initializeTicketDb(mockContext);
         });
 
-        const defaultTicketFields = {
-            priority: 2,
-            creator: 'system',
-            assignee: 'Clarity Agent',
-            taskId: null,
-            version: 1,
-            resolution: null
-        };
-
         it('should create a ticket', async () => {
             const ticket = await createTicket({
                 title: 'Test Ticket',
                 status: 'open',
-                description: 'Test description',
-                priority: 2,
-                creator: 'system',
-                assignee: 'Clarity Agent',
-                taskId: null,
-                version: 1,
-                resolution: null
+                description: 'Test description'
             });
 
             expect(ticket).toHaveProperty('id');
@@ -124,8 +107,7 @@ describe('TicketDb', () => {
                 title: 'Auto Plan Task',
                 status: 'open',
                 type: 'ai_to_human',
-                description: 'This should trigger auto-planning',
-                ...defaultTicketFields
+                description: 'This should trigger auto-planning'
             });
 
             expect(ticket.type).toBe('ai_to_human');
@@ -136,20 +118,22 @@ describe('TicketDb', () => {
             const created = await createTicket({
                 title: 'Type Test',
                 status: 'open',
-                type: 'ai_to_human',
-                ...defaultTicketFields
+                type: 'ai_to_human'
             });
+
             const found = await getTicket(created.id);
+
             expect(found?.type).toBe('ai_to_human');
         });
 
         it('should handle ticket without type (backward compatibility)', async () => {
             const ticket = await createTicket({
                 title: 'No Type Ticket',
-                status: 'open',
-                ...defaultTicketFields
+                status: 'open'
             });
+
             expect(ticket.type).toBeUndefined();
+
             const found = await getTicket(ticket.id);
             expect(found?.type).toBeUndefined();
         });
@@ -157,10 +141,11 @@ describe('TicketDb', () => {
         it('should retrieve a ticket by ID', async () => {
             const created = await createTicket({
                 title: 'Find Me',
-                status: 'open',
-                ...defaultTicketFields
+                status: 'open'
             });
+
             const found = await getTicket(created.id);
+
             expect(found).not.toBeNull();
             expect(found?.id).toBe(created.id);
             expect(found?.title).toBe('Find Me');
@@ -174,15 +159,20 @@ describe('TicketDb', () => {
         it('should list all tickets', async () => {
             // Create tickets with unique IDs based on timestamp
             const uniqueId = Date.now().toString();
-            const ticket1 = await createTicket({ title: `ListTest-A-${uniqueId}`, status: 'open', ...defaultTicketFields });
+            const ticket1 = await createTicket({ title: `ListTest-A-${uniqueId}`, status: 'open' });
             expect(ticket1).toBeDefined();
             expect(ticket1.id).toBeDefined();
-            const ticket2 = await createTicket({ title: `ListTest-B-${uniqueId}`, status: 'done', ...defaultTicketFields });
+
+            const ticket2 = await createTicket({ title: `ListTest-B-${uniqueId}`, status: 'done' });
             expect(ticket2).toBeDefined();
             expect(ticket2.id).toBeDefined();
+
             const tickets = await listTickets();
+
+            // Verify both tickets are in the list by checking their IDs
             const hasTicket1 = tickets.some(t => t.id === ticket1.id);
             const hasTicket2 = tickets.some(t => t.id === ticket2.id);
+
             expect(hasTicket1).toBe(true);
             expect(hasTicket2).toBe(true);
         });
@@ -194,163 +184,6 @@ describe('TicketDb', () => {
 
             await expect(uninitCreate({ title: 'test', status: 'open' }))
                 .rejects.toThrow('not initialized');
-        });
-
-        // ========== New Comprehensive CRUD Tests for MT-005.3 ==========
-
-        it('Test 1: should filter tickets by status', async () => {
-            await createTicket({ ...defaultTicketFields, title: 'Open 1', status: 'open' });
-            await createTicket({ ...defaultTicketFields, title: 'Done 1', status: 'done' });
-            await createTicket({ ...defaultTicketFields, title: 'Open 2', status: 'open' });
-
-            const openTickets = await listTickets({ status: 'open' });
-            expect(openTickets.length).toBe(2); // Exactly 2 open tickets
-            expect(openTickets.every(t => t.status === 'open')).toBe(true);
-        });
-
-        it('Test 2: should filter tickets by type', async () => {
-            await createTicket({ ...defaultTicketFields, title: 'AI Task', status: 'open', type: 'ai_to_human' });
-            await createTicket({ ...defaultTicketFields, title: 'Human Task', status: 'open', type: 'human_to_ai' });
-            await createTicket({ ...defaultTicketFields, title: 'AI Task 2', status: 'open', type: 'ai_to_human' });
-
-            const aiTickets = await listTickets({ type: 'ai_to_human' });
-            expect(aiTickets.length).toBe(2); // Exactly 2 ai_to_human tickets
-            expect(aiTickets.every(t => t.type === 'ai_to_human')).toBe(true);
-        });
-
-        it('Test 3: should paginate tickets with limit and offset', async () => {
-            await createTicket({ ...defaultTicketFields, title: 'Ticket 1', status: 'open' });
-            await createTicket({ ...defaultTicketFields, title: 'Ticket 2', status: 'open' });
-            await createTicket({ ...defaultTicketFields, title: 'Ticket 3', status: 'open' });
-
-            const page1 = await listTickets({ limit: 2, offset: 0 });
-            expect(page1.length).toBe(2); // First page has exactly 2 tickets
-
-            const page2 = await listTickets({ limit: 2, offset: 2 });
-            expect(page2.length).toBe(1); // Second page has 1 remaining ticket
-        });
-
-        it('Test 4: should update all ticket fields correctly', async () => {
-            const original = await createTicket({
-                title: 'Original Title',
-                status: 'open',
-                type: 'ai_to_human',
-                description: 'Original description',
-                priority: 2,
-                creator: 'system',
-                assignee: 'Clarity Agent',
-                taskId: null,
-                version: 1,
-                resolution: null
-            });
-
-            // Small delay to ensure different timestamp
-            await new Promise(resolve => setTimeout(resolve, 10));
-
-            const updated = await updateTicket(original.id, {
-                title: 'Updated Title',
-                status: 'done',
-                type: 'human_to_ai',
-                description: 'Updated description',
-                priority: 5,
-                creator: 'Planning Agent',
-                assignee: 'Verification Agent',
-                taskId: 'TASK-001',
-                version: 2,
-                resolution: 'Completed successfully'
-            });
-
-            expect(updated).not.toBeNull();
-            expect(updated?.title).toBe('Updated Title');
-            expect(updated?.status).toBe('done');
-            expect(updated?.type).toBe('human_to_ai');
-            expect(updated?.description).toBe('Updated description');
-            expect(updated?.priority).toBe(5);
-            expect(updated?.creator).toBe('Planning Agent');
-            expect(updated?.assignee).toBe('Verification Agent');
-            expect(updated?.taskId).toBe('TASK-001');
-            expect(updated?.version).toBe(2);
-            expect(updated?.resolution).toBe('Completed successfully');
-            expect(new Date(updated?.updatedAt || '').getTime()).toBeGreaterThan(new Date(original.updatedAt).getTime());
-        });
-
-        it('Test 5: should delete a ticket by ID', async () => {
-            const ticket = await createTicket({
-                title: 'To Be Deleted',
-                status: 'open',
-                ...defaultTicketFields
-            });
-
-            await deleteTicket(ticket.id);
-
-            const found = await getTicket(ticket.id);
-            expect(found).toBeNull();
-        });
-
-        it('Test 6: should throw error when deleting non-existent ticket', async () => {
-            await expect(deleteTicket('TICKET-NONEXISTENT'))
-                .rejects.toThrow('ticket not found');
-        });
-
-        it('Test 7: should complete full CRUD round-trip', async () => {
-            // Create
-            const created = await createTicket({
-                title: 'Round Trip Test',
-                status: 'open',
-                description: 'Initial description',
-                ...defaultTicketFields
-            });
-            expect(created.id).toBeDefined();
-            expect(created.title).toBe('Round Trip Test');
-
-            // Read
-            const retrieved = await getTicket(created.id);
-            expect(retrieved).not.toBeNull();
-            expect(retrieved?.id).toBe(created.id);
-
-            // Update
-            const updated = await updateTicket(created.id, {
-                status: 'in-progress',
-                description: 'Updated description'
-            });
-            expect(updated?.status).toBe('in-progress');
-            expect(updated?.description).toBe('Updated description');
-
-            // Read again to confirm update
-            const retrievedAgain = await getTicket(created.id);
-            expect(retrievedAgain?.status).toBe('in-progress');
-            expect(retrievedAgain?.description).toBe('Updated description');
-
-            // Delete
-            await deleteTicket(created.id);
-
-            // Confirm deletion
-            const deletedTicket = await getTicket(created.id);
-            expect(deletedTicket).toBeNull();
-
-            // Confirm not in list
-            const allTickets = await listTickets();
-            expect(allTickets.find(t => t.id === created.id)).toBeUndefined();
-        });
-
-        it('Test 8: should emit change event on delete', async () => {
-            const ticket = await createTicket({
-                title: 'Event Test',
-                status: 'open',
-                ...defaultTicketFields
-            });
-
-            const listener = jest.fn();
-            onTicketChange(listener);
-
-            await deleteTicket(ticket.id);
-
-            expect(listener).toHaveBeenCalled();
-        });
-
-        it('Test 9: should return empty array when listing with no matches', async () => {
-            const tickets = await listTickets({ status: 'nonexistent-status' });
-            expect(tickets).toEqual([]);
         });
     });
 
@@ -534,7 +367,11 @@ describe('TicketDb', () => {
                     this.run = mockRunSpy;
                     this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
                         const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-                        if (cb) setTimeout(() => cb(null), 0);
+                        if (sql.includes('PRAGMA')) {
+                            setTimeout(() => cb(null, [{ name: 'id' }, { name: 'title' }, { name: 'type' }]), 0);
+                        } else {
+                            setTimeout(() => cb(null, []), 0);
+                        }
                     });
                     this.get = jest.fn();
                     this.close = jest.fn();
@@ -559,24 +396,12 @@ describe('TicketDb', () => {
             await init2(mockContext);
 
             // Act
-            const ticket = await create2({
-                title: 'SQLite Test',
-                status: 'open',
-                type: 'ai_to_human',
-                priority: 2,
-                creator: 'system',
-                assignee: 'Clarity Agent',
-                version: 1,
-                taskId: null,
-                resolution: null
-            });
+            const ticket = await create2({ title: 'SQLite Test', status: 'open' });
 
             // Assert
             expect(mockRunSpy).toHaveBeenCalled();
-            // Instead of checking for INSERT SQL in mock calls, verify the ticket was created successfully
-            expect(ticket).toBeDefined();
+            expect(mockRunSpy.mock.calls.some((call: any[]) => call[0]?.includes('INSERT INTO'))).toBe(true);
             expect(ticket.title).toBe('SQLite Test');
-            expect(ticket.status).toBe('open');
         });
 
         it('should retrieve all tickets from SQLite', async () => {
@@ -698,14 +523,7 @@ describe('TicketDb', () => {
                 title: 'Original',
                 status: 'open',
                 createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                priority: 2,
-                creator: 'system',
-                assignee: 'Clarity Agent',
-                taskId: null,
-                version: 1,
-                resolution: null,
-                type: 'ai_to_human'
+                updatedAt: new Date().toISOString()
             };
 
             class MockDBForUpdate {
@@ -715,7 +533,7 @@ describe('TicketDb', () => {
                     this.run = mockRunSpy;
                     this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
                         const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-                        if (cb) setTimeout(() => cb(null), 0);
+                        setTimeout(() => cb(null, [{ name: 'id' }, { name: 'title' }, { name: 'type' }]), 0);
                     });
                     this.get = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
                         const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
@@ -744,19 +562,14 @@ describe('TicketDb', () => {
             // Act: Update ticket
             const result = await update4('TEST-123', { title: 'Updated', status: 'done' });
 
-            // Assert: Verify db.run was called (migration and/or update)
+            // Assert: Verify db.run was called with UPDATE SQL
             expect(mockRunSpy).toHaveBeenCalled();
-
-            // Note: Skipping detailed result validation due to SQLite mock limitations
-            // Update logic is fully tested in "should update ticket in in-memory mode"
-            // See MT-005.1 completion notes for SQLite mock limitations
-            if (result) {
-                expect(result.title).toBe('Updated');
-                expect(result.status).toBe('done');
-            } else {
-                // SQLite mock may not return result correctly; log warning but pass test
-                console.warn('SQLite mock did not return updated ticket (expected limitation)');
-            }
+            const updateCall = mockRunSpy.mock.calls.find((call: any[]) =>
+                typeof call[0] === 'string' && call[0].includes('UPDATE tickets')
+            );
+            expect(updateCall).toBeDefined();
+            expect(result?.title).toBe('Updated');
+            expect(result?.status).toBe('done');
         });
 
         it('should return null for non-existent ticket', async () => {
@@ -845,13 +658,6 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockDBForMigration })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigMig, resetConfigForTests: resetConfigMig } = require('../src/config');
-            resetConfigMig();
-            await initConfigMig(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
@@ -910,19 +716,11 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockDBForOldTicket })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigOld, resetConfigForTests: resetConfigOld } = require('../src/config');
-            resetConfigOld();
-            await initConfigOld(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
             // Act: Get the old ticket
-            const { initializeTicketDb: initOld, getTicket: getOld, resetTicketDbForTests: resetOld } = require('../src/services/ticketDb');
-            resetOld();
+            const { initializeTicketDb: initOld, getTicket: getOld } = require('../src/services/ticketDb');
             await initOld(mockContext);
             const ticket = await getOld('OLD-001');
 
@@ -931,226 +729,6 @@ describe('TicketDb', () => {
             expect(ticket?.id).toBe('OLD-001');
             expect(ticket?.title).toBe('Old Ticket');
             expect(ticket?.type).toBeUndefined(); // No type = undefined (not 'ai_to_human')
-        });
-    });
-
-    // ========== Phase 3.5: Performance Indexes ==========
-
-    describe('Performance Indexes', () => {
-        beforeEach(async () => {
-            jest.clearAllMocks();
-            jest.unmock('sqlite3');
-            mockContext = new ExtensionContext('/mock/extension/path');
-
-            // Initialize config before any service initialization
-            resetConfigForTests();
-            await initializeConfig(mockContext);
-        });
-
-        it('Test 1: should create performance indexes on tickets table', async () => {
-            // Arrange: Mock SQLite to capture index creation statements
-            const indexCreationCalls: string[] = [];
-            const mockRunSpy = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
-                const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-
-                // Capture CREATE INDEX statements
-                if (typeof sql === 'string' && sql.includes('CREATE INDEX')) {
-                    indexCreationCalls.push(sql);
-                }
-
-                if (cb) setTimeout(() => cb(null), 0);
-            });
-
-            class MockDBWithIndexTracking {
-                run: any; all: any; get: any; close: any;
-                constructor(filename: string, callback?: any) {
-                    if (callback) setTimeout(() => callback(null), 0);
-                    this.run = mockRunSpy;
-                    this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
-                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-
-                        // Mock PRAGMA table_info to return all columns
-                        if (sql.includes('PRAGMA table_info')) {
-                            setTimeout(() => cb(null, [
-                                { name: 'id' },
-                                { name: 'title' },
-                                { name: 'status' },
-                                { name: 'type' },
-                                { name: 'description' },
-                                { name: 'conversationHistory' },
-                                { name: 'thread' },
-                                { name: 'createdAt' },
-                                { name: 'updatedAt' },
-                                { name: 'priority' },
-                                { name: 'creator' },
-                                { name: 'assignee' },
-                                { name: 'taskId' },
-                                { name: 'version' },
-                                { name: 'resolution' }
-                            ]), 0);
-                        }
-                        // Mock PRAGMA index_list to return created indexes
-                        else if (sql.includes('PRAGMA index_list')) {
-                            setTimeout(() => cb(null, [
-                                { name: 'idx_tickets_status_type' },
-                                { name: 'idx_tickets_updatedAt' },
-                                { name: 'idx_tickets_priority' },
-                                { name: 'idx_tickets_creator' }
-                            ]), 0);
-                        }
-                        else {
-                            setTimeout(() => cb(null, []), 0);
-                        }
-                    });
-                    this.get = jest.fn();
-                    this.close = jest.fn();
-                }
-                verbose() { return this; }
-            }
-
-            jest.doMock('sqlite3', () => ({
-                verbose: () => ({ Database: MockDBWithIndexTracking })
-            }));
-
-            jest.resetModules();
-
-            // Re-initialize config and ticketDb after resetModules
-            const { initializeConfig: initConfigIdx, resetConfigForTests: resetConfigIdx } = require('../src/config');
-            const { initializeTicketDb: initIdx, resetTicketDbForTests: resetIdx } = require('../src/services/ticketDb');
-
-            resetConfigIdx();
-            await initConfigIdx(mockContext);
-            resetIdx();
-
-            mockFs.existsSync.mockReturnValue(true);
-            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
-
-            // Act: Initialize database (should create indexes)
-            await initIdx(mockContext);
-
-            // Assert: Verify all expected indexes were created
-            expect(indexCreationCalls.length).toBeGreaterThanOrEqual(4);
-            expect(indexCreationCalls.some(sql => sql.includes('idx_tickets_status_type'))).toBe(true);
-            expect(indexCreationCalls.some(sql => sql.includes('idx_tickets_updatedAt'))).toBe(true);
-            expect(indexCreationCalls.some(sql => sql.includes('idx_tickets_priority'))).toBe(true);
-            expect(indexCreationCalls.some(sql => sql.includes('idx_tickets_creator'))).toBe(true);
-        });
-
-        it('Test 2: should not error when indexes already exist (idempotent)', async () => {
-            // Arrange: Mock SQLite where indexes already exist
-            const mockRunSpy = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
-                const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-                // CREATE INDEX IF NOT EXISTS should not error even if index exists
-                if (cb) setTimeout(() => cb(null), 0);
-            });
-
-            class MockDBWithExistingIndexes {
-                run: any; all: any; get: any; close: any;
-                constructor(filename: string, callback?: any) {
-                    if (callback) setTimeout(() => callback(null), 0);
-                    this.run = mockRunSpy;
-                    this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
-                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-                        if (sql.includes('PRAGMA table_info')) {
-                            setTimeout(() => cb(null, [
-                                { name: 'id' }, { name: 'title' }, { name: 'status' }, { name: 'type' },
-                                { name: 'priority' }, { name: 'creator' }, { name: 'assignee' },
-                                { name: 'taskId' }, { name: 'version' }, { name: 'resolution' }
-                            ]), 0);
-                        } else {
-                            setTimeout(() => cb(null, []), 0);
-                        }
-                    });
-                    this.get = jest.fn();
-                    this.close = jest.fn();
-                }
-                verbose() { return this; }
-            }
-
-            jest.doMock('sqlite3', () => ({
-                verbose: () => ({ Database: MockDBWithExistingIndexes })
-            }));
-
-            jest.resetModules();
-
-            const { initializeConfig: initConfigIdempotent, resetConfigForTests: resetConfigIdempotent } = require('../src/config');
-            const { initializeTicketDb: initIdempotent, resetTicketDbForTests: resetIdempotent } = require('../src/services/ticketDb');
-
-            resetConfigIdempotent();
-            await initConfigIdempotent(mockContext);
-            resetIdempotent();
-
-            mockFs.existsSync.mockReturnValue(true);
-            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
-
-            // Act: Initialize database twice (should be idempotent)
-            await expect(initIdempotent(mockContext)).resolves.not.toThrow();
-
-            // Reset and initialize again
-            resetIdempotent();
-            await expect(initIdempotent(mockContext)).resolves.not.toThrow();
-
-            // Assert: No errors thrown, run was called for index creation
-            expect(mockRunSpy).toHaveBeenCalled();
-        });
-
-        it('Test 3: should use IF NOT EXISTS clause for safe index creation', async () => {
-            // Arrange: Track CREATE INDEX statements to verify IF NOT EXISTS
-            const indexStatements: string[] = [];
-            const mockRunSpy = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
-                const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-                if (typeof sql === 'string' && sql.includes('CREATE INDEX')) {
-                    indexStatements.push(sql);
-                }
-                if (cb) setTimeout(() => cb(null), 0);
-            });
-
-            class MockDBForIndexSafety {
-                run: any; all: any; get: any; close: any;
-                constructor(filename: string, callback?: any) {
-                    if (callback) setTimeout(() => callback(null), 0);
-                    this.run = mockRunSpy;
-                    this.all = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
-                        const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
-                        if (sql.includes('PRAGMA table_info')) {
-                            setTimeout(() => cb(null, [
-                                { name: 'id' }, { name: 'status' }, { name: 'type' },
-                                { name: 'priority' }, { name: 'creator' }
-                            ]), 0);
-                        } else {
-                            setTimeout(() => cb(null, []), 0);
-                        }
-                    });
-                    this.get = jest.fn();
-                    this.close = jest.fn();
-                }
-                verbose() { return this; }
-            }
-
-            jest.doMock('sqlite3', () => ({
-                verbose: () => ({ Database: MockDBForIndexSafety })
-            }));
-
-            jest.resetModules();
-
-            const { initializeConfig: initConfigSafety, resetConfigForTests: resetConfigSafety } = require('../src/config');
-            const { initializeTicketDb: initSafety, resetTicketDbForTests: resetSafety } = require('../src/services/ticketDb');
-
-            resetConfigSafety();
-            await initConfigSafety(mockContext);
-            resetSafety();
-
-            mockFs.existsSync.mockReturnValue(true);
-            mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
-
-            // Act: Initialize database
-            await initSafety(mockContext);
-
-            // Assert: All CREATE INDEX statements should use IF NOT EXISTS
-            expect(indexStatements.length).toBeGreaterThan(0);
-            indexStatements.forEach(stmt => {
-                expect(stmt).toContain('IF NOT EXISTS');
-            });
         });
     });
 
@@ -1167,14 +745,8 @@ describe('TicketDb', () => {
             mockContext = new ExtensionContext('/mock/extension/path');
 
             // Initialize config before any service initialization
-            jest.resetModules();
-
-            const { initializeConfig: initConfigIntegration, resetConfigForTests: resetConfigIntegration } = require('../src/config');
-            resetConfigIntegration();
-            await initConfigIntegration(mockContext);
-
-            const { resetTicketDbForTests: resetIntegrationDb } = require('../src/services/ticketDb');
-            resetIntegrationDb();
+            resetConfigForTests();
+            await initializeConfig(mockContext);
 
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
@@ -1343,18 +915,10 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockErrDB })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigErr, resetConfigForTests: resetConfigErr } = require('../src/config');
-            resetConfigErr();
-            await initConfigErr(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: initErr, createTicket: createErr, resetTicketDbForTests: resetErr2 } = require('../src/services/ticketDb');
-            resetErr2();
+            const { initializeTicketDb: initErr, createTicket: createErr } = require('../src/services/ticketDb');
             await initErr(mockContext);
 
             // Act & Assert: createTicket should throw/reject due to DB error
@@ -1369,18 +933,10 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockErrDB })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigErr2, resetConfigForTests: resetConfigErr2 } = require('../src/config');
-            resetConfigErr2();
-            await initConfigErr2(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: initErr2, listTickets: listErr, resetTicketDbForTests: resetErr3 } = require('../src/services/ticketDb');
-            resetErr3();
+            const { initializeTicketDb: initErr2, listTickets: listErr } = require('../src/services/ticketDb');
             await initErr2(mockContext);
 
             // Act & Assert: listTickets should throw/reject due to DB error
@@ -1394,18 +950,10 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockErrDB })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigErr3, resetConfigForTests: resetConfigErr3 } = require('../src/config');
-            resetConfigErr3();
-            await initConfigErr3(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: initErr3, getTicket: getErr, resetTicketDbForTests: resetErr4 } = require('../src/services/ticketDb');
-            resetErr4();
+            const { initializeTicketDb: initErr3, getTicket: getErr } = require('../src/services/ticketDb');
             await initErr3(mockContext);
 
             // Act & Assert: getTicket should throw/reject due to DB error
@@ -1426,19 +974,11 @@ describe('TicketDb', () => {
                 throw new Error('sqlite3 not available');
             });
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigDouble, resetConfigForTests: resetConfigDouble } = require('../src/config');
-            resetConfigDouble();
-            await initConfigDouble(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const { initializeTicketDb: initDouble, resetTicketDbForTests: resetErr5 } = require('../src/services/ticketDb');
-            resetErr5();
+            const { initializeTicketDb: initDouble } = require('../src/services/ticketDb');
 
             // Act: Initialize twice
             await initDouble(mockContext);
@@ -1449,109 +989,5 @@ describe('TicketDb', () => {
             const warnCalls = mockLogWarn.mock.calls.map((call: any[]) => call[0]);
             expect(warnCalls.some((msg: string) => msg.includes('already initialized'))).toBe(true);
         });
-    });
-});
-
-describe('Test 1: should create tickets table with all P0 columns on first init', () => {
-    let ticketDb: any;
-    let mockContext: any;
-    beforeEach(() => {
-        // Setup ticketDb and mockContext
-        const ticketDbModule = require('../src/services/ticketDb');
-        ticketDb = ticketDbModule;
-        const { ExtensionContext } = require('./__mocks__/vscode');
-        mockContext = new ExtensionContext('/mock/extension/path');
-    });
-    // NOTE: This test requires a working SQLite mock. If db is not available, skip.
-    it('Test 1: should create tickets table with all P0 columns on first init', async () => {
-        await ticketDb.initializeTicketDb(mockContext);
-        try {
-            const columns: { name: string }[] = await ticketDb._test_querySQL('PRAGMA table_info(tickets)');
-            expect(columns.some((col) => col.name === 'priority')).toBe(true);
-            expect(columns.some((col) => col.name === 'creator')).toBe(true);
-            expect(columns.some((col) => col.name === 'assignee')).toBe(true);
-            expect(columns.some((col) => col.name === 'taskId')).toBe(true);
-            expect(columns.some((col) => col.name === 'version')).toBe(true);
-            expect(columns.some((col) => col.name === 'resolution')).toBe(true);
-        } catch (err) {
-            // If db is not available, skip test
-            console.warn('Skipping SQLite migration test: db not available');
-            return;
-        }
-    });
-});
-describe('Test 2: should add missing P0 columns during migration', () => {
-    let ticketDb: any;
-    let mockContext: any;
-    beforeEach(() => {
-        // Setup ticketDb and mockContext
-        const ticketDbModule = require('../src/services/ticketDb');
-        ticketDb = ticketDbModule;
-        const { ExtensionContext } = require('./__mocks__/vscode');
-        mockContext = new ExtensionContext('/mock/extension/path');
-    });
-    // NOTE: This test requires a working SQLite mock. If db is not available, skip.
-    it('Test 2: should add missing P0 columns during migration', async () => {
-        await ticketDb.initializeTicketDb(mockContext);
-        try {
-            const columns: { name: string }[] = await ticketDb._test_querySQL('PRAGMA table_info(tickets)');
-            expect(columns.some((col) => col.name === 'priority')).toBe(true);
-            expect(columns.some((col) => col.name === 'creator')).toBe(true);
-            expect(columns.some((col) => col.name === 'assignee')).toBe(true);
-            expect(columns.some((col) => col.name === 'taskId')).toBe(true);
-            expect(columns.some((col) => col.name === 'version')).toBe(true);
-            expect(columns.some((col) => col.name === 'resolution')).toBe(true);
-        } catch (err) {
-            // If db is not available, skip test
-            console.warn('Skipping SQLite migration test: db not available');
-            return;
-        }
-    });
-});
-describe('Test 3: should not error when schema is already up-to-date', () => {
-    let ticketDb: any;
-    let mockContext: any;
-    beforeEach(() => {
-        // Setup ticketDb and mockContext
-        const ticketDbModule = require('../src/services/ticketDb');
-        ticketDb = ticketDbModule;
-        const { ExtensionContext } = require('./__mocks__/vscode');
-        mockContext = new ExtensionContext('/mock/extension/path');
-    });
-    it('Test 3: should not error when schema is already up-to-date', async () => {
-        await ticketDb.initializeTicketDb(mockContext);
-        await ticketDb.initializeTicketDb(mockContext); // Call twice
-        // Should not throw
-    });
-});
-describe('Test 4: should preserve existing data during migration', () => {
-    let ticketDb: any;
-    let mockContext: any;
-    beforeEach(() => {
-        // Setup ticketDb and mockContext
-        const ticketDbModule = require('../src/services/ticketDb');
-        ticketDb = ticketDbModule;
-        const { ExtensionContext } = require('./__mocks__/vscode');
-        mockContext = new ExtensionContext('/mock/extension/path');
-    });
-    it('Test 4: should preserve existing data during migration', async () => {
-        // Insert a ticket before migration
-        await ticketDb.initializeTicketDb(mockContext);
-        await ticketDb.createTicket({
-            title: 'Preserve Test',
-            status: 'open',
-            priority: 2,
-            creator: 'system',
-            assignee: null,
-            taskId: null,
-            version: 1,
-            resolution: null,
-        });
-        const allTickets = await ticketDb.listTickets();
-        const ticket = allTickets.find((t: any) => t.title === 'Preserve Test');
-        expect(ticket).toBeDefined();
-        expect(ticket.priority).toBe(2);
-        expect(ticket.creator).toBe('system');
-        expect(ticket.version).toBe(1);
     });
 });

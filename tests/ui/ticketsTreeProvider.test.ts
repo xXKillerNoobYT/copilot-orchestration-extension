@@ -50,6 +50,15 @@ describe('TicketsTreeDataProvider', () => {
 
     describe('getChildren', () => {
         it('should return ticket items for open tickets', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -57,6 +66,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
+                    ...defaultTicketFields
                 },
                 {
                     id: 'TICKET-002',
@@ -64,6 +75,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'in-progress',
                     createdAt: '2026-02-01T11:00:00Z',
                     updatedAt: '2026-02-01T11:00:00Z',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -77,6 +90,15 @@ describe('TicketsTreeDataProvider', () => {
         });
 
         it('should filter out done tickets', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -84,6 +106,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
+                    ...defaultTicketFields
                 },
                 {
                     id: 'TICKET-002',
@@ -91,6 +115,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'done',
                     createdAt: '2026-02-01T11:00:00Z',
                     updatedAt: '2026-02-01T11:00:00Z',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
+                    ...defaultTicketFields
                 },
                 {
                     id: 'TICKET-003',
@@ -98,6 +124,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'blocked',
                     createdAt: '2026-02-01T12:00:00Z',
                     updatedAt: '2026-02-01T12:00:00Z',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -123,6 +151,15 @@ describe('TicketsTreeDataProvider', () => {
         });
 
         it('should show placeholder when all tickets are done', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -130,6 +167,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'done',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -160,6 +199,15 @@ describe('TicketsTreeDataProvider', () => {
         });
 
         it('should set correct descriptions with status and date', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -167,6 +215,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'in-progress',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -179,6 +229,15 @@ describe('TicketsTreeDataProvider', () => {
         });
 
         it('should include full ticket description in tooltip for hover-to-read', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -187,6 +246,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: 'Step 1: Design\nStep 2: Implement\nStep 3: Test',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -199,6 +259,15 @@ describe('TicketsTreeDataProvider', () => {
         });
 
         it('should use correct icons for different statuses', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -206,6 +275,7 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
                 {
                     id: 'TICKET-002',
@@ -213,6 +283,7 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'in-progress',
                     createdAt: '2026-02-01T11:00:00Z',
                     updatedAt: '2026-02-01T11:00:00Z',
+                    ...defaultTicketFields
                 },
                 {
                     id: 'TICKET-003',
@@ -220,6 +291,7 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'blocked',
                     createdAt: '2026-02-01T12:00:00Z',
                     updatedAt: '2026-02-01T12:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -244,6 +316,15 @@ describe('TicketsTreeDataProvider', () => {
 
     describe('plan preview extraction from description', () => {
         it('should extract plan preview from ticket.description', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -252,6 +333,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: 'Step 1: Design component\nStep 2: Add styles\nStep 3: Test',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -265,6 +347,15 @@ describe('TicketsTreeDataProvider', () => {
 
         it('should truncate plan preview to 200 characters', async () => {
             const longPlan = 'Step 1: ' + 'A'.repeat(250);
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -273,6 +364,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: longPlan,
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -289,6 +381,15 @@ describe('TicketsTreeDataProvider', () => {
 
         it('should handle exactly 200 character plan without ellipsis', async () => {
             const plan200 = 'A'.repeat(200);
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -297,6 +398,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: plan200,
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -316,6 +418,15 @@ describe('TicketsTreeDataProvider', () => {
 
         it('should clean whitespace in plan preview', async () => {
             const multilinePlan = 'Step 1: Design\nStep 2: Code\tStep 3: Test\r\nStep 4: Review';
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -324,6 +435,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: multilinePlan,
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -349,6 +461,12 @@ describe('TicketsTreeDataProvider', () => {
                     description: undefined,
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
             ];
 
@@ -368,6 +486,12 @@ describe('TicketsTreeDataProvider', () => {
                     description: '',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
             ];
 
@@ -380,6 +504,15 @@ describe('TicketsTreeDataProvider', () => {
 
         it('should set tooltip to full description for hover-to-read', async () => {
             const fullDescription = 'Step 1: Design\nStep 2: Implement\nStep 3: Test\nStep 4: Deploy';
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -388,6 +521,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: fullDescription,
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -407,6 +541,12 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
             ];
 
@@ -418,6 +558,15 @@ describe('TicketsTreeDataProvider', () => {
         });
 
         it('should handle multiple tickets with different plan lengths', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-001',
@@ -426,6 +575,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: 'Quick task',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    ...defaultTicketFields
                 },
                 {
                     id: 'TICKET-002',
@@ -434,6 +584,7 @@ describe('TicketsTreeDataProvider', () => {
                     description: 'A'.repeat(300),
                     createdAt: '2026-02-01T11:00:00Z',
                     updatedAt: '2026-02-01T11:00:00Z',
+                    ...defaultTicketFields
                 },
                 {
                     id: 'TICKET-003',
@@ -441,6 +592,7 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T12:00:00Z',
                     updatedAt: '2026-02-01T12:00:00Z',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -460,6 +612,15 @@ describe('TicketsTreeDataProvider', () => {
 
     describe('TreeItem command for clickable tickets', () => {
         it('should set command property on TreeItem to make it clickable', async () => {
+            const defaultTicketFields = {
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
+            };
+
             const mockTickets: ticketDb.Ticket[] = [
                 {
                     id: 'TICKET-123',
@@ -467,7 +628,8 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
-                    description: '# Plan\nStep 1: Design\nStep 2: Code'
+                    description: '# Plan\nStep 1: Design\nStep 2: Code',
+                    ...defaultTicketFields
                 },
             ];
 
@@ -490,6 +652,12 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
                 {
                     id: 'TICKET-789',
@@ -497,6 +665,12 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'in-progress',
                     createdAt: '2026-02-01T11:00:00Z',
                     updatedAt: '2026-02-01T11:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
             ];
 
@@ -587,6 +761,12 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
             ];
 
@@ -606,6 +786,12 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'open',
                     createdAt: '2026-02-01T10:00:00Z',
                     updatedAt: '2026-02-01T10:00:00Z',
+                    priority: 2,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
                 {
                     id: 'TICKET-002',
@@ -613,6 +799,12 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'blocked',
                     createdAt: '2026-02-01T11:00:00Z',
                     updatedAt: '2026-02-01T11:00:00Z',
+                    priority: 1,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
             ];
 
@@ -633,6 +825,12 @@ describe('TicketsTreeDataProvider', () => {
                     status: 'pending',
                     createdAt: '2026-02-01T12:00:00Z',
                     updatedAt: '2026-02-01T12:00:00Z',
+                    priority: 3,
+                    creator: 'system',
+                    assignee: 'Clarity Agent',
+                    taskId: null,
+                    version: 1,
+                    resolution: null
                 },
             ];
 

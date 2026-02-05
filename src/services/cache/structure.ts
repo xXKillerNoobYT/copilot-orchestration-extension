@@ -102,6 +102,9 @@ export async function initializeCacheStructure(
             const initialIndex = {
                 version: '1.0.0',
                 createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                totalItems: 0,
+                totalSizeBytes: 0,
                 items: [],
             };
             fs.writeFileSync(indexPath, JSON.stringify(initialIndex, null, 2));

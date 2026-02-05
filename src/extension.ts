@@ -471,7 +471,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 status: 'open',
                 type: 'human_to_ai',
                 description: `User question submitted: ${question}`,
-                thread: [threadEntry]
+                thread: [threadEntry],
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             });
 
             const chatId = ticket.id;
@@ -1031,7 +1037,13 @@ export async function activate(context: vscode.ExtensionContext) {
             const testTicket = await createTicket({
                 title: 'Add dark mode toggle',
                 type: 'ai_to_human',
-                status: 'open'
+                status: 'open',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             });
             logInfo(`[TEST] Created ticket: ${testTicket.id} - auto-planning should trigger`);
         } catch (error: unknown) {
@@ -1054,13 +1066,19 @@ export async function activate(context: vscode.ExtensionContext) {
         logInfo('User triggered: Start New Conversation');
         try {
             const newChatId = createChatId();
-            
+
             // Create empty ticket for this conversation
             const ticket = await createTicket({
                 title: 'New Conversation',
                 status: 'open',
                 type: 'answer_agent',
-                description: 'New conversation'
+                description: 'New conversation',
+                priority: 2,
+                creator: 'system',
+                assignee: 'Clarity Agent',
+                taskId: null,
+                version: 1,
+                resolution: null
             });
 
             // Open webview with this chatId

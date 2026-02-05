@@ -1,0 +1,1138 @@
+
+> copilot-orchestration-extension@0.0.1 test:once
+> jest tests/cache/cacheManagement.spec.ts
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.656Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.683Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.686Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.689Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.696Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.698Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.708Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.710Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.712Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.714Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.716Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.717Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.719Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.725Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.727Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.729Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.731Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.734Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.735Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.746Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.748Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.750Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.753Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.757Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.758Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.763Z Cleaned up 1 temp file(s)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.768Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.770Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.774Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.776Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.778Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.779Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.782Z Saved payload 290abf64e10a9c9fe856f277b1661b395782a0947bc136ce305b55331b1a5286 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.785Z Loaded payload 290abf64e10a9c9fe856f277b1661b395782a0947bc136ce305b55331b1a5286 from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.792Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.794Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.796Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.798Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.800Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.801Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.804Z Saved payload 1b2d5ef06214e4b523e0d9a31d72d71f2145c01c0e51fb19924be08eea7e0b71 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.806Z Payload 1b2d5ef06214e4b523e0d9a31d72d71f2145c01c0e51fb19924be08eea7e0b71 already cached, skipping
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.811Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.813Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.815Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.816Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.819Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.820Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.823Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.825Z Deleted payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.830Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.831Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.833Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.835Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.838Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.839Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.842Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.847Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.849Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.851Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.852Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.855Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.857Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.859Z Saved payload 015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.861Z Saved payload 0ab1a6d394cd30195f0642b67ae1180c375ffadf5dd7f39c390668b5fdb6da93 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.867Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.868Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.870Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.873Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.875Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.876Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.882Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.884Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.886Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.889Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.891Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.892Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.899Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.900Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.902Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.903Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.906Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.907Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.910Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from llm (type: response)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.911Z Loaded payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.913Z Added e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b to cache index
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.920Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.922Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.924Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.926Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.928Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.929Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.932Z Saved payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.933Z Loaded payload e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b from cache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.935Z Added e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b to cache index
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.943Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.944Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.946Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.948Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.950Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.951Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.953Z Saved payload 015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862 from llm (type: response)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.956Z Saved payload 0ab1a6d394cd30195f0642b67ae1180c375ffadf5dd7f39c390668b5fdb6da93 from github (type: issue)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.977Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.978Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.980Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.982Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.984Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.985Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.989Z Saved payload 1c1a39e1e23a7e42e9eaa400a8045e356704ce7421deaf3576ad1c2697a8e796 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.996Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.997Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:24.999Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.001Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.003Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.006Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.007Z Starting retention policy cleanup (retention period: 7 days)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.009Z No items exceeded retention period
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.013Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.015Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.016Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.018Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.020Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.022Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.028Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.029Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.031Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.032Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.034Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.035Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.037Z Cache size (NaN undefined) exceeds threshold (1000 B), starting LRU pruning
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.040Z No items to delete (minimum count reached)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.044Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.045Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.047Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.073Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.075Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.076Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.081Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.083Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.084Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.086Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.089Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.090Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.096Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.098Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.100Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.102Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.103Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.106Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.114Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.115Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.117Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.119Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.122Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.123Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.125Z Saved payload a39cc2a7cc07de8dde84e4b10ca219aa5488eea3d882a39b430c58142cd08565 from test (type: example)
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.133Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.134Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.136Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.139Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.142Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.143Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.147Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.149Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.150Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.152Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.153Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.156Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.161Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.162Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.164Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.166Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.168Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.169Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.177Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.178Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.180Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.182Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.183Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.185Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.195Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.197Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.198Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.200Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.202Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.203Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.209Z Scanning 1 tracked file(s) for changes
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.212Z File changed: C:\Users\weird\OneDrive\Documents\GitHub\copilot-orchestration-extension\tests\cache\__test_cache__\test.txt
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.214Z Change detection complete: 1 file(s) changed, 1 cache entries invalidated
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.219Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.221Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.223Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.225Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.227Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.228Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.237Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.240Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.242Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.243Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.245Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.246Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.error
+    [ERROR] 2026-02-05T04:15:25.249Z Failed to load cache index: Unexpected token 'c', "corrupted {{{ json" is not valid JSON
+
+    [0m [90m 83 |[39m     [36mconst[39m line [33m=[39m [32m`[ERROR] ${new Date().toISOString()} ${msg}`[39m[33m;[39m
+     [90m 84 |[39m     getOutputChannel()[33m.[39mappendLine(line)[33m;[39m
+    [31m[1m>[22m[39m[90m 85 |[39m     console[33m.[39merror(line)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 86 |[39m }
+     [90m 87 |[39m[0m
+
+      at logError (src/logger.ts:85:13)
+      at loadCacheIndex (src/services/cache/index.ts:125:17)
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:556:41)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.259Z Created cache directory: root
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.260Z Created cache directory: offlineCache
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.262Z Created cache directory: processed
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.264Z Created cache directory: temp
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.266Z Created cache index file
+
+      at logInfo (src/logger.ts:69:17)
+
+  console.log
+    [INFO] 2026-02-05T04:15:25.267Z Cache structure initialized successfully
+
+      at logInfo (src/logger.ts:69:17)
+
+FAIL tests/cache/cacheManagement.spec.ts
+  Cache Management
+    Structure - MT-004.1
+      ΓêÜ Test 1: should create all required directories (52 ms)
+      ΓêÜ Test 2: should handle existing directories gracefully (17 ms)
+      ΓêÜ Test 3: should validate cache structure (19 ms)
+      ΓêÜ Test 4: should clean up old temp files (23 ms)
+    Storage - MT-004.2
+      ΓêÜ Test 5: should save and load payloads (24 ms)
+      ΓêÜ Test 6: should detect duplicate payloads (18 ms)
+      ΓêÜ Test 7: should delete payloads (18 ms)
+      ΓêÜ Test 8: should calculate payload size (17 ms)
+      ΓêÜ Test 9: should list all payloads (19 ms)
+      ΓêÜ Test 10: should generate consistent hashes (14 ms)
+    Index - MT-004.3
+      ΓêÜ Test 11: should load and save cache index (17 ms)
+      ΓêÜ Test 12: should search index with filters (21 ms)
+      ΓêÜ Test 13: should update last accessed time (23 ms)
+      ├ù Test 14: should calculate cache statistics (21 ms)
+    Retention - MT-004.4
+      ΓêÜ Test 15: should identify expired items (19 ms)
+      ΓêÜ Test 16: should apply retention policy (18 ms)
+      ΓêÜ Test 17: should format item age correctly (14 ms)
+    Pruning - MT-004.5
+      ΓêÜ Test 18: should prune when size exceeds threshold (16 ms)
+      ΓêÜ Test 19: should preserve minimum items (37 ms)
+      ΓêÜ Test 20: should format bytes correctly (14 ms)
+      ├ù Test 21: should get cache size info (16 ms)
+    Auto-Refresh - MT-004.6
+      ΓêÜ Test 22: should identify stale items (18 ms)
+      ΓêÜ Test 23: should calculate refresh priority (15 ms)
+      ΓêÜ Test 24: should sort items by priority (13 ms)
+    Change Detection - MT-004.7
+      ΓêÜ Test 25: should compute file hash (16 ms)
+      ΓêÜ Test 26: should register file hash (18 ms)
+      ΓêÜ Test 27: should detect file changes (23 ms)
+      ΓêÜ Test 28: should untrack files (18 ms)
+    Error Recovery
+      ΓêÜ Test 29: should handle corrupted index gracefully (21 ms)
+      ΓêÜ Test 30: should handle missing files during deletion (14 ms)
+
+  ΓùÅ Cache Management ΓÇ║ Index - MT-004.3 ΓÇ║ Test 14: should calculate cache statistics
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: undefined
+
+      315 |
+      316 |             const stats = getCacheStats(mockContext);
+    > 317 |             expect(stats.totalItems).toBe(0); // Not added to index yet
+          |                                      ^
+      318 |         });
+      319 |     });
+      320 |
+
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:317:38)
+
+  ΓùÅ Cache Management ΓÇ║ Pruning - MT-004.5 ΓÇ║ Test 21: should get cache size info
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: undefined
+
+      391 |         it('Test 21: should get cache size info', () => {
+      392 |             const info = getCacheSizeInfo(mockContext);
+    > 393 |             expect(info.totalBytes).toBe(0);
+          |                                     ^
+      394 |             expect(info.itemCount).toBe(0);
+      395 |         });
+      396 |     });
+
+      at Object.<anonymous> (tests/cache/cacheManagement.spec.ts:393:37)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 28 passed, 30 total
+Snapshots:   0 total
+Time:        2.671 s, estimated 4 s
+Ran all test suites matching tests/cache/cacheManagement.spec.ts.

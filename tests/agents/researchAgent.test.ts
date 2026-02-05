@@ -1,6 +1,9 @@
 import { ResearchAgent } from '../../src/agents/researchAgent';
 import * as llmService from '../../src/services/llmService';
 import { logInfo, logError } from '../../src/logger';
+import { createTicket, initializeTicketDb } from '../../src/services/ticketDb';
+import { initializeConfig } from '../../src/config';
+import { ExtensionContext } from '../__mocks__/vscode';
 
 // Mock dependencies
 jest.mock('../../src/services/llmService');
@@ -222,6 +225,60 @@ TypeScript provides optional static typing, classes, and interfaces. This helps 
             expect(report).toContain('Network connectivity issues');
             expect(report).toContain('Query processing errors');
             expect(report).toContain('Please try again later');
+        });
+    });
+
+    describe('createTicket()', () => {
+        const defaultTicketFields = {
+            priority: 2,
+            creator: 'system',
+            assignee: 'Clarity Agent',
+            taskId: null,
+            version: 1,
+            resolution: null
+        };
+        beforeAll(async () => {
+            const mockContext = new ExtensionContext('/mock/extension/path');
+            await initializeConfig(mockContext);
+            await initializeTicketDb(mockContext);
+        });
+        it('should create a ticket with default fields', async () => {
+            // Act
+            const ticket = await createTicket({
+                title: 'Research Ticket',
+                status: 'blocked',
+                description: 'Error',
+                ...defaultTicketFields
+            });
+            // Assert
+            expect(ticket).toHaveProperty('priority', 2);
+            expect(ticket).toHaveProperty('creator', 'system');
+            expect(ticket).toHaveProperty('assignee', 'Clarity Agent');
+            expect(ticket).toHaveProperty('taskId', null);
+            expect(ticket).toHaveProperty('version', 1);
+            expect(ticket).toHaveProperty('resolution', null);
+        });
+
+        it('should create a ticket with custom fields', async () => {
+            // Act
+            const ticket = await createTicket({
+                title: 'Research Ticket',
+                status: 'blocked',
+                description: 'Error',
+                priority: 3,
+                creator: 'user',
+                assignee: 'user',
+                taskId: 'task-1',
+                version: 2,
+                resolution: 'Resolved'
+            });
+            // Assert
+            expect(ticket).toHaveProperty('priority', 3);
+            expect(ticket).toHaveProperty('creator', 'user');
+            expect(ticket).toHaveProperty('assignee', 'user');
+            expect(ticket).toHaveProperty('taskId', 'task-1');
+            expect(ticket).toHaveProperty('version', 2);
+            expect(ticket).toHaveProperty('resolution', 'Resolved');
         });
     });
 });
