@@ -1,8 +1,6 @@
 // Requires Node.js 18+ for native fetch. If using Node 16, install node-fetch as fallback.
 
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import { logInfo, logWarn, logError } from '../logger';
 import { getConfigInstance } from '../config';
 import { createTicket } from './ticketDb';
@@ -188,12 +186,12 @@ function trimMessagesToTokenLimit(messages: Message[], maxTokens: number): Messa
 }
 
 /**
- * Initialize the LLM service by reading and validating config
- * 
- * This function reads the config from .coe/config.json and validates it.
- * If config is missing or invalid, uses default values with warnings.
- * 
- * @param context - VS Code extension context
+ * Initialize the LLM service by reading config from central config system
+ *
+ * This function reads the config from the centralized config system (already validated).
+ * The config system handles defaults and validation via Zod schema.
+ *
+ * @param context - VS Code extension context (kept for API compatibility)
  */
 export async function initializeLLMService(context: vscode.ExtensionContext): Promise<void> {
     // Check for native fetch support (Node.js 18+)
@@ -203,9 +201,20 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
         throw new Error('Node.js 18+ required for LLM integration. Please upgrade Node.js or install node-fetch as a polyfill.');
     }
 
-    // Now using central config system
-    const configInstance = getConfigInstance();
-    const config = configInstance.llm;
+    // Get config from central config system (already validated by Zod)
+    const centralConfig = getConfigInstance();
+    const llmConfig = centralConfig.llm;
+
+    // Map central config to LLMConfig interface
+    const config: LLMConfig = {
+        endpoint: llmConfig.endpoint,
+        model: llmConfig.model,
+        timeoutSeconds: llmConfig.timeoutSeconds,
+        maxTokens: llmConfig.maxTokens,
+        startupTimeoutSeconds: llmConfig.startupTimeoutSeconds,
+    };
+
+    // Store validated config
     llmServiceInstance.setConfig(config);
     logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model})`);
 }

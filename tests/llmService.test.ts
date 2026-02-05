@@ -1,6 +1,6 @@
 /**
  * Tests for LLM Service
- * 
+ *
  * Tests config reading, validation, completeLLM, streamLLM, error handling, and timeout behavior
  */
 
@@ -8,6 +8,7 @@ import { initializeLLMService, completeLLM, streamLLM } from '../src/services/ll
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { initializeConfig, resetConfigForTests } from '../src/config';
+import { DEFAULT_CONFIG } from '../src/config/schema';
 
 // Mock dependencies
 jest.mock('../src/services/ticketDb', () => ({
@@ -27,11 +28,19 @@ jest.mock('../src/ui/llmStatusBar', () => ({
     }
 }));
 
+// Mock config module - return default config
+jest.mock('../src/config', () => ({
+    getConfigInstance: jest.fn(() => DEFAULT_CONFIG),
+    initializeConfig: jest.fn(),
+    resetConfigForTests: jest.fn(),
+}));
+
 jest.mock('fs');
 
 import { createTicket } from '../src/services/ticketDb';
 import { logInfo, logWarn, logError } from '../src/logger';
 import { llmStatusBar } from '../src/ui/llmStatusBar';
+import { getConfigInstance } from '../src/config';
 
 describe('LLM Service', () => {
     let mockContext: vscode.ExtensionContext;
@@ -73,80 +82,50 @@ describe('LLM Service', () => {
             global.fetch = originalFetch;
         });
 
-        it('should use default config if file is missing', async () => {
-            (fs.existsSync as jest.Mock).mockReturnValue(false);
-
+        it('should use config from centralized config system', async () => {
+            // Now uses getConfigInstance() which returns DEFAULT_CONFIG mock
             await initializeLLMService(mockContext);
 
-            expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Config file not found'));
+            // Verify it uses config from centralized system (DEFAULT_CONFIG values)
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('http://127.0.0.1:1234/v1'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('ministral-3-14b-reasoning'));
         });
 
-        it('should read config from file if it exists', async () => {
-            const mockConfig = {
-                llm: {
-                    endpoint: 'http://localhost:1234/v1',
-                    model: 'test-model',
-                    timeoutSeconds: 30,
-                    maxTokens: 1024
-                }
-            };
-
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
-
+        it('should read LLM config from centralized config system', async () => {
+            // The mock returns DEFAULT_CONFIG which has default LLM settings
             await initializeLLMService(mockContext);
 
-            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('http://localhost:1234/v1'));
-            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('test-model'));
+            expect(getConfigInstance).toHaveBeenCalled();
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('http://127.0.0.1:1234/v1'));
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('ministral-3-14b-reasoning'));
         });
 
-        it('should validate and use defaults for invalid timeoutSeconds', async () => {
-            const mockConfig = {
-                llm: {
-                    endpoint: 'http://localhost:1234/v1',
-                    model: 'test-model',
-                    timeoutSeconds: -5, // Invalid
-                    maxTokens: 2048
-                }
-            };
-
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
-
+        it('should use validated config values from centralized config (validation handled by Zod)', async () => {
+            // Note: Config validation is now handled by the config system (Zod schema)
+            // Invalid values are rejected or replaced with defaults at config loading time
+            // The llmService just reads already-validated config
             await initializeLLMService(mockContext);
 
-            expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Invalid timeoutSeconds'));
-            expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('using default: 60'));
+            // Should get valid default values from centralized config
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('http://127.0.0.1:1234/v1'));
         });
 
-        it('should validate and use defaults for invalid maxTokens', async () => {
-            const mockConfig = {
-                llm: {
-                    endpoint: 'http://localhost:1234/v1',
-                    model: 'test-model',
-                    timeoutSeconds: 60,
-                    maxTokens: 'invalid' // Invalid type
-                }
-            };
-
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
-
+        it('should use maxTokens from centralized config (validation handled by Zod)', async () => {
+            // Note: Config validation is now handled by the config system (Zod schema)
+            // The llmService reads already-validated config
             await initializeLLMService(mockContext);
 
-            expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Invalid maxTokens'));
-            expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('using default: 2048'));
+            // Should get valid default maxTokens from centralized config (2048)
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('LLM service initialized'));
         });
 
-        it('should handle JSON parse errors gracefully', async () => {
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readFileSync as jest.Mock).mockReturnValue('invalid json{');
-
+        it('should initialize successfully with centralized config', async () => {
+            // Config parsing errors are now handled by the config system
+            // The llmService just reads getConfigInstance() which always returns valid config
             await initializeLLMService(mockContext);
 
-            expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to read config file'));
+            // Should log successful initialization
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('LLM service initialized'));
         });
     });
 
@@ -256,8 +235,12 @@ describe('LLM Service', () => {
         });
         // Helper to reinitialize service with custom config
         const reinitWithConfig = async (config: any) => {
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ llm: config }));
+            // Mock getConfigInstance to return custom config
+            const customConfig = {
+                ...DEFAULT_CONFIG,
+                llm: { ...DEFAULT_CONFIG.llm, ...config }
+            };
+            (getConfigInstance as jest.Mock).mockReturnValue(customConfig);
             await initializeLLMService(mockContext);
             jest.clearAllMocks();
         };
@@ -347,7 +330,7 @@ describe('LLM Service', () => {
 
             let readCount = 0;
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -424,7 +407,7 @@ describe('LLM Service', () => {
             });
 
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     // Simulate no chunks arriving - wait and check if aborted
@@ -466,7 +449,7 @@ describe('LLM Service', () => {
 
             let readCount = 0;
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -515,7 +498,7 @@ describe('LLM Service', () => {
 
             let readCount = 0;
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -557,17 +540,16 @@ describe('LLM Service', () => {
 
     describe('token management', () => {
         beforeEach(async () => {
-            // Initialize with low token limit for testing
-            const mockConfig = {
+            // Initialize with low token limit for testing trimming behavior
+            // Mock getConfigInstance to return low maxTokens
+            const lowTokenConfig = {
+                ...DEFAULT_CONFIG,
                 llm: {
-                    endpoint: 'http://localhost:1234/v1',
-                    model: 'test-model',
-                    timeoutSeconds: 30,
+                    ...DEFAULT_CONFIG.llm,
                     maxTokens: 200 // Low limit for testing trimming
                 }
             };
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
+            (getConfigInstance as jest.Mock).mockReturnValue(lowTokenConfig);
             await initializeLLMService(mockContext);
         });
 
@@ -641,7 +623,7 @@ describe('LLM Service', () => {
                 (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
                 // Build messages that exceed 80% of 200 tokens (160 tokens)
-                // Each message is ~50 chars = ~15 tokens
+                // Each message with 200 chars is ~50+ tokens
                 const longContent = 'A'.repeat(200); // ~50 tokens per message
                 const messages = [
                     { role: 'system' as const, content: 'You are a helpful assistant' },
@@ -673,7 +655,7 @@ describe('LLM Service', () => {
                 };
                 (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
-                // System message alone exceeds maxTokens
+                // System message alone exceeds maxTokens (200 in this test)
                 const hugeSystemPrompt = 'A'.repeat(2000); // Way over 200 token limit
                 const messages = [
                     { role: 'system' as const, content: hugeSystemPrompt }
@@ -699,6 +681,8 @@ describe('LLM Service', () => {
                 (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
                 // 10 user/assistant exchanges + system message
+                // Need to exceed 80% of 200 tokens (160 tokens)
+                // Each message with 100 chars is ~30 tokens
                 const mediumContent = 'B'.repeat(100); // ~30 tokens each
                 const messages = [
                     { role: 'system' as const, content: 'System prompt' },

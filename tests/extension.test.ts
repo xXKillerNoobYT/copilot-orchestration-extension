@@ -1,5 +1,13 @@
 import * as vscode from 'vscode';
 import { activate, deactivate, updateStatusBar } from '../src/extension';
+import { DEFAULT_CONFIG } from '../src/config/schema';
+
+// Mock config module first - return default config
+jest.mock('../src/config', () => ({
+    initializeConfig: jest.fn(),
+    getConfigInstance: jest.fn(() => DEFAULT_CONFIG),
+    resetConfigForTests: jest.fn(),
+}));
 
 // Mock all dependencies before importing activate
 jest.mock('../src/logger', () => ({
