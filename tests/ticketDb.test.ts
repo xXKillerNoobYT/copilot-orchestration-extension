@@ -335,7 +335,8 @@ describe('TicketDb', () => {
             }));
 
             // Act: Import with successful sqlite3 mock
-            const { initializeTicketDb: init, initializeConfig } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init } = require('../src/services/ticketDb');
+            const { initializeConfig } = require('../src/config');
 
             // Initialize config in the dynamically imported context
             await initializeConfig(mockContext);
@@ -381,11 +382,13 @@ describe('TicketDb', () => {
             jest.doMock('sqlite3', () => ({
                 verbose: () => ({ Database: MockDBWithSpy })
             }));
+            jest.resetModules();
 
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: init2, createTicket: create2, initializeConfig: initConfig2 } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init2, createTicket: create2 } = require('../src/services/ticketDb');
+            const { initializeConfig: initConfig2 } = require('../src/config');
 
             // Initialize config in the dynamically imported context
             await initConfig2(mockContext);
@@ -437,11 +440,13 @@ describe('TicketDb', () => {
             jest.doMock('sqlite3', () => ({
                 verbose: () => ({ Database: MockDBWithAllSpy })
             }));
+            jest.resetModules();
 
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: init3, listTickets: list3, initializeConfig: initConfig3 } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init3, listTickets: list3 } = require('../src/services/ticketDb');
+            const { initializeConfig: initConfig3 } = require('../src/config');
 
             // Initialize config in the dynamically imported context
             await initConfig3(mockContext);
@@ -470,6 +475,7 @@ describe('TicketDb', () => {
             jest.doMock('sqlite3', () => {
                 throw new Error('sqlite3 module not found (simulated)');
             });
+            jest.resetModules();
 
             mockContext = new ExtensionContext('/mock/extension/path');
 
@@ -545,7 +551,8 @@ describe('TicketDb', () => {
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: init4, updateTicket: update4, initializeConfig: initConfig4 } = require('../src/services/ticketDb');
+            const { initializeTicketDb: init4, updateTicket: update4 } = require('../src/services/ticketDb');
+            const { initializeConfig: initConfig4 } = require('../src/config');
 
             // Initialize config in the dynamically imported context
             await initConfig4(mockContext);

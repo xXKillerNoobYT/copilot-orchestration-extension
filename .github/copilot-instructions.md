@@ -53,6 +53,8 @@ When you discover constraints, better approaches, or common errors:
 - Update the relevant skill in `.github/skills/`
 - Add notes to the master plan if it affects task estimates
 - Don't overwrite directives without asking unless explicitly told to
+- This makes the system stronger over time
+- Use the skills as a checklist for every task you do It helps ensure code quality.
 
 ## Project Structure
 

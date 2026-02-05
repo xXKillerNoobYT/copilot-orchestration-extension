@@ -249,6 +249,12 @@ class TicketDatabase {
             return null;
         }
 
+        // Defensive check for data corruption
+        if (!existing.createdAt) {
+            logWarn(`Ticket ${id} exists but has null createdAt - data may be corrupted`);
+            throw new Error(`Cannot update ticket ${id}: createdAt is missing`);
+        }
+
         const now = new Date().toISOString();
         const updated: Ticket = {
             ...existing,

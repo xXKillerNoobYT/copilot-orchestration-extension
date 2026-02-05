@@ -83,7 +83,7 @@ describe('Cache Management', () => {
         testDir = path.join(__dirname, '__test_cache__');
         mockContext = {
             extensionPath: testDir,
-            extensionUri: vscode.Uri.file(testDir),
+            extensionUri: { fsPath: testDir } as vscode.Uri,
         } as unknown as vscode.ExtensionContext;
 
         // Clean up test directory if it exists
@@ -280,10 +280,13 @@ describe('Cache Management', () => {
                 'response'
             );
 
-            addToIndex(mockContext, saveResult.payload!, 1000);
+            const loadResult = await loadPayload(mockContext, saveResult.hash);
+            if (loadResult.success && loadResult.payload) {
+                addToIndex(mockContext, loadResult.payload, 1000);
 
-            const results = searchIndex(mockContext, { source: 'llm' });
-            expect(results.length).toBe(1);
+                const results = searchIndex(mockContext, { source: 'llm' });
+                expect(results.length).toBe(1);
+            }
         });
 
         it('Test 13: should update last accessed time', async () => {
@@ -294,13 +297,16 @@ describe('Cache Management', () => {
                 'example'
             );
 
-            addToIndex(mockContext, saveResult.payload!, 1000);
+            const loadResult = await loadPayload(mockContext, saveResult.hash);
+            if (loadResult.success && loadResult.payload) {
+                addToIndex(mockContext, loadResult.payload, 1000);
 
-            const updated = updateLastAccessed(mockContext, saveResult.hash);
-            expect(updated).toBe(true);
+                const updated = updateLastAccessed(mockContext, saveResult.hash);
+                expect(updated).toBe(true);
 
-            const item = getIndexItem(mockContext, saveResult.hash);
-            expect(item?.accessCount).toBe(2);
+                const item = getIndexItem(mockContext, saveResult.hash);
+                expect(item?.accessCount).toBe(2);
+            }
         });
 
         it('Test 14: should calculate cache statistics', async () => {

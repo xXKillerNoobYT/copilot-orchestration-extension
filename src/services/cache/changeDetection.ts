@@ -12,6 +12,7 @@
  */
 
 import * as fs from 'fs';
+import * as path from 'path';
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { logInfo, logWarn, logError } from '../../logger';
@@ -79,11 +80,11 @@ export function computeFileHash(filePath: string): string | null {
  * @returns Path to hash-registry.json
  */
 function getRegistryPath(context: vscode.ExtensionContext): string {
-    return vscode.Uri.joinPath(
-        context.extensionUri,
+    return path.join(
+        context.extensionPath,
         '.coe',
         'hash-registry.json'
-    ).fsPath;
+    );
 }
 
 /**

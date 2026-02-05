@@ -157,6 +157,8 @@ Instructions should focus on:
 
 ## Keeping Instructions Lightweight
 
+Keep `.github/copilot-instructions.md` & `CLAUDE.md` the exsat same. 
+
 Good instructions are:
 - ✅ Scannable (headings, bullet points)
 - ✅ Actionable (not just theory)
