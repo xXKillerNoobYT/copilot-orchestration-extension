@@ -6,8 +6,10 @@
 
 **COE** is a VS Code extension that coordinates AI agents (Planning, Answer, Verification, Research) to execute plan-driven development workflows. The system is designed to operate **fully autonomously** while maintaining optional manual controls.
 
-**Current Status**: Stage 1 - Foundation & Core Infrastructure (33.3% complete, 9/27 tasks)
+**Current Status**: Stage 2 - Ticket System & Data Layer (in progress, Stage 1 complete)
 **Master Plan**: `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md`
+**LM Studio Setup**: `Docs/LM-STUDIO-SETUP.md`
+**Tips & Learnings**: `Docs/TIPS-AND-LEARNINGS.md`
 
 ---
 
