@@ -11,7 +11,7 @@ jest.mock('vscode', () => ({
   },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('logError', () => {
   let mockOutputChannel: vscode.OutputChannel;
 
@@ -20,7 +20,7 @@ describe('logError', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should log an error message to the output channel and console', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     const message = 'Test error message';
@@ -43,7 +43,7 @@ describe('logError', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should log an Error object message to the output channel and console', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     const error = new Error('Test Error object');
@@ -66,7 +66,7 @@ describe('logError', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle undefined message gracefully', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
@@ -88,7 +88,7 @@ describe('logError', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle null message gracefully', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
@@ -110,7 +110,7 @@ describe('logError', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle an empty string message gracefully', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     const message = '';
@@ -133,7 +133,7 @@ describe('logError', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle an Error object with no message gracefully', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     const error = new Error();
@@ -151,6 +151,36 @@ describe('logError', () => {
     );
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('')
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle an Error object with a stack trace', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const error = new Error('Test Error with stack');
+    error.stack = 'Error: Test Error with stack\n    at someFunction (file.js:10:5)';
+
+    logError(error);
+
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('[ERROR]')
+    );
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining(error.message)
+    );
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining(error.stack)
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ERROR]')
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(error.message)
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(error.stack)
     );
 
     consoleErrorSpy.mockRestore();

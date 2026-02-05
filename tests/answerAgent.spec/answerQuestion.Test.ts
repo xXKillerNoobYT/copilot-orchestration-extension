@@ -1,7 +1,8 @@
 // ./answerAgent.Test.ts
 import { answerQuestion, initializeAnswerAgent, resetAnswerAgentForTests, getAnswerAgent } from '../../src/agents/answerAgent';
 import { completeLLM, streamLLM } from '../../src/services/llmService';
-import { logInfo, logError } from '../../src/logger';
+import { logInfo, logError, logWarn } from '../../src/logger';
+import { updateTicket } from '../../src/services/ticketDb';
 
 jest.mock('../../src/services/llmService', () => ({
     ...jest.requireActual('../../src/services/llmService'),
@@ -13,9 +14,15 @@ jest.mock('../../src/logger', () => ({
     ...jest.requireActual('../../src/logger'),
     logInfo: jest.fn(),
     logError: jest.fn(),
+    logWarn: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+jest.mock('../../src/services/ticketDb', () => ({
+    ...jest.requireActual('../../src/services/ticketDb'),
+    updateTicket: jest.fn(),
+}));
+
+/** @aiContributed-2026-02-04 */
 describe('answerQuestion', () => {
   beforeEach(() => {
     initializeAnswerAgent();
@@ -26,8 +33,8 @@ describe('answerQuestion', () => {
     resetAnswerAgentForTests();
   });
 
-  /** @aiContributed-2026-02-03 */
-  it('should return an answer for a valid question (happy path)', async () => {
+  /** @aiContributed-2026-02-04 */
+    it('should return an answer for a valid question (happy path)', async () => {
     const mockResponse = { content: 'This is the answer.' };
     (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
 
@@ -39,8 +46,8 @@ describe('answerQuestion', () => {
     expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Starting question'));
   });
 
-  /** @aiContributed-2026-02-03 */
-  it('should handle streaming mode correctly', async () => {
+  /** @aiContributed-2026-02-04 */
+    it('should handle streaming mode correctly', async () => {
     const mockStreamResponse = { content: 'Streaming answer.' };
     const onStream = jest.fn();
     (streamLLM as jest.Mock).mockResolvedValue(mockStreamResponse);
@@ -53,8 +60,8 @@ describe('answerQuestion', () => {
     expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Starting question'));
   });
 
-  /** @aiContributed-2026-02-03 */
-  it('should generate a new chat ID if none is provided', async () => {
+  /** @aiContributed-2026-02-04 */
+    it('should generate a new chat ID if none is provided', async () => {
     const mockResponse = { content: 'Generated chat ID answer.' };
     (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
 
@@ -65,8 +72,8 @@ describe('answerQuestion', () => {
     expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Starting question'));
   });
 
-  /** @aiContributed-2026-02-03 */
-  it('should throw an error if LLM call fails', async () => {
+  /** @aiContributed-2026-02-04 */
+    it('should throw an error if LLM call fails', async () => {
     const errorMessage = 'LLM service error';
     (completeLLM as jest.Mock).mockRejectedValue(new Error(errorMessage));
 
@@ -76,8 +83,8 @@ describe('answerQuestion', () => {
     expect(logError).toHaveBeenCalledWith(expect.stringContaining('Error in chat'));
   });
 
-  /** @aiContributed-2026-02-03 */
-  it('should handle undefined question input gracefully', async () => {
+  /** @aiContributed-2026-02-04 */
+    it('should handle undefined question input gracefully', async () => {
     const mockResponse = { content: 'Default answer.' };
     (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
 
@@ -88,8 +95,8 @@ describe('answerQuestion', () => {
     expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Starting question'));
   });
 
-  /** @aiContributed-2026-02-03 */
-  it('should trim conversation history if it exceeds the maximum exchanges', async () => {
+  /** @aiContributed-2026-02-04 */
+    it('should trim conversation history if it exceeds the maximum exchanges', async () => {
     const mockResponse = { content: 'Trimmed history answer.' };
     (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
 
@@ -112,5 +119,47 @@ describe('answerQuestion', () => {
     expect(answer).toBe(mockResponse.content);
     expect(completeLLM).toHaveBeenCalledWith('', expect.objectContaining({ messages: expect.any(Array) }));
     expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('history trimmed'));
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should persist conversation history after answering a question', async () => {
+    const mockResponse = { content: 'Persisted history answer.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+    (updateTicket as jest.Mock).mockResolvedValue(true);
+
+    const question = 'What is the capital of Canada?';
+    const chatId = 'persist-chat-id';
+
+    const answer = await answerQuestion(question, chatId);
+
+    expect(answer).toBe(mockResponse.content);
+    expect(updateTicket).toHaveBeenCalledWith(chatId, expect.objectContaining({ conversationHistory: expect.any(String) }));
+    expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Persisted history'));
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log a warning if history persistence fails', async () => {
+    const mockResponse = { content: 'Failed persistence answer.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+    (updateTicket as jest.Mock).mockResolvedValue(false);
+
+    const question = 'What is the capital of Australia?';
+    const chatId = 'fail-persist-chat-id';
+
+    const answer = await answerQuestion(question, chatId);
+
+    expect(answer).toBe(mockResponse.content);
+    expect(updateTicket).toHaveBeenCalledWith(chatId, expect.objectContaining({ conversationHistory: expect.any(String) }));
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Could not persist history'));
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log an error if deserialization of history fails', async () => {
+    const invalidSerializedData = { 'invalid-chat-id': 'invalid-json' };
+    const agent = getAnswerAgent();
+
+    agent.deserializeHistory(invalidSerializedData);
+
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history'));
   });
 });

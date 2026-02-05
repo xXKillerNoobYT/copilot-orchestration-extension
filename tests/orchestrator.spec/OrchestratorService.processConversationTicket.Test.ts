@@ -13,46 +13,49 @@ jest.mock('../../src/logger', () => ({
     logWarn: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('OrchestratorService', () => {
-  let orchestratorService: OrchestratorService;
+  let orchestrator: OrchestratorService;
 
   beforeEach(() => {
-    orchestratorService = new OrchestratorService();
+    orchestrator = new OrchestratorService();
+    jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
   describe('processConversationTicket', () => {
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log a warning if the ticket is not found', async () => {
       (listTickets as jest.Mock).mockResolvedValueOnce([]);
 
-      await orchestratorService.processConversationTicket('nonexistent-ticket-id');
+      await orchestrator.processConversationTicket('nonexistent-ticket-id');
 
+      expect(listTickets).toHaveBeenCalledTimes(1);
       expect(logWarn).toHaveBeenCalledWith('[ConversationRouting] Ticket nonexistent-ticket-id not found');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should call processConversationTicketInternal if the ticket is found', async () => {
       const mockTicket = { id: 'ticket-id', title: 'Test Ticket' };
       (listTickets as jest.Mock).mockResolvedValueOnce([mockTicket]);
       const processConversationTicketInternalSpy = jest
-        .spyOn(orchestratorService as unknown as { processConversationTicketInternal: (ticket: typeof mockTicket) => Promise<void> }, 'processConversationTicketInternal')
+        .spyOn(orchestrator as unknown as { processConversationTicketInternal: (ticket: typeof mockTicket) => Promise<void> }, 'processConversationTicketInternal')
         .mockResolvedValueOnce(undefined);
 
-      await orchestratorService.processConversationTicket('ticket-id');
+      await orchestrator.processConversationTicket('ticket-id');
 
+      expect(listTickets).toHaveBeenCalledTimes(1);
       expect(processConversationTicketInternalSpy).toHaveBeenCalledWith(mockTicket);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle errors thrown during ticket processing', async () => {
-      const mockTicket = { id: 'ticket-id', title: 'Test Ticket' };
-      (listTickets as jest.Mock).mockResolvedValueOnce([mockTicket]);
-      jest.spyOn(orchestratorService as unknown as { processConversationTicketInternal: (ticket: typeof mockTicket) => Promise<void> }, 'processConversationTicketInternal')
-        .mockRejectedValueOnce(new Error('Processing error'));
+      (listTickets as jest.Mock).mockRejectedValueOnce(new Error('Database error'));
 
-      await expect(orchestratorService.processConversationTicket('ticket-id')).rejects.toThrow('Processing error');
+      await expect(orchestrator.processConversationTicket('ticket-id')).rejects.toThrow('Database error');
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(logWarn).not.toHaveBeenCalled();
     });
   });
 });

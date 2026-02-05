@@ -10,7 +10,7 @@ jest.mock('../../utils/logger', () => ({
   },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('resetTicketDbForTests', () => {
   let mockDbInstance: { resetForTests: jest.Mock };
 
@@ -32,7 +32,7 @@ describe('resetTicketDbForTests', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should reset the database instance and call resetForTests', async () => {
     const { resetTicketDbForTests } = await import('../../src/services/ticketDb');
     resetTicketDbForTests();
@@ -41,7 +41,7 @@ describe('resetTicketDbForTests', () => {
     expect(Logger.info).toHaveBeenCalledWith('Database reset for tests');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should set dbInstance to null after resetting', async () => {
     const { resetTicketDbForTests, dbInstance } = await import('../../src/services/ticketDb');
     resetTicketDbForTests();
@@ -49,7 +49,7 @@ describe('resetTicketDbForTests', () => {
     expect(dbInstance).toBeNull();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle the case where dbInstance is null', async () => {
     jest.doMock('./ticketDb', () => {
       const actual = jest.requireActual('../../src/services/ticketDb');
@@ -63,7 +63,7 @@ describe('resetTicketDbForTests', () => {
     expect(Logger.info).not.toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should not call resetForTests if dbInstance is null', async () => {
     jest.doMock('./ticketDb', () => {
       const actual = jest.requireActual('../../src/services/ticketDb');
@@ -76,5 +76,15 @@ describe('resetTicketDbForTests', () => {
     resetTicketDbForTests();
 
     expect(mockDbInstance.resetForTests).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log a warning if resetForTests throws an error', async () => {
+    mockDbInstance.resetForTests.mockImplementation(() => {
+      throw new Error('Test error');
+    });
+    const { resetTicketDbForTests } = await import('../../src/services/ticketDb');
+    expect(() => resetTicketDbForTests()).not.toThrow();
+    expect(Logger.error).toHaveBeenCalledWith('Failed to reset database for tests: Test error');
   });
 });

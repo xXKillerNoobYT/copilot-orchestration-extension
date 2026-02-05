@@ -14,49 +14,46 @@ jest.mock('../../src/logger', () => ({
   logError: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
-describe('OrchestratorService', () => {
-  let orchestrator: OrchestratorService;
+/** @aiContributed-2026-02-04 */
+describe('OrchestratorService - registerConversationThreadListener', () => {
+  let orchestratorService: OrchestratorService;
 
   beforeEach(() => {
-    orchestrator = new OrchestratorService();
+    orchestratorService = new OrchestratorService();
   });
 
-  /** @aiContributed-2026-02-03 */
-    describe('registerConversationThreadListener', () => {
-    /** @aiContributed-2026-02-03 */
-        it('should register the conversation thread listener and log success', () => {
-      orchestrator['registerConversationThreadListener']();
+  /** @aiContributed-2026-02-04 */
+    it('should register the conversation thread listener and log info', () => {
+    orchestratorService['registerConversationThreadListener']();
 
-      expect(onTicketChange).toHaveBeenCalledTimes(1);
-      expect(onTicketChange).toHaveBeenCalledWith(expect.any(Function));
-      expect(logInfo).toHaveBeenCalledWith('Conversation thread listener registered');
+    expect(onTicketChange).toHaveBeenCalledTimes(1);
+    expect(onTicketChange).toHaveBeenCalledWith(expect.any(Function));
+    expect(logInfo).toHaveBeenCalledWith('Conversation thread listener registered');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log an error if an exception occurs', () => {
+    (onTicketChange as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Test error');
     });
 
-    /** @aiContributed-2026-02-03 */
-        it('should log an error if an exception occurs', () => {
-      (onTicketChange as jest.Mock).mockImplementationOnce(() => {
-        throw new Error('Test error');
-      });
+    orchestratorService['registerConversationThreadListener']();
 
-      orchestrator['registerConversationThreadListener']();
+    expect(logError).toHaveBeenCalledWith(
+      'Failed to register conversation thread listener: Test error'
+    );
+  });
 
-      expect(logError).toHaveBeenCalledWith(
-        'Failed to register conversation thread listener: Test error'
-      );
+  /** @aiContributed-2026-02-04 */
+    it('should handle non-Error exceptions gracefully', () => {
+    (onTicketChange as jest.Mock).mockImplementationOnce(() => {
+      throw 'Non-error exception';
     });
 
-    /** @aiContributed-2026-02-03 */
-        it('should handle non-Error exceptions gracefully', () => {
-      (onTicketChange as jest.Mock).mockImplementationOnce(() => {
-        throw 'Non-error exception';
-      });
+    orchestratorService['registerConversationThreadListener']();
 
-      orchestrator['registerConversationThreadListener']();
-
-      expect(logError).toHaveBeenCalledWith(
-        'Failed to register conversation thread listener: Non-error exception'
-      );
-    });
+    expect(logError).toHaveBeenCalledWith(
+      'Failed to register conversation thread listener: Non-error exception'
+    );
   });
 });

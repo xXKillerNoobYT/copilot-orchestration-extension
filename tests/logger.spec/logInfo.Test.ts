@@ -9,7 +9,7 @@ jest.mock('vscode', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('logInfo', () => {
     let mockOutputChannel: { appendLine: jest.Mock };
 
@@ -22,7 +22,7 @@ describe('logInfo', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log an info message to the output channel and console', () => {
         const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
         const mockDate = new Date('2023-01-01T00:00:00.000Z');
@@ -41,7 +41,7 @@ describe('logInfo', () => {
         jest.useRealTimers();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should not throw an error if the message is empty', () => {
         const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
         const mockDate = new Date('2023-01-01T00:00:00.000Z');
@@ -60,7 +60,7 @@ describe('logInfo', () => {
         jest.useRealTimers();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle undefined message gracefully', () => {
         const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
         const mockDate = new Date('2023-01-01T00:00:00.000Z');
@@ -79,7 +79,7 @@ describe('logInfo', () => {
         jest.useRealTimers();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle special characters in the message', () => {
         const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
         const mockDate = new Date('2023-01-01T00:00:00.000Z');
@@ -98,7 +98,7 @@ describe('logInfo', () => {
         jest.useRealTimers();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle long messages without truncation', () => {
         const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
         const mockDate = new Date('2023-01-01T00:00:00.000Z');
@@ -112,6 +112,26 @@ describe('logInfo', () => {
         );
         expect(consoleLogSpy).toHaveBeenCalledWith(
             `[INFO] 2023-01-01T00:00:00.000Z ${longMessage}`
+        );
+
+        consoleLogSpy.mockRestore();
+        jest.useRealTimers();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle messages with newlines correctly', () => {
+        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+        const mockDate = new Date('2023-01-01T00:00:00.000Z');
+        jest.useFakeTimers().setSystemTime(mockDate);
+
+        const messageWithNewlines = 'Line 1\nLine 2\nLine 3';
+        logInfo(messageWithNewlines);
+
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z Line 1\nLine 2\nLine 3'
+        );
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+            '[INFO] 2023-01-01T00:00:00.000Z Line 1\nLine 2\nLine 3'
         );
 
         consoleLogSpy.mockRestore();

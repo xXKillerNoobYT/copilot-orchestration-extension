@@ -9,7 +9,7 @@ jest.mock('vscode', () => ({
     ThemeIcon: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('TicketsTreeDataProvider', () => {
     let provider: TicketsTreeDataProvider;
 
@@ -17,9 +17,9 @@ describe('TicketsTreeDataProvider', () => {
         provider = new TicketsTreeDataProvider();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('createTicketItem', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should create a TreeItem with correct properties for a valid ticket', () => {
             const ticket = {
                 id: '1',
@@ -46,7 +46,7 @@ describe('TicketsTreeDataProvider', () => {
             expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle tickets with no description', () => {
             const ticket = {
                 id: '2',
@@ -65,7 +65,7 @@ describe('TicketsTreeDataProvider', () => {
             expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should truncate long descriptions to 200 characters', () => {
             const longDescription = 'a'.repeat(250);
             const ticket = {
@@ -85,7 +85,7 @@ describe('TicketsTreeDataProvider', () => {
             expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should clean whitespace from descriptions', () => {
             const ticket = {
                 id: '4',
@@ -104,13 +104,13 @@ describe('TicketsTreeDataProvider', () => {
             expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should throw an error if ticket is null or undefined', () => {
             expect(() => (provider as unknown as { createTicketItem: (ticket: null | undefined) => vscode.TreeItem }).createTicketItem(null)).toThrow();
             expect(() => (provider as unknown as { createTicketItem: (ticket: null | undefined) => vscode.TreeItem }).createTicketItem(undefined)).toThrow();
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle tickets with empty title', () => {
             const ticket = {
                 id: '5',
@@ -130,7 +130,7 @@ describe('TicketsTreeDataProvider', () => {
             expect(mockGetIconForStatus).toHaveBeenCalledWith(ticket.status);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should assign the correct context value for pending tickets', () => {
             const ticket = {
                 id: '6',

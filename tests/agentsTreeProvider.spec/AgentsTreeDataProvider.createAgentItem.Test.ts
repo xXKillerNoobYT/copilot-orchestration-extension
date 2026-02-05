@@ -18,7 +18,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AgentsTreeDataProvider', () => {
     let provider: AgentsTreeDataProvider;
 
@@ -26,9 +26,9 @@ describe('AgentsTreeDataProvider', () => {
         provider = new AgentsTreeDataProvider();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('createAgentItem', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should create a TreeItem with the correct properties', () => {
             const mockName = 'Agent 1';
             const mockStatus = 'Active';
@@ -59,7 +59,7 @@ describe('AgentsTreeDataProvider', () => {
             expect(result.contextValue).toBe('coe-agent-enabled');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should set contextValue to "coe-agent-disabled" when isEnabled is false', () => {
             const mockName = 'Agent 2';
             const mockStatus = 'Inactive';
@@ -90,7 +90,7 @@ describe('AgentsTreeDataProvider', () => {
             expect(result.contextValue).toBe('coe-agent-disabled');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle null or undefined inputs gracefully', () => {
             const mockIcon = { id: 'mock-icon' } as vscode.ThemeIcon;
 
@@ -108,7 +108,7 @@ describe('AgentsTreeDataProvider', () => {
             expect(result.contextValue).toBe('coe-agent-enabled');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should log debug information during execution', () => {
             const mockName = 'Agent 1';
             const mockStatus = 'Active';
@@ -127,7 +127,7 @@ describe('AgentsTreeDataProvider', () => {
             expect(Logger.debug).toHaveBeenCalled();
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should create a TreeItem with an empty tooltip if not provided', () => {
             const mockName = 'Agent 2';
             const mockStatus = 'Inactive';

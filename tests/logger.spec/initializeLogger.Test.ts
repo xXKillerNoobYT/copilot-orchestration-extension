@@ -22,7 +22,7 @@ jest.mock('path', () => ({
     join: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('initializeLogger', () => {
     let mockContext: vscode.ExtensionContext;
     let mockOutputChannel: vscode.OutputChannel;
@@ -45,7 +45,7 @@ describe('initializeLogger', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should initialize the logger with default log level when config file does not exist', () => {
         (fs.existsSync as jest.Mock).mockReturnValue(false);
 
@@ -55,7 +55,7 @@ describe('initializeLogger', () => {
         expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should initialize the logger with log level from config file', () => {
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ debug: { logLevel: 'warn' } }));
@@ -66,7 +66,7 @@ describe('initializeLogger', () => {
         expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: warn');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle invalid log level in config file gracefully', () => {
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ debug: { logLevel: 'invalid' } }));
@@ -76,7 +76,7 @@ describe('initializeLogger', () => {
         expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle errors while reading the config file gracefully', () => {
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readFileSync as jest.Mock).mockImplementation(() => {
@@ -88,7 +88,7 @@ describe('initializeLogger', () => {
         expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should create the output channel only once', () => {
         (fs.existsSync as jest.Mock).mockReturnValue(false);
 
@@ -99,7 +99,7 @@ describe('initializeLogger', () => {
         expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log the initialization message with the correct timestamp', () => {
         (fs.existsSync as jest.Mock).mockReturnValue(false);
 
@@ -111,5 +111,25 @@ describe('initializeLogger', () => {
         expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
 
         jest.useRealTimers();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle missing debug property in config file gracefully', () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({}));
+
+        initializeLogger(mockContext);
+
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle missing logLevel property in debug config gracefully', () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ debug: {} }));
+
+        initializeLogger(mockContext);
+
+        expect(mockOutputChannel.appendLine).toHaveBeenCalledWith('[INFO] Logger initialized – level: info');
     });
 });

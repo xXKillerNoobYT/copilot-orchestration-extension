@@ -7,7 +7,7 @@ jest.mock('../../src/logger', () => ({
     logInfo: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('MCPServer', () => {
     let server: MCPServer;
     let mockInputStream: NodeJS.ReadableStream;
@@ -29,7 +29,7 @@ describe('MCPServer', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should stop the server when it is started', () => {
         server.stop();
 
@@ -40,16 +40,18 @@ describe('MCPServer', () => {
         expect(logInfo).toHaveBeenCalledWith('MCP server stopped');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should pause the input stream if it is process.stdin', () => {
         (server as MCPServer & { inputStream: NodeJS.ReadableStream }).inputStream = process.stdin;
+
+        jest.spyOn(process.stdin, 'pause').mockImplementation(() => {});
 
         server.stop();
 
         expect(process.stdin.pause).toHaveBeenCalled();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should do nothing if the server is not started', () => {
         (server as MCPServer & { isStarted: boolean }).isStarted = false;
 
@@ -58,5 +60,17 @@ describe('MCPServer', () => {
         expect(logInfo).not.toHaveBeenCalled();
         expect(mockInputStream.removeAllListeners).not.toHaveBeenCalled();
         expect(mockInputStream.pause).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should unregister shutdown handlers when stopping the server', () => {
+        const unregisterShutdownHandlersSpy = jest.spyOn(
+            server as MCPServer & { unregisterShutdownHandlers: () => void },
+            'unregisterShutdownHandlers'
+        );
+
+        server.stop();
+
+        expect(unregisterShutdownHandlersSpy).toHaveBeenCalled();
     });
 });

@@ -15,13 +15,13 @@ jest.mock('../../src/logger', () => ({
     logError: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('handleGetNextTask', () => {
     afterEach(() => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return the next task successfully with default parameters', async () => {
         const mockTask = { id: '1', ticketId: 'T123', title: 'Task 1', status: 'ready', createdAt: '2023-01-01' };
         (orchestratorGetNextTask as jest.Mock).mockResolvedValue(mockTask);
@@ -37,7 +37,7 @@ describe('handleGetNextTask', () => {
         expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Returning task: 1'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return an error for an invalid filter', async () => {
         const invalidFilter = 'invalid' as unknown as 'ready' | 'blocked' | 'all';
         const result = await handleGetNextTask({ filter: invalidFilter });
@@ -53,7 +53,7 @@ describe('handleGetNextTask', () => {
         expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Invalid filter: invalid'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle an empty queue', async () => {
         (orchestratorGetNextTask as jest.Mock).mockResolvedValue(null);
 
@@ -70,7 +70,7 @@ describe('handleGetNextTask', () => {
         expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Queue is empty'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle the blocked filter with no blocked tasks', async () => {
         const mockTask = { id: '1', ticketId: 'T123', title: 'Task 1', status: 'ready', createdAt: '2023-01-01' };
         (orchestratorGetNextTask as jest.Mock).mockResolvedValue(mockTask);
@@ -88,7 +88,7 @@ describe('handleGetNextTask', () => {
         expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Blocked filter requested but task returned'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should exclude context when includeContext is false', async () => {
         const mockTask = { id: '1', ticketId: 'T123', title: 'Task 1', status: 'ready', createdAt: '2023-01-01', extra: 'context' };
         (orchestratorGetNextTask as jest.Mock).mockResolvedValue(mockTask);
@@ -109,7 +109,7 @@ describe('handleGetNextTask', () => {
         expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Context excluded from response'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle orchestrator not initialized error', async () => {
         (orchestratorGetNextTask as jest.Mock).mockRejectedValue(new Error('not initialized'));
 
@@ -126,7 +126,7 @@ describe('handleGetNextTask', () => {
         expect(logError).toHaveBeenCalledWith(expect.stringContaining('Error: not initialized'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle generic errors', async () => {
         (orchestratorGetNextTask as jest.Mock).mockRejectedValue(new Error('Unexpected error'));
 
@@ -141,5 +141,20 @@ describe('handleGetNextTask', () => {
             },
         });
         expect(logError).toHaveBeenCalledWith(expect.stringContaining('Error: Unexpected error'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle invalid parameter types', async () => {
+        const result = await handleGetNextTask('invalid' as unknown as GetNextTaskParams);
+
+        expect(result).toEqual({
+            success: false,
+            task: null,
+            error: {
+                code: 'INVALID_FILTER',
+                message: "Invalid filter 'undefined'. Valid options: ready, blocked, all",
+            },
+        });
+        expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Invalid filter'));
     });
 });

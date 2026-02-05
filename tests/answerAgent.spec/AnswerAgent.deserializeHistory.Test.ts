@@ -9,7 +9,7 @@ jest.mock('../../src/logger', () => ({
 
 type ConversationHistory = Map<string, { id: string; messages: string[] }>;
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AnswerAgent.deserializeHistory', () => {
   let answerAgent: AnswerAgent;
 
@@ -19,7 +19,7 @@ describe('AnswerAgent.deserializeHistory', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should deserialize and store valid history entries', () => {
     const serialized = {
       chat1: JSON.stringify({ id: 'chat1', messages: ['Hello'] }),
@@ -39,7 +39,7 @@ describe('AnswerAgent.deserializeHistory', () => {
     });
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should log a warning and skip invalid JSON entries', () => {
     const serialized = {
       chat1: JSON.stringify({ id: 'chat1', messages: ['Hello'] }),
@@ -56,7 +56,7 @@ describe('AnswerAgent.deserializeHistory', () => {
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history for chat chat2'));
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle an empty serialized object', () => {
     const serialized = {};
 
@@ -66,7 +66,7 @@ describe('AnswerAgent.deserializeHistory', () => {
     expect(logWarn).not.toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle null or undefined input gracefully', () => {
     answerAgent.deserializeHistory(null as unknown as Record<string, string>);
     answerAgent.deserializeHistory(undefined as unknown as Record<string, string>);
@@ -75,7 +75,7 @@ describe('AnswerAgent.deserializeHistory', () => {
     expect(logWarn).not.toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle partially valid serialized data', () => {
     const serialized = {
       chat1: JSON.stringify({ id: 'chat1', messages: ['Hello'] }),
@@ -97,7 +97,7 @@ describe('AnswerAgent.deserializeHistory', () => {
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history for chat chat2'));
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle metadata with unexpected structure gracefully', () => {
     const serialized = {
       chat1: JSON.stringify({ id: 'chat1', messages: ['Hello'] }),
@@ -112,5 +112,34 @@ describe('AnswerAgent.deserializeHistory', () => {
       messages: ['Hello'],
     });
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history for chat chat2'));
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle invalid JSON with special characters gracefully', () => {
+    const serialized = {
+      chat1: JSON.stringify({ id: 'chat1', messages: ['Hello'] }),
+      chat2: '{invalid-json}',
+    };
+
+    answerAgent.deserializeHistory(serialized);
+
+    expect((answerAgent as { conversationHistory: ConversationHistory }).conversationHistory.size).toBe(1);
+    expect((answerAgent as { conversationHistory: ConversationHistory }).conversationHistory.get('chat1')).toEqual({
+      id: 'chat1',
+      messages: ['Hello'],
+    });
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history for chat chat2'));
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle empty strings as metadata gracefully', () => {
+    const serialized = {
+      chat1: '',
+    };
+
+    answerAgent.deserializeHistory(serialized);
+
+    expect((answerAgent as { conversationHistory: ConversationHistory }).conversationHistory.size).toBe(0);
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to load history for chat chat1'));
   });
 });

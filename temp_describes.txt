@@ -1,0 +1,3755 @@
+describe('answerQuestion', () => {
+  let mockAnswerAgent: jest.Mocked<AnswerAgent>;
+
+  beforeEach(() => {
+    resetOrchestratorForTests();
+    mockAnswerAgent = new AnswerAgent() as jest.Mocked<AnswerAgent>;
+    (AnswerAgent as jest.Mock).mockImplementation(() => mockAnswerAgent);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return the answer from AnswerAgent on success', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    const expectedAnswer = 'TypeScript is a strongly typed superset of JavaScript.';
+    mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+    const result = await answerQuestion(question);
+
+    expect(result).toBe(expectedAnswer);
+    expect(mockAnswerAgent.ask).toHaveBeenCalledWith(question, undefined);
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle errors from AnswerAgent gracefully', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    const errorMessage = 'AnswerAgent failed';
+    mockAnswerAgent.ask.mockRejectedValue(new Error(errorMessage));
+
+    const result = await answerQuestion(question);
+
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log and return a message for empty questions', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = '';
+
+    const result = await answerQuestion(question);
+
+    expect(result).toBe('Please ask a question.');
+    expect(Logger.warn).toHaveBeenCalledWith('[Answer] Empty question provided');
+    expect(llmStatusBar.start).not.toHaveBeenCalled();
+    expect(llmStatusBar.end).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle multi-turn conversations with chatId', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    const chatId = 'chat-123';
+    const expectedAnswer = 'TypeScript is a strongly typed superset of JavaScript.';
+    mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+    const result = await answerQuestion(question, chatId, true);
+
+    expect(result).toBe(expectedAnswer);
+    expect(mockAnswerAgent.ask).toHaveBeenCalledWith(question, chatId);
+    expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Continuing conversation'));
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should initialize AnswerAgent lazily if not already initialized', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    const expectedAnswer = 'TypeScript is a strongly typed superset of JavaScript.';
+    mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+    const result = await answerQuestion(question);
+
+    expect(result).toBe(expectedAnswer);
+    expect(mockAnswerAgent.ask).toHaveBeenCalledWith(question, undefined);
+    expect(AnswerAgent).toHaveBeenCalledTimes(1);
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log and return a fallback message if AnswerAgent throws a non-Error object', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    mockAnswerAgent.ask.mockRejectedValue('Non-Error object');
+
+    const result = await answerQuestion(question);
+
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Non-Error object'));
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log and handle undefined chatId gracefully', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const question = 'What is TypeScript?';
+    const expectedAnswer = 'TypeScript is a strongly typed superset of JavaScript.';
+    mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+    const result = await answerQuestion(question, undefined, false);
+
+    expect(result).toBe(expectedAnswer);
+    expect(mockAnswerAgent.ask).toHaveBeenCalledWith(question, undefined);
+    expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Starting conversation'));
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle long questions by truncating logs', async () => {
+    const mockContext = { extensionPath: '/mock/path' } as { extensionPath: string };
+    await initializeOrchestrator(mockContext);
+
+    const longQuestion = 'A'.repeat(1000);
+    const expectedAnswer = 'This is a response.';
+    mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+    const result = await answerQuestion(longQuestion);
+
+    expect(result).toBe(expectedAnswer);
+    expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining(longQuestion.substring(0, 50)));
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+  });
+});
+describe('getNextTask', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(async () => {
+    orchestrator = new OrchestratorService();
+    await orchestrator.initialize({ extensionPath: '/mock/path' } as vscode.ExtensionContext);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    orchestrator.resetForTests();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return null if the task queue is empty', async () => {
+    const task = await orchestrator.getNextTask();
+    expect(task).toBeNull();
+    expect(logInfo).toHaveBeenCalledWith('No pending tasks in queue');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return the next task and update its status in the database', async () => {
+    const mockTask = {
+      id: 'TICKET-001',
+      ticketId: 'TICKET-001',
+      title: 'Test Task',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    orchestrator['taskQueue'] = [mockTask];
+
+    const task = await orchestrator.getNextTask();
+
+    expect(task).toEqual({
+      ...mockTask,
+      status: 'picked',
+      lastPickedAt: expect.any(String),
+    });
+    expect(orchestrator['pickedTasks']).toContainEqual({
+      ...mockTask,
+      status: 'picked',
+      lastPickedAt: expect.any(String),
+    });
+    expect(updateTicket).toHaveBeenCalledWith(mockTask.id, {
+      status: 'in-progress',
+      updatedAt: expect.any(String),
+    });
+    expect(logInfo).toHaveBeenCalledWith(`Task picked atomically: ${mockTask.id} - ${mockTask.title}`);
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should check for blocked tasks before returning the next task', async () => {
+    const mockTask = {
+      id: 'TICKET-002',
+      ticketId: 'TICKET-002',
+      title: 'Blocked Task',
+      status: 'picked',
+      createdAt: new Date().toISOString(),
+      lastPickedAt: new Date(Date.now() - 31000).toISOString(), // 31 seconds ago
+    };
+    orchestrator['pickedTasks'] = [mockTask];
+
+    await orchestrator.getNextTask();
+
+    expect(createTicket).toHaveBeenCalledWith({
+      title: `P1 BLOCKED: ${mockTask.title}`,
+      status: 'blocked',
+      description: expect.stringContaining('Task idle for 31s'),
+    });
+    expect(logWarn).toHaveBeenCalledWith(`Created P1 blocked ticket for task: ${mockTask.id}`);
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle errors during blocked task detection gracefully', async () => {
+    const mockTask = {
+      id: 'TICKET-003',
+      ticketId: 'TICKET-003',
+      title: 'Error Task',
+      status: 'picked',
+      createdAt: new Date().toISOString(),
+      lastPickedAt: new Date(Date.now() - 31000).toISOString(), // 31 seconds ago
+    };
+    orchestrator['pickedTasks'] = [mockTask];
+    (createTicket as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+    await orchestrator.getNextTask();
+
+    expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to create blocked ticket'));
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should not update lastPickedAt if the task queue is empty', async () => {
+    orchestrator['taskQueue'] = [];
+    const task = await orchestrator.getNextTask();
+    expect(task).toBeNull();
+    expect(logInfo).toHaveBeenCalledWith('No pending tasks in queue');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should correctly handle tasks with undefined lastPickedAt', async () => {
+    const mockTask = {
+      id: 'TICKET-004',
+      ticketId: 'TICKET-004',
+      title: 'Undefined LastPickedAt Task',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    orchestrator['taskQueue'] = [mockTask];
+
+    const task = await orchestrator.getNextTask();
+
+    expect(task).toEqual({
+      ...mockTask,
+      status: 'picked',
+      lastPickedAt: expect.any(String),
+    });
+    expect(orchestrator['pickedTasks']).toContainEqual({
+      ...mockTask,
+      status: 'picked',
+      lastPickedAt: expect.any(String),
+    });
+    expect(updateTicket).toHaveBeenCalledWith(mockTask.id, {
+      status: 'in-progress',
+      updatedAt: expect.any(String),
+    });
+    expect(logInfo).toHaveBeenCalledWith(`Task picked atomically: ${mockTask.id} - ${mockTask.title}`);
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return null and leave the task in the queue if database update fails', async () => {
+    const mockTask = {
+      id: 'TICKET-005',
+      ticketId: 'TICKET-005',
+      title: 'DB Update Fail Task',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    orchestrator['taskQueue'] = [mockTask];
+    (updateTicket as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+    const task = await orchestrator.getNextTask();
+
+    expect(task).toBeNull();
+    expect(orchestrator['taskQueue']).toContainEqual(mockTask);
+    expect(logWarn).toHaveBeenCalledWith(
+      `Failed to atomically pick task ${mockTask.id}: Database error. Leaving in queue for retry.`
+    );
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should emit a queue change event after picking a task', async () => {
+    const mockTask = {
+      id: 'TICKET-006',
+      ticketId: 'TICKET-006',
+      title: 'Emit Event Task',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    orchestrator['taskQueue'] = [mockTask];
+    const emitQueueChangeSpy = jest.spyOn(orchestrator as unknown as { emitQueueChange: () => void }, 'emitQueueChange');
+
+    await orchestrator.getNextTask();
+
+    expect(emitQueueChangeSpy).toHaveBeenCalled();
+  });
+});
+describe('getOrchestratorInstance', () => {
+  let mockContext: vscode.ExtensionContext;
+
+  beforeEach(() => {
+    resetOrchestratorForTests();
+    mockContext = { extensionPath: '/mock/path' } as unknown as vscode.ExtensionContext;
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return an instance of OrchestratorService after initialization', async () => {
+    await initializeOrchestrator(mockContext);
+    const instance = getOrchestratorInstance();
+    expect(instance).toBeInstanceOf(OrchestratorService);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should throw an error if the orchestrator is not initialized', () => {
+    expect(() => getOrchestratorInstance()).toThrowError('Orchestrator not initialized');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return the same instance on multiple calls after initialization', async () => {
+    await initializeOrchestrator(mockContext);
+    const instance1 = getOrchestratorInstance();
+    const instance2 = getOrchestratorInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log a warning if initializeOrchestrator is called multiple times', async () => {
+    await initializeOrchestrator(mockContext);
+    await initializeOrchestrator(mockContext);
+    expect(logWarn).toHaveBeenCalledWith('Orchestrator already initialized');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should throw an error if getOrchestratorInstance is called after reset', async () => {
+    await initializeOrchestrator(mockContext);
+    resetOrchestratorForTests();
+    expect(() => getOrchestratorInstance()).toThrowError('Orchestrator not initialized');
+  });
+});
+describe('initializeOrchestrator', () => {
+  let mockContext: vscode.ExtensionContext;
+
+  beforeEach(() => {
+    mockContext = {
+      extensionPath: '/mock/extension/path',
+    } as unknown as vscode.ExtensionContext;
+
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should initialize orchestrator with default timeout when config file does not exist', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(logWarn).not.toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should initialize orchestrator with timeout from config file', async () => {
+    const mockConfig = JSON.stringify({ orchestrator: { taskTimeoutSeconds: 60 } });
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(fs.readFileSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json', 'utf-8');
+    expect(logWarn).not.toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 60s');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should fallback to default timeout if config file is invalid', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockImplementation(() => {
+      throw new Error('Invalid JSON');
+    });
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(fs.readFileSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json', 'utf-8');
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to read orchestrator config'));
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should load tasks from TicketDb during initialization', async () => {
+    const mockTickets = [
+      { id: 'TICKET-001', title: 'Test Ticket 1', status: 'open', createdAt: '2023-01-01T00:00:00Z' },
+    ];
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+    (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(listTickets).toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Loaded 1 tasks from tickets');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle errors when loading tasks from TicketDb', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+    (listTickets as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(listTickets).toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to load tasks from tickets'));
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should warn if orchestrator is already initialized', async () => {
+    await initializeOrchestrator(mockContext);
+    await initializeOrchestrator(mockContext);
+
+    expect(logWarn).toHaveBeenCalledWith('Orchestrator already initialized');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should fallback to llm.timeoutSeconds if orchestrator.taskTimeoutSeconds is not defined', async () => {
+    const mockConfig = JSON.stringify({ llm: { timeoutSeconds: 45 } });
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(fs.readFileSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json', 'utf-8');
+    expect(logWarn).not.toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 45s');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should use default timeout if neither orchestrator.taskTimeoutSeconds nor llm.timeoutSeconds is defined', async () => {
+    const mockConfig = JSON.stringify({});
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(fs.readFileSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json', 'utf-8');
+    expect(logWarn).not.toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should register manual mode listener during initialization', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(onTicketChange).toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Manual mode listener registered');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should register conversation thread listener during initialization', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(onTicketChange).toHaveBeenCalled();
+    expect(logInfo).toHaveBeenCalledWith('Conversation thread listener registered');
+    expect(orchestrator).toBeDefined();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle invalid taskTimeoutSeconds in config file gracefully', async () => {
+    const mockConfig = JSON.stringify({ orchestrator: { taskTimeoutSeconds: -10 } });
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+    const orchestrator = await initializeOrchestrator(mockContext);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json');
+    expect(fs.readFileSync).toHaveBeenCalledWith('/mock/extension/path/.coe/config.json', 'utf-8');
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Invalid taskTimeoutSeconds'));
+    expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    expect(orchestrator).toBeDefined();
+  });
+});
+describe('OrchestratorService', () => {
+    let orchestrator: OrchestratorService;
+    let mockAnswerAgent: jest.Mocked<AnswerAgent>;
+
+    beforeEach(() => {
+        orchestrator = new OrchestratorService();
+        mockAnswerAgent = new AnswerAgent() as jest.Mocked<AnswerAgent>;
+        orchestrator['answerAgent'] = mockAnswerAgent;
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return the answer from AnswerAgent on the happy path', async () => {
+        const question = 'What is the capital of France?';
+        const chatId = '123';
+        const isContinue = false;
+        const expectedAnswer = 'Paris';
+
+        mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+        const result = await orchestrator.answerQuestion(question, chatId, isContinue);
+
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(llmStatusBar.end).toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Starting conversation'));
+        expect(logInfo).toHaveBeenCalledWith('[Answer] Response generated');
+        expect(result).toBe(expectedAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should initialize AnswerAgent if not already initialized', async () => {
+        orchestrator['answerAgent'] = null;
+        const question = 'What is the capital of France?';
+        const expectedAnswer = 'Paris';
+
+        mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+        const result = await orchestrator.answerQuestion(question);
+
+        expect(orchestrator['answerAgent']).not.toBeNull();
+        expect(result).toBe(expectedAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors and return a fallback message', async () => {
+        const question = 'What is the capital of France?';
+        const errorMessage = 'Service unavailable';
+
+        mockAnswerAgent.ask.mockRejectedValue(new Error(errorMessage));
+
+        const result = await orchestrator.answerQuestion(question);
+
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(llmStatusBar.end).toHaveBeenCalled();
+        expect(logError).toHaveBeenCalledWith(expect.stringContaining(`[Answer] Failed to answer question: ${errorMessage}`));
+        expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle null or undefined inputs gracefully', async () => {
+        const result = await orchestrator.answerQuestion(null as unknown as string);
+
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(llmStatusBar.end).toHaveBeenCalled();
+        expect(logError).toHaveBeenCalledWith(expect.stringContaining('[Answer] Failed to answer question'));
+        expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log and truncate long questions in the log', async () => {
+        const longQuestion = 'a'.repeat(100);
+        const expectedAnswer = 'Truncated response';
+
+        mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+        const result = await orchestrator.answerQuestion(longQuestion);
+
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining(longQuestion.substring(0, 50)));
+        expect(result).toBe(expectedAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should call llmStatusBar.end even if an error is thrown', async () => {
+        const question = 'What is the capital of France?';
+        mockAnswerAgent.ask.mockRejectedValue(new Error('Unexpected error'));
+
+        await orchestrator.answerQuestion(question);
+
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(llmStatusBar.end).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle isContinue flag correctly in the log', async () => {
+        const question = 'What is the capital of France?';
+        const chatId = '123';
+        const isContinue = true;
+        const expectedAnswer = 'Paris';
+
+        mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+        const result = await orchestrator.answerQuestion(question, chatId, isContinue);
+
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Continuing conversation'));
+        expect(result).toBe(expectedAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle missing chatId gracefully', async () => {
+        const question = 'What is the capital of France?';
+        const isContinue = false;
+        const expectedAnswer = 'Paris';
+
+        mockAnswerAgent.ask.mockResolvedValue(expectedAnswer);
+
+        const result = await orchestrator.answerQuestion(question, undefined, isContinue);
+
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Starting conversation'));
+        expect(result).toBe(expectedAnswer);
+    });
+});
+describe('OrchestratorService', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    orchestrator.resetForTests();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('appendThreadMessage', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should append a message to the ticket thread and update the ticket', async () => {
+      const ticket: Ticket = {
+        id: '1',
+        thread: [{ content: 'Existing message', createdAt: '2023-01-01T00:00:00Z' }],
+      };
+      const message: Message = { content: 'New message', role: 'user' };
+
+      await orchestrator.appendThreadMessage(ticket, message);
+
+      expect(updateTicket).toHaveBeenCalledWith('1', {
+        thread: [
+          { content: 'Existing message', createdAt: '2023-01-01T00:00:00Z' },
+          expect.objectContaining({ content: 'New message', role: 'user', createdAt: expect.any(String) }),
+        ],
+      });
+      expect(orchestrator['conversationThreadLengths'].get('1')).toBe(2);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle tickets with no existing thread', async () => {
+      const ticket: Ticket = { id: '2', thread: null };
+      const message: Message = { content: 'First message', role: 'assistant' };
+
+      await orchestrator.appendThreadMessage(ticket, message);
+
+      expect(updateTicket).toHaveBeenCalledWith('2', {
+        thread: [expect.objectContaining({ content: 'First message', role: 'assistant', createdAt: expect.any(String) })],
+      });
+      expect(orchestrator['conversationThreadLengths'].get('2')).toBe(1);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log an error if updateTicket throws an error', async () => {
+      const ticket: Ticket = { id: '3', thread: [] };
+      const message: Message = { content: 'Error message', role: 'system' };
+      (updateTicket as jest.Mock).mockRejectedValueOnce(new Error('Update failed'));
+      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
+
+      await expect(orchestrator.appendThreadMessage(ticket, message)).rejects.toThrow('Update failed');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should correctly handle multiple messages in the thread', async () => {
+      const ticket: Ticket = {
+        id: '4',
+        thread: [
+          { content: 'Message 1', createdAt: '2023-01-01T00:00:00Z', role: 'user' },
+          { content: 'Message 2', createdAt: '2023-01-02T00:00:00Z', role: 'assistant' },
+        ],
+      };
+      const message: Message = { content: 'Message 3', role: 'user' };
+
+      await orchestrator.appendThreadMessage(ticket, message);
+
+      expect(updateTicket).toHaveBeenCalledWith('4', {
+        thread: [
+          { content: 'Message 1', createdAt: '2023-01-01T00:00:00Z', role: 'user' },
+          { content: 'Message 2', createdAt: '2023-01-02T00:00:00Z', role: 'assistant' },
+          expect.objectContaining({ content: 'Message 3', role: 'user', createdAt: expect.any(String) }),
+        ],
+      });
+      expect(orchestrator['conversationThreadLengths'].get('4')).toBe(3);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle undefined thread gracefully', async () => {
+      const ticket: Ticket = { id: '5', thread: undefined };
+      const message: Message = { content: 'New message', role: 'assistant' };
+
+      await orchestrator.appendThreadMessage(ticket, message);
+
+      expect(updateTicket).toHaveBeenCalledWith('5', {
+        thread: [expect.objectContaining({ content: 'New message', role: 'assistant', createdAt: expect.any(String) })],
+      });
+      expect(orchestrator['conversationThreadLengths'].get('5')).toBe(1);
+    });
+  });
+});
+describe('OrchestratorService', () => {
+    /** @aiContributed-2026-02-04 */
+    describe('buildMessagesFromThread', () => {
+        let orchestratorService: OrchestratorService;
+
+        beforeEach(() => {
+            orchestratorService = new OrchestratorService();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should build messages with system prompt and filtered thread messages', () => {
+            const thread: Array<{ role: string; content: string }> = [
+                { role: 'user', content: 'User message 1' },
+                { role: 'assistant', content: 'Assistant message 1' },
+                { role: 'system', content: 'System message 1' },
+                { role: 'user', content: 'User message 2' },
+            ];
+            const ANSWER_SYSTEM_PROMPT = 'System prompt content';
+            (orchestratorService as unknown as { ANSWER_SYSTEM_PROMPT: string }).ANSWER_SYSTEM_PROMPT = ANSWER_SYSTEM_PROMPT;
+
+            const result = (orchestratorService as unknown as { buildMessagesFromThread: (thread: typeof thread) => Array<{ role: string; content: string }> }).buildMessagesFromThread(thread);
+
+            expect(result).toEqual([
+                { role: 'system', content: ANSWER_SYSTEM_PROMPT },
+                { role: 'user', content: 'User message 1' },
+                { role: 'assistant', content: 'Assistant message 1' },
+                { role: 'user', content: 'User message 2' },
+            ]);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return only the system prompt if thread is empty', () => {
+            const thread: Array<{ role: string; content: string }> = [];
+            const ANSWER_SYSTEM_PROMPT = 'System prompt content';
+            (orchestratorService as unknown as { ANSWER_SYSTEM_PROMPT: string }).ANSWER_SYSTEM_PROMPT = ANSWER_SYSTEM_PROMPT;
+
+            const result = (orchestratorService as unknown as { buildMessagesFromThread: (thread: typeof thread) => Array<{ role: string; content: string }> }).buildMessagesFromThread(thread);
+
+            expect(result).toEqual([{ role: 'system', content: ANSWER_SYSTEM_PROMPT }]);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle threads with no user or assistant messages', () => {
+            const thread: Array<{ role: string; content: string }> = [
+                { role: 'system', content: 'System message 1' },
+                { role: 'other', content: 'Other message 1' },
+            ];
+            const ANSWER_SYSTEM_PROMPT = 'System prompt content';
+            (orchestratorService as unknown as { ANSWER_SYSTEM_PROMPT: string }).ANSWER_SYSTEM_PROMPT = ANSWER_SYSTEM_PROMPT;
+
+            const result = (orchestratorService as unknown as { buildMessagesFromThread: (thread: typeof thread) => Array<{ role: string; content: string }> }).buildMessagesFromThread(thread);
+
+            expect(result).toEqual([{ role: 'system', content: ANSWER_SYSTEM_PROMPT }]);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should throw an error if thread is null or undefined', () => {
+            const ANSWER_SYSTEM_PROMPT = 'System prompt content';
+            (orchestratorService as unknown as { ANSWER_SYSTEM_PROMPT: string }).ANSWER_SYSTEM_PROMPT = ANSWER_SYSTEM_PROMPT;
+
+            expect(() => (orchestratorService as unknown as { buildMessagesFromThread: (thread: null | undefined) => void }).buildMessagesFromThread(null)).toThrow();
+            expect(() => (orchestratorService as unknown as { buildMessagesFromThread: (thread: null | undefined) => void }).buildMessagesFromThread(undefined)).toThrow();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle threads with mixed roles and preserve order', () => {
+            const thread: Array<{ role: string; content: string }> = [
+                { role: 'assistant', content: 'Assistant message 1' },
+                { role: 'user', content: 'User message 1' },
+                { role: 'other', content: 'Other message 1' },
+                { role: 'user', content: 'User message 2' },
+                { role: 'assistant', content: 'Assistant message 2' },
+            ];
+            const ANSWER_SYSTEM_PROMPT = 'System prompt content';
+            (orchestratorService as unknown as { ANSWER_SYSTEM_PROMPT: string }).ANSWER_SYSTEM_PROMPT = ANSWER_SYSTEM_PROMPT;
+
+            const result = (orchestratorService as unknown as { buildMessagesFromThread: (thread: typeof thread) => Array<{ role: string; content: string }> }).buildMessagesFromThread(thread);
+
+            expect(result).toEqual([
+                { role: 'system', content: ANSWER_SYSTEM_PROMPT },
+                { role: 'assistant', content: 'Assistant message 1' },
+                { role: 'user', content: 'User message 1' },
+                { role: 'user', content: 'User message 2' },
+                { role: 'assistant', content: 'Assistant message 2' },
+            ]);
+        });
+    });
+});
+describe('OrchestratorService - checkForBlockedTasks', () => {
+  let orchestrator: OrchestratorServiceExtended;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService() as OrchestratorServiceExtended;
+    orchestrator.taskQueue = [];
+    orchestrator.pickedTasks = [];
+    orchestrator.taskTimeoutSeconds = 300; // 5 minutes
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should block tasks that exceed the timeout and create a ticket', async () => {
+    const now = Date.now();
+    const task: Task = {
+      id: '1',
+      title: 'Test Task',
+      lastPickedAt: new Date(now - 400000).toISOString(), // Picked 400 seconds ago
+      blockedAt: null,
+      status: 'in-progress',
+    };
+    orchestrator.pickedTasks = [task];
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).not.toBeNull();
+    expect(task.status).toBe('blocked');
+    expect(orchestrator.pickedTasks).toHaveLength(0);
+    expect(createTicket).toHaveBeenCalledWith({
+      title: `P1 BLOCKED: ${task.title}`,
+      status: 'blocked',
+      description: `Task idle for 400s (timeout: 300s)`,
+    });
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+      `⚠️ P1 BLOCKED: ${task.title} (idle 400s)`,
+      'Review'
+    );
+    expect(logWarn).toHaveBeenCalledWith(`Created P1 blocked ticket for task: ${task.id}`);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should not block tasks that are within the timeout', async () => {
+    const now = Date.now();
+    const task: Task = {
+      id: '2',
+      title: 'Test Task 2',
+      lastPickedAt: new Date(now - 200000).toISOString(), // Picked 200 seconds ago
+      blockedAt: null,
+      status: 'in-progress',
+    };
+    orchestrator.pickedTasks = [task];
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).toBeNull();
+    expect(task.status).toBe('in-progress');
+    expect(orchestrator.pickedTasks).toHaveLength(1);
+    expect(createTicket).not.toHaveBeenCalled();
+    expect(llmStatusBar.start).not.toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should skip tasks without lastPickedAt', async () => {
+    const task: Task = {
+      id: '3',
+      title: 'Test Task 3',
+      lastPickedAt: null,
+      blockedAt: null,
+      status: 'pending',
+    };
+    orchestrator.taskQueue = [task];
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).toBeNull();
+    expect(task.status).toBe('pending');
+    expect(createTicket).not.toHaveBeenCalled();
+    expect(llmStatusBar.start).not.toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle errors when creating a ticket', async () => {
+    const now = Date.now();
+    const task: Task = {
+      id: '4',
+      title: 'Test Task 4',
+      lastPickedAt: new Date(now - 400000).toISOString(), // Picked 400 seconds ago
+      blockedAt: null,
+      status: 'in-progress',
+    };
+    orchestrator.pickedTasks = [task];
+    (createTicket as jest.Mock).mockRejectedValueOnce(new Error('Database error'));
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(task.blockedAt).not.toBeNull();
+    expect(task.status).toBe('blocked');
+    expect(orchestrator.pickedTasks).toHaveLength(0);
+    expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to create blocked ticket'));
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should remove blocked tasks from pickedTasks', async () => {
+    const now = Date.now();
+    const task: Task = {
+      id: '5',
+      title: 'Test Task 5',
+      lastPickedAt: new Date(now - 400000).toISOString(), // Picked 400 seconds ago
+      blockedAt: null,
+      status: 'in-progress',
+    };
+    orchestrator.pickedTasks = [task];
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(orchestrator.pickedTasks).toHaveLength(0);
+    expect(task.blockedAt).not.toBeNull();
+    expect(task.status).toBe('blocked');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle multiple tasks correctly', async () => {
+    const now = Date.now();
+    const tasks: Task[] = [
+      {
+        id: '6',
+        title: 'Task 6',
+        lastPickedAt: new Date(now - 400000).toISOString(),
+        blockedAt: null,
+        status: 'in-progress',
+      },
+      {
+        id: '7',
+        title: 'Task 7',
+        lastPickedAt: new Date(now - 200000).toISOString(),
+        blockedAt: null,
+        status: 'in-progress',
+      },
+    ];
+    orchestrator.pickedTasks = tasks;
+
+    await orchestrator.checkForBlockedTasks();
+
+    expect(tasks[0].blockedAt).not.toBeNull();
+    expect(tasks[0].status).toBe('blocked');
+    expect(tasks[1].blockedAt).toBeNull();
+    expect(tasks[1].status).toBe('in-progress');
+    expect(orchestrator.pickedTasks).toHaveLength(1);
+    expect(createTicket).toHaveBeenCalledTimes(1);
+  });
+});
+describe('OrchestratorService - classifyConversationIntent', () => {
+  let orchestratorService: OrchestratorService;
+
+  beforeEach(() => {
+    orchestratorService = new OrchestratorService();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return "planning" when the response includes "planning"', async () => {
+    (completeLLM as jest.Mock).mockResolvedValueOnce({
+      content: 'This is a planning task.',
+    });
+
+    const result = await orchestratorService.classifyConversationIntent('Test message');
+    expect(result).toBe('planning');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return "verification" when the response includes "verification"', async () => {
+    (completeLLM as jest.Mock).mockResolvedValueOnce({
+      content: 'This is a verification task.',
+    });
+
+    const result = await orchestratorService.classifyConversationIntent('Test message');
+    expect(result).toBe('verification');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return "answer" when the response does not include "planning" or "verification"', async () => {
+    (completeLLM as jest.Mock).mockResolvedValueOnce({
+      content: 'This is an answer task.',
+    });
+
+    const result = await orchestratorService.classifyConversationIntent('Test message');
+    expect(result).toBe('answer');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return "answer" and log an error when completeLLM throws an error', async () => {
+    const errorMessage = 'LLM service failed';
+    (completeLLM as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+
+    const result = await orchestratorService.classifyConversationIntent('Test message');
+    expect(result).toBe('answer');
+    expect(logError).toHaveBeenCalledWith(`Conversation classification failed: ${errorMessage}`);
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle undefined or null userMessage gracefully and return "answer"', async () => {
+    (completeLLM as jest.Mock).mockResolvedValueOnce({
+      content: '',
+    });
+
+    const resultUndefined = await orchestratorService.classifyConversationIntent(undefined as unknown as string);
+    const resultNull = await orchestratorService.classifyConversationIntent(null as unknown as string);
+
+    expect(resultUndefined).toBe('answer');
+    expect(resultNull).toBe('answer');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return "answer" when response content is empty', async () => {
+    (completeLLM as jest.Mock).mockResolvedValueOnce({
+      content: '   ',
+    });
+
+    const result = await orchestratorService.classifyConversationIntent('Test message');
+    expect(result).toBe('answer');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should log an error and return "answer" when response is undefined', async () => {
+    (completeLLM as jest.Mock).mockResolvedValueOnce(undefined);
+
+    const result = await orchestratorService.classifyConversationIntent('Test message');
+    expect(result).toBe('answer');
+    expect(logError).toHaveBeenCalledWith('Conversation classification failed: Cannot read properties of undefined (reading \'content\')');
+  });
+});
+describe('OrchestratorService.determineConversationAgent', () => {
+  let orchestratorService: OrchestratorService;
+
+  beforeEach(() => {
+    orchestratorService = new OrchestratorService();
+    jest.spyOn(orchestratorService, 'classifyConversationIntent').mockResolvedValue('verification');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return "planning" when ticket type is "ai_to_human"', async () => {
+    const ticket = { type: 'ai_to_human' };
+    const userMessage = 'Test message';
+
+    const result = await orchestratorService.determineConversationAgent(ticket, userMessage);
+
+    expect(result).toBe('planning');
+    expect(Logger.debug).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should call classifyConversationIntent and return its result when ticket type is "human_to_ai"', async () => {
+    const ticket = { type: 'human_to_ai' };
+    const userMessage = 'Test message';
+
+    const result = await orchestratorService.determineConversationAgent(ticket, userMessage);
+
+    expect(result).toBe('verification');
+    expect(orchestratorService.classifyConversationIntent).toHaveBeenCalledWith(userMessage);
+    expect(Logger.debug).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return "answer" when ticket type is "answer_agent"', async () => {
+    const ticket = { type: 'answer_agent' };
+    const userMessage = 'Test message';
+
+    const result = await orchestratorService.determineConversationAgent(ticket, userMessage);
+
+    expect(result).toBe('answer');
+    expect(Logger.debug).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should call classifyConversationIntent and return its result when ticket type is undefined', async () => {
+    const ticket = { type: undefined };
+    const userMessage = 'Test message';
+
+    const result = await orchestratorService.determineConversationAgent(ticket, userMessage);
+
+    expect(result).toBe('verification');
+    expect(orchestratorService.classifyConversationIntent).toHaveBeenCalledWith(userMessage);
+    expect(Logger.debug).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle errors thrown by classifyConversationIntent', async () => {
+    const ticket = { type: 'human_to_ai' };
+    const userMessage = 'Test message';
+    jest.spyOn(orchestratorService, 'classifyConversationIntent').mockRejectedValue(new Error('Intent classification failed'));
+
+    await expect(orchestratorService.determineConversationAgent(ticket, userMessage)).rejects.toThrow('Intent classification failed');
+    expect(Logger.error).toHaveBeenCalled();
+  });
+});
+describe('OrchestratorService', () => {
+  let orchestratorService: OrchestratorService;
+  let mockQueueChangeEmitter: EventEmitter;
+
+  beforeEach(() => {
+    mockQueueChangeEmitter = new EventEmitter();
+    orchestratorService = new OrchestratorService();
+    orchestratorService.queueChangeEmitter = mockQueueChangeEmitter;
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('emitQueueChange', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should fire the queueChangeEmitter event', () => {
+      const fireSpy = jest.spyOn(mockQueueChangeEmitter, 'emit');
+      orchestratorService.emitQueueChange();
+      expect(fireSpy).toHaveBeenCalledTimes(1);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log debug information when the event is fired', () => {
+      orchestratorService.emitQueueChange();
+      expect(Logger.debug).toHaveBeenCalledWith('Queue change event emitted');
+    });
+  });
+});
+describe('OrchestratorService - getAnswerAgent', () => {
+    let orchestratorService: OrchestratorService;
+
+    beforeEach(() => {
+        orchestratorService = new OrchestratorService();
+        orchestratorService.resetForTests();
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return a new AnswerAgent instance if answerAgent is null', () => {
+        const answerAgent = orchestratorService.getAnswerAgent();
+        expect(answerAgent).toBeDefined();
+        expect(answerAgent).toBeInstanceOf(AnswerAgent);
+        expect(Logger.debug).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return the existing AnswerAgent instance if already initialized', () => {
+        const firstInstance = orchestratorService.getAnswerAgent();
+        const secondInstance = orchestratorService.getAnswerAgent();
+        expect(secondInstance).toBe(firstInstance);
+        expect(Logger.debug).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should not create a new AnswerAgent instance if one already exists', () => {
+        orchestratorService.getAnswerAgent();
+        orchestratorService.getAnswerAgent();
+        expect(AnswerAgent).toHaveBeenCalledTimes(1);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should initialize AnswerAgent only once even with multiple calls', () => {
+        const instances = Array.from({ length: 5 }, () => orchestratorService.getAnswerAgent());
+        expect(instances.every(instance => instance === instances[0])).toBe(true);
+        expect(AnswerAgent).toHaveBeenCalledTimes(1);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle concurrent calls to getAnswerAgent gracefully', async () => {
+        const results = await Promise.all([
+            orchestratorService.getAnswerAgent(),
+            orchestratorService.getAnswerAgent(),
+            orchestratorService.getAnswerAgent(),
+        ]);
+        expect(results.every(instance => instance === results[0])).toBe(true);
+        expect(AnswerAgent).toHaveBeenCalledTimes(1);
+    });
+});
+describe('OrchestratorService - getNextTask', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    (orchestrator as unknown as { taskQueue: Task[] }).taskQueue = [];
+    (orchestrator as unknown as { pickedTasks: Task[] }).pickedTasks = [];
+    jest.spyOn(orchestrator as unknown as { checkForBlockedTasks: () => Promise<void> }, 'checkForBlockedTasks').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return null if the task queue is empty', async () => {
+    const result = await orchestrator.getNextTask();
+    expect(result).toBeNull();
+    expect(logInfo).toHaveBeenCalledWith('No pending tasks in queue');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return the next task and update its properties', async () => {
+    const mockTask: Task = { id: '1', title: 'Test Task', status: 'pending', lastPickedAt: null };
+    (orchestrator as unknown as { taskQueue: Task[] }).taskQueue.push(mockTask);
+    (updateTicket as jest.Mock).mockResolvedValue({ ...mockTask, status: 'in-progress' });
+
+    const result = await orchestrator.getNextTask();
+
+    expect(result).toEqual(expect.objectContaining({ id: '1', title: 'Test Task', status: 'picked' }));
+    expect(result?.lastPickedAt).not.toBeNull();
+    expect((orchestrator as unknown as { pickedTasks: Task[] }).pickedTasks).toContain(result);
+    expect(logInfo).toHaveBeenCalledWith('Task picked atomically: 1 - Test Task');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle concurrent access to the task queue', async () => {
+    const mockTask1: Task = { id: '1', title: 'Task 1', status: 'pending', lastPickedAt: null };
+    const mockTask2: Task = { id: '2', title: 'Task 2', status: 'pending', lastPickedAt: null };
+    (orchestrator as unknown as { taskQueue: Task[] }).taskQueue.push(mockTask1, mockTask2);
+    (updateTicket as jest.Mock).mockResolvedValueOnce({ ...mockTask1, status: 'in-progress' });
+    (updateTicket as jest.Mock).mockResolvedValueOnce({ ...mockTask2, status: 'in-progress' });
+
+    const [task1, task2] = await Promise.all([orchestrator.getNextTask(), orchestrator.getNextTask()]);
+
+    expect(task1).not.toEqual(task2);
+    expect((orchestrator as unknown as { pickedTasks: Task[] }).pickedTasks).toHaveLength(2);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log a warning and return null if updateTicket fails', async () => {
+    const mockTask: Task = { id: '1', title: 'Test Task', status: 'pending', lastPickedAt: null };
+    (orchestrator as unknown as { taskQueue: Task[] }).taskQueue.push(mockTask);
+    (updateTicket as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+    const result = await orchestrator.getNextTask();
+
+    expect(result).toBeNull();
+    expect(logWarn).toHaveBeenCalledWith(
+      'Failed to atomically pick task 1: Database error. Leaving in queue for retry.'
+    );
+    expect((orchestrator as unknown as { taskQueue: Task[] }).taskQueue).toContain(mockTask);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should throw an error if checkForBlockedTasks fails', async () => {
+    jest.spyOn(orchestrator as unknown as { checkForBlockedTasks: () => Promise<void> }, 'checkForBlockedTasks').mockRejectedValue(new Error('Blocked tasks check failed'));
+
+    await expect(orchestrator.getNextTask()).rejects.toThrow('Blocked tasks check failed');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should correctly handle tasks with existing timestamps', async () => {
+    const mockTask: Task = { id: '1', title: 'Test Task', status: 'pending', lastPickedAt: '2023-01-01T00:00:00.000Z' };
+    (orchestrator as unknown as { taskQueue: Task[] }).taskQueue.push(mockTask);
+    (updateTicket as jest.Mock).mockResolvedValue({ ...mockTask, status: 'in-progress' });
+
+    const result = await orchestrator.getNextTask();
+
+    expect(result).toEqual(expect.objectContaining({ id: '1', title: 'Test Task', status: 'picked' }));
+    expect(result?.lastPickedAt).not.toBe('2023-01-01T00:00:00.000Z');
+    expect((orchestrator as unknown as { pickedTasks: Task[] }).pickedTasks).toContain(result);
+    expect(logInfo).toHaveBeenCalledWith('Task picked atomically: 1 - Test Task');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should not modify the task queue if an error occurs', async () => {
+    const mockTask: Task = { id: '1', title: 'Test Task', status: 'pending', lastPickedAt: null };
+    (orchestrator as unknown as { taskQueue: Task[] }).taskQueue.push(mockTask);
+    jest.spyOn(orchestrator as unknown as { checkForBlockedTasks: () => Promise<void> }, 'checkForBlockedTasks').mockRejectedValue(new Error('Blocked tasks check failed'));
+
+    await expect(orchestrator.getNextTask()).rejects.toThrow('Blocked tasks check failed');
+    expect((orchestrator as unknown as { taskQueue: Task[] }).taskQueue).toContain(mockTask);
+    expect((orchestrator as unknown as { pickedTasks: Task[] }).pickedTasks).toHaveLength(0);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should emit queue change event after picking a task', async () => {
+    const mockTask: Task = { id: '1', title: 'Test Task', status: 'pending', lastPickedAt: null };
+    (orchestrator as unknown as { taskQueue: Task[] }).taskQueue.push(mockTask);
+    (updateTicket as jest.Mock).mockResolvedValue({ ...mockTask, status: 'in-progress' });
+    const emitQueueChangeSpy = jest.spyOn(orchestrator as unknown as { emitQueueChange: () => void }, 'emitQueueChange');
+
+    await orchestrator.getNextTask();
+
+    expect(emitQueueChangeSpy).toHaveBeenCalled();
+  });
+});
+describe('OrchestratorService - getQueueDetails', () => {
+    let orchestrator: OrchestratorServiceMock;
+
+    beforeEach(() => {
+        orchestrator = new OrchestratorService() as OrchestratorServiceMock;
+        orchestrator.taskQueue = [
+            { title: 'Task 1' },
+            { title: 'Task 2' },
+        ];
+        orchestrator.pickedTasks = [
+            { title: 'Picked Task 1' },
+        ];
+        orchestrator.lastPickedTaskTitle = 'Picked Task 1';
+        orchestrator.lastPickedTaskAt = '2023-10-01T12:00:00Z';
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return queue details with correct data', async () => {
+        (listTickets as jest.Mock).mockResolvedValue([
+            { title: 'Blocked P1', status: 'P1', type: 'blocked' },
+            { title: 'Normal Ticket', status: 'P2', type: 'open' },
+        ]);
+        jest.spyOn(orchestrator, 'isBlockedP1Ticket').mockImplementation((ticket) => ticket.status === 'P1');
+
+        const result = await orchestrator.getQueueDetails();
+
+        expect(result).toEqual({
+            queueTitles: ['Task 1', 'Task 2'],
+            pickedTitles: ['Picked Task 1'],
+            blockedP1Titles: ['Blocked P1'],
+            lastPickedTitle: 'Picked Task 1',
+            lastPickedAt: '2023-10-01T12:00:00Z',
+        });
+        expect(listTickets).toHaveBeenCalledTimes(1);
+        expect(Logger.debug).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle empty task queue and picked tasks', async () => {
+        orchestrator.taskQueue = [];
+        orchestrator.pickedTasks = [];
+        orchestrator.lastPickedTaskTitle = null;
+        orchestrator.lastPickedTaskAt = null;
+
+        (listTickets as jest.Mock).mockResolvedValue([]);
+        jest.spyOn(orchestrator, 'isBlockedP1Ticket').mockImplementation(() => false);
+
+        const result = await orchestrator.getQueueDetails();
+
+        expect(result).toEqual({
+            queueTitles: [],
+            pickedTitles: [],
+            blockedP1Titles: [],
+            lastPickedTitle: null,
+            lastPickedAt: null,
+        });
+        expect(listTickets).toHaveBeenCalledTimes(1);
+        expect(Logger.debug).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors from listTickets gracefully', async () => {
+        (listTickets as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+        await expect(orchestrator.getQueueDetails()).rejects.toThrow('Database error');
+        expect(listTickets).toHaveBeenCalledTimes(1);
+        expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));
+    });
+});
+describe('OrchestratorService - getQueueStatus', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    orchestrator['taskQueue'] = [] as Task[];
+    orchestrator['lastPickedTaskTitle'] = null;
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should return correct queue status on happy path', async () => {
+    orchestrator['taskQueue'] = [{ id: '1' }, { id: '2' }] as Task[];
+    orchestrator['lastPickedTaskTitle'] = 'Task 1';
+    jest.spyOn(orchestrator as unknown as { isBlockedP1Ticket: (ticket: Ticket) => boolean }, 'isBlockedP1Ticket')
+      .mockImplementation((ticket: Ticket) => ticket.status === 'blockedP1');
+    (listTickets as jest.Mock).mockResolvedValue([
+      { id: '1', status: 'blockedP1' },
+      { id: '2', status: 'open' },
+    ]);
+
+    const result = await orchestrator.getQueueStatus();
+
+    expect(result).toEqual({
+      queueCount: 2,
+      blockedP1Count: 1,
+      lastPickedTitle: 'Task 1',
+    });
+    expect(listTickets).toHaveBeenCalledTimes(1);
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle errors and return fallback queue status', async () => {
+    orchestrator['taskQueue'] = [{ id: '1' }] as Task[];
+    orchestrator['lastPickedTaskTitle'] = 'Task 1';
+    (listTickets as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+    const result = await orchestrator.getQueueStatus();
+
+    expect(result).toEqual({
+      queueCount: 1,
+      blockedP1Count: 0,
+      lastPickedTitle: 'Task 1',
+    });
+    expect(logError).toHaveBeenCalledWith('[Orchestrator] Failed to get queue status: Database error');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle empty task queue and tickets', async () => {
+    orchestrator['taskQueue'] = [] as Task[];
+    orchestrator['lastPickedTaskTitle'] = null;
+    (listTickets as jest.Mock).mockResolvedValue([]);
+
+    const result = await orchestrator.getQueueStatus();
+
+    expect(result).toEqual({
+      queueCount: 0,
+      blockedP1Count: 0,
+      lastPickedTitle: null,
+    });
+    expect(listTickets).toHaveBeenCalledTimes(1);
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle undefined ticket properties gracefully', async () => {
+    orchestrator['taskQueue'] = [{ id: '1' }] as Task[];
+    orchestrator['lastPickedTaskTitle'] = 'Task 1';
+    jest.spyOn(orchestrator as unknown as { isBlockedP1Ticket: (ticket: Ticket) => boolean }, 'isBlockedP1Ticket')
+      .mockImplementation(() => false);
+    (listTickets as jest.Mock).mockResolvedValue([{ id: '1' } as Ticket]);
+
+    const result = await orchestrator.getQueueStatus();
+
+    expect(result).toEqual({
+      queueCount: 1,
+      blockedP1Count: 0,
+      lastPickedTitle: 'Task 1',
+    });
+    expect(listTickets).toHaveBeenCalledTimes(1);
+  });
+});
+describe('OrchestratorService.handleAnswerConversation', () => {
+  let orchestratorService: OrchestratorService;
+
+  beforeEach(() => {
+    orchestratorService = new OrchestratorService();
+    orchestratorService.buildMessagesFromThread = jest.fn();
+    orchestratorService.appendThreadMessage = jest.fn();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle the happy path correctly', async () => {
+    const ticket = { thread: [{ content: 'message' }] };
+    const userMessage = 'test message';
+    const mockMessages = [{ role: 'user', content: 'message' }];
+    const mockResponse = { content: 'response content' };
+
+    (orchestratorService.buildMessagesFromThread as jest.Mock).mockReturnValue(mockMessages);
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    await orchestratorService.handleAnswerConversation(ticket, userMessage);
+
+    expect(orchestratorService.buildMessagesFromThread).toHaveBeenCalledWith(ticket.thread);
+    expect(completeLLM).toHaveBeenCalledWith('', { messages: mockMessages });
+    expect(orchestratorService.appendThreadMessage).toHaveBeenCalledWith(ticket, {
+      role: 'assistant',
+      content: mockResponse.content,
+    });
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle null thread gracefully', async () => {
+    const ticket = { thread: null };
+    const userMessage = 'test message';
+    const mockMessages: { role: string; content: string }[] = [];
+    const mockResponse = { content: 'response content' };
+
+    (orchestratorService.buildMessagesFromThread as jest.Mock).mockReturnValue(mockMessages);
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    await orchestratorService.handleAnswerConversation(ticket, userMessage);
+
+    expect(orchestratorService.buildMessagesFromThread).toHaveBeenCalledWith([]);
+    expect(completeLLM).toHaveBeenCalledWith('', { messages: mockMessages });
+    expect(orchestratorService.appendThreadMessage).toHaveBeenCalledWith(ticket, {
+      role: 'assistant',
+      content: mockResponse.content,
+    });
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should log an error if completeLLM throws', async () => {
+    const ticket = { thread: [{ content: 'message' }] };
+    const userMessage = 'test message';
+    const mockMessages = [{ role: 'user', content: 'message' }];
+
+    (orchestratorService.buildMessagesFromThread as jest.Mock).mockReturnValue(mockMessages);
+    (completeLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+
+    await expect(orchestratorService.handleAnswerConversation(ticket, userMessage)).rejects.toThrow('LLM error');
+
+    expect(orchestratorService.buildMessagesFromThread).toHaveBeenCalledWith(ticket.thread);
+    expect(completeLLM).toHaveBeenCalledWith('', { messages: mockMessages });
+    expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));
+    expect(orchestratorService.appendThreadMessage).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle empty response content gracefully', async () => {
+    const ticket = { thread: [{ content: 'message' }] };
+    const userMessage = 'test message';
+    const mockMessages = [{ role: 'user', content: 'message' }];
+    const mockResponse = { content: '' };
+
+    (orchestratorService.buildMessagesFromThread as jest.Mock).mockReturnValue(mockMessages);
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    await orchestratorService.handleAnswerConversation(ticket, userMessage);
+
+    expect(orchestratorService.buildMessagesFromThread).toHaveBeenCalledWith(ticket.thread);
+    expect(completeLLM).toHaveBeenCalledWith('', { messages: mockMessages });
+    expect(orchestratorService.appendThreadMessage).toHaveBeenCalledWith(ticket, {
+      role: 'assistant',
+      content: '',
+    });
+  });
+});
+describe('OrchestratorService', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('handleConversationThreadUpdates', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should process all tickets successfully', async () => {
+      const mockTickets = [
+        { id: '1', title: 'Ticket 1', status: 'open', createdAt: '', updatedAt: '' },
+        { id: '2', title: 'Ticket 2', status: 'closed', createdAt: '', updatedAt: '' },
+      ];
+      (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+      const processSpy = jest
+        .spyOn(orchestrator, 'processConversationTicketInternal' as keyof OrchestratorService)
+        .mockResolvedValue(undefined);
+
+      await orchestrator.handleConversationThreadUpdates();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(processSpy).toHaveBeenCalledTimes(mockTickets.length);
+      expect(processSpy).toHaveBeenCalledWith(mockTickets[0]);
+      expect(processSpy).toHaveBeenCalledWith(mockTickets[1]);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log an error if listTickets throws an error', async () => {
+      const error = new Error('Database error');
+      (listTickets as jest.Mock).mockRejectedValue(error);
+
+      await orchestrator.handleConversationThreadUpdates();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(logError).toHaveBeenCalledWith(
+        `Failed to handle conversation updates: ${error.message}`
+      );
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log an error if processConversationTicketInternal throws an error', async () => {
+      const mockTickets = [
+        { id: '1', title: 'Ticket 1', status: 'open', createdAt: '', updatedAt: '' },
+      ];
+      (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+      const processSpy = jest
+        .spyOn(orchestrator, 'processConversationTicketInternal' as keyof OrchestratorService)
+        .mockRejectedValue(new Error('Processing error'));
+
+      await orchestrator.handleConversationThreadUpdates();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(processSpy).toHaveBeenCalledTimes(1);
+      expect(logError).toHaveBeenCalledWith(
+        'Failed to handle conversation updates: Processing error'
+      );
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle empty ticket list gracefully', async () => {
+      (listTickets as jest.Mock).mockResolvedValue([]);
+
+      await orchestrator.handleConversationThreadUpdates();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(logError).not.toHaveBeenCalled();
+    });
+  });
+});
+describe('OrchestratorService', () => {
+  let orchestratorService: OrchestratorService;
+
+  beforeEach(() => {
+    orchestratorService = new OrchestratorService();
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('handleManualModeTicketChange', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should return early if autoProcessTickets is enabled', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn().mockReturnValue(true),
+      });
+
+      await orchestratorService['handleManualModeTicketChange']();
+
+      expect(listTickets).not.toHaveBeenCalled();
+      expect(updateTicket).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return early if there are no tickets', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn().mockReturnValue(false),
+      });
+      (listTickets as jest.Mock).mockResolvedValue([]);
+
+      await orchestratorService['handleManualModeTicketChange']();
+
+      expect(listTickets).toHaveBeenCalled();
+      expect(updateTicket).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return early if the latest ticket is not of type "ai_to_human" or status is not "open"', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn().mockReturnValue(false),
+      });
+      (listTickets as jest.Mock).mockResolvedValue([
+        { id: '1', type: 'human_to_ai', status: 'closed' },
+      ]);
+
+      await orchestratorService['handleManualModeTicketChange']();
+
+      expect(listTickets).toHaveBeenCalled();
+      expect(updateTicket).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should update the ticket status to "pending" for valid tickets', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn().mockReturnValue(false),
+      });
+      (listTickets as jest.Mock).mockResolvedValue([
+        { id: '1', type: 'ai_to_human', status: 'open' },
+      ]);
+      (updateTicket as jest.Mock).mockResolvedValue(null);
+
+      await orchestratorService['handleManualModeTicketChange']();
+
+      expect(listTickets).toHaveBeenCalled();
+      expect(updateTicket).toHaveBeenCalledWith('1', { status: 'pending' });
+      expect(logInfo).toHaveBeenCalledWith(
+        'Manual mode: Ticket pending approval (1)'
+      );
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log an error if an exception occurs', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(() => {
+        throw new Error('Configuration error');
+      });
+
+      await orchestratorService['handleManualModeTicketChange']();
+
+      expect(logError).toHaveBeenCalledWith(
+        'Manual mode pending update failed: Configuration error'
+      );
+    });
+  });
+});
+describe('OrchestratorService', () => {
+    let orchestratorService: OrchestratorService;
+    let mockAppendThreadMessage: jest.SpyInstance;
+    let mockRouteToPlanningAgent: jest.SpyInstance;
+
+    beforeEach(() => {
+        orchestratorService = new OrchestratorService();
+
+        mockAppendThreadMessage = jest.spyOn(
+            orchestratorService as unknown as { appendThreadMessage: (ticket: { id: string; title: string }, message: { role: string; content: string }) => Promise<void> },
+            'appendThreadMessage'
+        ).mockResolvedValue(undefined);
+
+        mockRouteToPlanningAgent = jest.spyOn(
+            orchestratorService as unknown as { routeToPlanningAgent: (message: string) => Promise<string> },
+            'routeToPlanningAgent'
+        ).mockResolvedValue('Generated Plan');
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    describe('handlePlanningConversation', () => {
+        /** @aiContributed-2026-02-04 */
+        it('should append system message, generate a plan, and append assistant message', async () => {
+            const ticket = { id: '1', title: 'Test Ticket' };
+            const userMessage = 'Test user message';
+
+            await (orchestratorService as OrchestratorService).handlePlanningConversation(ticket, userMessage);
+
+            expect(mockAppendThreadMessage).toHaveBeenCalledTimes(2);
+            expect(mockAppendThreadMessage).toHaveBeenCalledWith(ticket, {
+                role: 'system',
+                content: 'Status: Building a plan...',
+            });
+            expect(mockRouteToPlanningAgent).toHaveBeenCalledWith(userMessage);
+            expect(mockAppendThreadMessage).toHaveBeenCalledWith(ticket, {
+                role: 'assistant',
+                content: `Plan ready:\nGenerated Plan\n\nDo you approve this plan?`,
+            });
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle errors during planning gracefully', async () => {
+            const ticket = { id: '1', title: 'Test Ticket' };
+            const userMessage = 'Test user message';
+            const error = new Error('Planning error');
+
+            mockRouteToPlanningAgent.mockRejectedValueOnce(error);
+
+            await expect((orchestratorService as OrchestratorService).handlePlanningConversation(ticket, userMessage)).rejects.toThrow(error);
+
+            expect(mockAppendThreadMessage).toHaveBeenCalledTimes(1);
+            expect(mockAppendThreadMessage).toHaveBeenCalledWith(ticket, {
+                role: 'system',
+                content: 'Status: Building a plan...',
+            });
+            expect(mockRouteToPlanningAgent).toHaveBeenCalledWith(userMessage);
+            expect(Logger.error).toHaveBeenCalledWith(error);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle null or undefined inputs gracefully', async () => {
+            const ticket = null;
+            const userMessage = undefined;
+
+            await expect((orchestratorService as OrchestratorService).handlePlanningConversation(ticket, userMessage)).rejects.toThrow();
+
+            expect(mockAppendThreadMessage).not.toHaveBeenCalled();
+            expect(mockRouteToPlanningAgent).not.toHaveBeenCalled();
+        });
+    });
+});
+describe('OrchestratorService', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    jest.spyOn(orchestrator as unknown as { appendThreadMessage: (ticket: Ticket, message: { role: string; content: string }) => Promise<void> }, 'appendThreadMessage').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    describe('handleVerificationConversation', () => {
+    /** @aiContributed-2026-02-04 */
+        it('should append a thread message with the correct content', async () => {
+      const ticket: Ticket = { id: '1', title: 'Test Ticket' };
+      const userMessage = 'Verify this code';
+
+      await (orchestrator as unknown as { handleVerificationConversation: (ticket: Ticket, userMessage: string) => Promise<void> }).handleVerificationConversation(ticket, userMessage);
+
+      expect(orchestrator['appendThreadMessage']).toHaveBeenCalledWith(ticket, {
+        role: 'assistant',
+        content: 'Please provide the code diff or changes you want verified.',
+      });
+    });
+
+    /** @aiContributed-2026-02-04 */
+        it('should handle null ticket gracefully', async () => {
+      const userMessage = 'Verify this code';
+
+      await expect((orchestrator as unknown as { handleVerificationConversation: (ticket: Ticket | null, userMessage: string) => Promise<void> }).handleVerificationConversation(null, userMessage)).rejects.toThrow();
+      expect(Logger.error).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+        it('should handle undefined userMessage gracefully', async () => {
+      const ticket: Ticket = { id: '1', title: 'Test Ticket' };
+
+      await expect((orchestrator as unknown as { handleVerificationConversation: (ticket: Ticket, userMessage: string | undefined) => Promise<void> }).handleVerificationConversation(ticket, undefined)).rejects.toThrow();
+      expect(Logger.error).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+        it('should log an error if appendThreadMessage fails', async () => {
+      const ticket: Ticket = { id: '1', title: 'Test Ticket' };
+      const userMessage = 'Verify this code';
+      jest.spyOn(orchestrator as unknown as { appendThreadMessage: (ticket: Ticket, message: { role: string; content: string }) => Promise<void> }, 'appendThreadMessage').mockRejectedValue(new Error('Mock Error'));
+
+      await expect((orchestrator as unknown as { handleVerificationConversation: (ticket: Ticket, userMessage: string) => Promise<void> }).handleVerificationConversation(ticket, userMessage)).rejects.toThrow('Mock Error');
+      expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    /** @aiContributed-2026-02-04 */
+        it('should not call appendThreadMessage if userMessage is empty', async () => {
+      const ticket: Ticket = { id: '1', title: 'Test Ticket' };
+      const userMessage = '';
+
+      await (orchestrator as unknown as { handleVerificationConversation: (ticket: Ticket, userMessage: string) => Promise<void> }).handleVerificationConversation(ticket, userMessage);
+
+      expect(orchestrator['appendThreadMessage']).not.toHaveBeenCalled();
+      expect(Logger.info).toHaveBeenCalledWith('User message is empty, skipping appendThreadMessage.');
+    });
+  });
+});
+describe('OrchestratorService', () => {
+  let orchestrator: OrchestratorService;
+  let mockContext: vscode.ExtensionContext;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    mockContext = {
+      extensionPath: '/mock/extension/path',
+    } as unknown as vscode.ExtensionContext;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('initialize', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should initialize with default timeout if config file does not exist', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+      await orchestrator.initialize(mockContext);
+
+      expect(orchestrator['taskTimeoutSeconds']).toBe(30);
+      expect(logWarn).not.toHaveBeenCalled();
+      expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should initialize with orchestrator.taskTimeoutSeconds if present in config', async () => {
+      const mockConfig = {
+        orchestrator: { taskTimeoutSeconds: 45 },
+      };
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
+
+      await orchestrator.initialize(mockContext);
+
+      expect(orchestrator['taskTimeoutSeconds']).toBe(45);
+      expect(logWarn).not.toHaveBeenCalled();
+      expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 45s');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should fallback to llm.timeoutSeconds if orchestrator.taskTimeoutSeconds is not present', async () => {
+      const mockConfig = {
+        llm: { timeoutSeconds: 60 },
+      };
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
+
+      await orchestrator.initialize(mockContext);
+
+      expect(orchestrator['taskTimeoutSeconds']).toBe(60);
+      expect(logWarn).not.toHaveBeenCalled();
+      expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 60s');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle invalid orchestrator.taskTimeoutSeconds gracefully', async () => {
+      const mockConfig = {
+        orchestrator: { taskTimeoutSeconds: -10 },
+      };
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
+
+      await orchestrator.initialize(mockContext);
+
+      expect(orchestrator['taskTimeoutSeconds']).toBe(30);
+      expect(logWarn).toHaveBeenCalledWith('Invalid taskTimeoutSeconds: -10. Must be > 0. Using default 30s');
+      expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle JSON parsing errors gracefully', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockImplementation(() => {
+        throw new Error('Invalid JSON');
+      });
+
+      await orchestrator.initialize(mockContext);
+
+      expect(orchestrator['taskTimeoutSeconds']).toBe(30);
+      expect(logWarn).toHaveBeenCalledWith('Failed to read orchestrator config: Error: Invalid JSON');
+      expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should call loadTasksFromTickets during initialization', async () => {
+      const loadTasksFromTicketsSpy = jest
+        .spyOn(orchestrator as unknown as { loadTasksFromTickets: () => Promise<void> }, 'loadTasksFromTickets')
+        .mockResolvedValue();
+
+      await orchestrator.initialize(mockContext);
+
+      expect(loadTasksFromTicketsSpy).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors during loadTasksFromTickets gracefully', async () => {
+      const loadTasksFromTicketsSpy = jest
+        .spyOn(orchestrator as unknown as { loadTasksFromTickets: () => Promise<void> }, 'loadTasksFromTickets')
+        .mockRejectedValue(new Error('Failed to load tasks'));
+
+      await orchestrator.initialize(mockContext);
+
+      expect(loadTasksFromTicketsSpy).toHaveBeenCalled();
+      expect(logWarn).toHaveBeenCalledWith('Failed to read orchestrator config: Error: Failed to load tasks');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should call initializeConversationThreadState and registerConversationThreadListener', async () => {
+      const initializeConversationThreadStateSpy = jest
+        .spyOn(orchestrator as unknown as { initializeConversationThreadState: () => Promise<void> }, 'initializeConversationThreadState')
+        .mockResolvedValue();
+      const registerConversationThreadListenerSpy = jest
+        .spyOn(orchestrator as unknown as { registerConversationThreadListener: () => void }, 'registerConversationThreadListener')
+        .mockImplementation();
+
+      await orchestrator.initialize(mockContext);
+
+      expect(initializeConversationThreadStateSpy).toHaveBeenCalled();
+      expect(registerConversationThreadListenerSpy).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should call registerManualModeListener during initialization', async () => {
+      const registerManualModeListenerSpy = jest
+        .spyOn(orchestrator as unknown as { registerManualModeListener: () => void }, 'registerManualModeListener')
+        .mockImplementation();
+
+      await orchestrator.initialize(mockContext);
+
+      expect(registerManualModeListenerSpy).toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should call registerQueueRefreshListener during initialization', async () => {
+      const registerQueueRefreshListenerSpy = jest
+        .spyOn(orchestrator as unknown as { registerQueueRefreshListener: () => void }, 'registerQueueRefreshListener')
+        .mockImplementation();
+
+      await orchestrator.initialize(mockContext);
+
+      expect(registerQueueRefreshListenerSpy).toHaveBeenCalled();
+    });
+  });
+});
+describe('OrchestratorService', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    orchestrator.conversationThreadLengths = new Map<string, number>();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('initializeConversationThreadState', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should populate conversationThreadLengths with thread lengths from tickets', async () => {
+      const mockTickets = [
+        { id: '1', thread: [{}, {}, {}] },
+        { id: '2', thread: [{}] },
+        { id: '3', thread: [] },
+      ];
+      (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+      await orchestrator.initializeConversationThreadState();
+
+      expect(orchestrator.conversationThreadLengths.get('1')).toBe(3);
+      expect(orchestrator.conversationThreadLengths.get('2')).toBe(1);
+      expect(orchestrator.conversationThreadLengths.get('3')).toBe(0);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle tickets with undefined thread', async () => {
+      const mockTickets = [
+        { id: '1', thread: undefined },
+        { id: '2', thread: null },
+      ];
+      (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+      await orchestrator.initializeConversationThreadState();
+
+      expect(orchestrator.conversationThreadLengths.get('1')).toBe(0);
+      expect(orchestrator.conversationThreadLengths.get('2')).toBe(0);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log an error if listTickets throws an error', async () => {
+      const mockError = new Error('Database error');
+      (listTickets as jest.Mock).mockRejectedValue(mockError);
+
+      await orchestrator.initializeConversationThreadState();
+
+      expect(logError).toHaveBeenCalledWith(
+        'Failed to initialize conversation thread state: Database error'
+      );
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log an error if an unknown error occurs', async () => {
+      const mockError = 'Unknown error';
+      (listTickets as jest.Mock).mockRejectedValue(mockError);
+
+      await orchestrator.initializeConversationThreadState();
+
+      expect(logError).toHaveBeenCalledWith(
+        'Failed to initialize conversation thread state: Unknown error'
+      );
+    });
+  });
+});
+describe('OrchestratorService', () => {
+    /** @aiContributed-2026-02-04 */
+    describe('isBlockedP1Ticket', () => {
+        let orchestratorService: OrchestratorService;
+
+        beforeEach(() => {
+            orchestratorService = new OrchestratorService();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return false if the ticket status is not "blocked"', () => {
+            const ticket = { status: 'open', title: 'P1 Blocked: Critical issue' };
+            const result = orchestratorService.isBlockedP1Ticket(ticket);
+            expect(result).toBe(false);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return true if the ticket title starts with "p1 blocked" (case insensitive)', () => {
+            const ticket = { status: 'blocked', title: 'P1 Blocked: Critical issue' };
+            const result = orchestratorService.isBlockedP1Ticket(ticket);
+            expect(result).toBe(true);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return true if the ticket title starts with "[p1]" (case insensitive)', () => {
+            const ticket = { status: 'blocked', title: '[P1] Critical issue' };
+            const result = orchestratorService.isBlockedP1Ticket(ticket);
+            expect(result).toBe(true);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return true if the ticket title starts with "p1:" (case insensitive)', () => {
+            const ticket = { status: 'blocked', title: 'P1: Critical issue' };
+            const result = orchestratorService.isBlockedP1Ticket(ticket);
+            expect(result).toBe(true);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return false if the ticket title does not match any P1 patterns', () => {
+            const ticket = { status: 'blocked', title: 'Critical issue' };
+            const result = orchestratorService.isBlockedP1Ticket(ticket);
+            expect(result).toBe(false);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle tickets with undefined or null title gracefully', () => {
+            const ticketWithNullTitle = { status: 'blocked', title: null };
+            const ticketWithUndefinedTitle = { status: 'blocked', title: undefined };
+
+            expect(() => orchestratorService.isBlockedP1Ticket(ticketWithNullTitle)).toThrow();
+            expect(() => orchestratorService.isBlockedP1Ticket(ticketWithUndefinedTitle)).toThrow();
+        });
+    });
+});
+describe('OrchestratorService - loadTasksFromTickets', () => {
+  let orchestrator: OrchestratorServiceWithQueue;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService() as OrchestratorServiceWithQueue;
+    orchestrator.taskQueue = [];
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should load tasks from tickets and log the count (happy path)', async () => {
+    const mockTickets = [
+      { id: '1', title: 'Ticket 1', status: 'open', createdAt: '2023-01-01' },
+      { id: '2', title: 'Ticket 2', status: 'in-progress', createdAt: '2023-01-02' },
+    ];
+    (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+    await orchestrator.loadTasksFromTickets();
+
+    expect(orchestrator.taskQueue).toEqual([
+      { id: '1', ticketId: '1', title: 'Ticket 1', status: 'pending', createdAt: '2023-01-01' },
+      { id: '2', ticketId: '2', title: 'Ticket 2', status: 'pending', createdAt: '2023-01-02' },
+    ]);
+    expect(logInfo).toHaveBeenCalledWith('Loaded 2 tasks from tickets');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle no workable tickets', async () => {
+    const mockTickets = [
+      { id: '1', title: 'Ticket 1', status: 'closed', createdAt: '2023-01-01' },
+    ];
+    (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+    await orchestrator.loadTasksFromTickets();
+
+    expect(orchestrator.taskQueue).toEqual([]);
+    expect(logInfo).toHaveBeenCalledWith('Loaded 0 tasks from tickets');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle errors from listTickets and log the error', async () => {
+    const mockError = new Error('Database error');
+    (listTickets as jest.Mock).mockRejectedValue(mockError);
+
+    await orchestrator.loadTasksFromTickets();
+
+    expect(orchestrator.taskQueue).toEqual([]);
+    expect(logError).toHaveBeenCalledWith(`Failed to load tasks from tickets: ${mockError}`);
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle undefined or null tickets', async () => {
+    (listTickets as jest.Mock).mockResolvedValue(null);
+
+    await orchestrator.loadTasksFromTickets();
+
+    expect(orchestrator.taskQueue).toEqual([]);
+    expect(logInfo).toHaveBeenCalledWith('Loaded 0 tasks from tickets');
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle tickets with mixed statuses', async () => {
+    const mockTickets = [
+      { id: '1', title: 'Ticket 1', status: 'open', createdAt: '2023-01-01' },
+      { id: '2', title: 'Ticket 2', status: 'closed', createdAt: '2023-01-02' },
+      { id: '3', title: 'Ticket 3', status: 'in-progress', createdAt: '2023-01-03' },
+    ];
+    (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+    await orchestrator.loadTasksFromTickets();
+
+    expect(orchestrator.taskQueue).toEqual([
+      { id: '1', ticketId: '1', title: 'Ticket 1', status: 'pending', createdAt: '2023-01-01' },
+      { id: '3', ticketId: '3', title: 'Ticket 3', status: 'pending', createdAt: '2023-01-03' },
+    ]);
+    expect(logInfo).toHaveBeenCalledWith('Loaded 2 tasks from tickets');
+  });
+});
+describe('OrchestratorService - onQueueChange', () => {
+    let orchestratorService: OrchestratorService;
+    let mockEventEmitter: vscode.EventEmitter<void>;
+    let mockListener: jest.Mock;
+
+    beforeEach(() => {
+        mockEventEmitter = new vscode.EventEmitter<void>();
+        orchestratorService = new OrchestratorService() as unknown as OrchestratorService;
+        (orchestratorService as unknown as { queueChangeEmitter: vscode.EventEmitter<void> }).queueChangeEmitter = mockEventEmitter;
+        mockListener = jest.fn();
+        jest.spyOn(Logger, 'debug').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should register the listener and return a Disposable', () => {
+        const disposable = orchestratorService.onQueueChange(mockListener);
+
+        expect(mockEventEmitter.event).toHaveBeenCalledWith(mockListener);
+        expect(disposable).toBeInstanceOf(vscode.Disposable);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should trigger the listener when the event is fired', () => {
+        orchestratorService.onQueueChange(mockListener);
+
+        mockEventEmitter.fire();
+
+        expect(mockListener).toHaveBeenCalledTimes(1);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should not throw if listener is null or undefined', () => {
+        expect(() => orchestratorService.onQueueChange(null as unknown as jest.Mock)).not.toThrow();
+        expect(() => orchestratorService.onQueueChange(undefined as unknown as jest.Mock)).not.toThrow();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log debug messages at critical steps', () => {
+        orchestratorService.onQueueChange(mockListener);
+
+        expect(Logger.debug).toHaveBeenCalledWith('Listener registered for queue change event.');
+    });
+});
+describe('OrchestratorService', () => {
+  let orchestratorService: OrchestratorService;
+
+  beforeEach(() => {
+    orchestratorService = new OrchestratorService();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('processConversationTicket', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should log a warning if the ticket is not found', async () => {
+      (listTickets as jest.Mock).mockResolvedValueOnce([]);
+
+      await orchestratorService.processConversationTicket('nonexistent-ticket-id');
+
+      expect(logWarn).toHaveBeenCalledWith('[ConversationRouting] Ticket nonexistent-ticket-id not found');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should call processConversationTicketInternal if the ticket is found', async () => {
+      const mockTicket = { id: 'ticket-id', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
+      (listTickets as jest.Mock).mockResolvedValueOnce([mockTicket]);
+      const processConversationTicketInternalSpy = jest
+        .spyOn(orchestratorService as unknown as { processConversationTicketInternal: (ticket: typeof mockTicket) => Promise<void> }, 'processConversationTicketInternal')
+        .mockResolvedValueOnce(undefined);
+
+      await orchestratorService.processConversationTicket('ticket-id');
+
+      expect(processConversationTicketInternalSpy).toHaveBeenCalledWith(mockTicket);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors thrown during ticket processing', async () => {
+      const mockTicket = { id: 'ticket-id', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
+      (listTickets as jest.Mock).mockResolvedValueOnce([mockTicket]);
+      jest.spyOn(orchestratorService as unknown as { processConversationTicketInternal: (ticket: typeof mockTicket) => Promise<void> }, 'processConversationTicketInternal')
+        .mockRejectedValueOnce(new Error('Processing error'));
+
+      await expect(orchestratorService.processConversationTicket('ticket-id')).rejects.toThrow('Processing error');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should not call processConversationTicketInternal if tickets list is empty', async () => {
+      (listTickets as jest.Mock).mockResolvedValueOnce([]);
+      const processConversationTicketInternalSpy = jest.spyOn(orchestratorService as unknown as { processConversationTicketInternal: (ticket: unknown) => Promise<void> }, 'processConversationTicketInternal');
+
+      await orchestratorService.processConversationTicket('ticket-id');
+
+      expect(processConversationTicketInternalSpy).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle multiple tickets and find the correct one', async () => {
+      const mockTickets = [
+        { id: 'ticket-1', title: 'Ticket 1', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' },
+        { id: 'ticket-2', title: 'Ticket 2', status: 'closed', createdAt: '2023-01-03', updatedAt: '2023-01-04' },
+      ];
+      (listTickets as jest.Mock).mockResolvedValueOnce(mockTickets);
+      const processConversationTicketInternalSpy = jest
+        .spyOn(orchestratorService as unknown as { processConversationTicketInternal: (ticket: typeof mockTickets[0]) => Promise<void> }, 'processConversationTicketInternal')
+        .mockResolvedValueOnce(undefined);
+
+      await orchestratorService.processConversationTicket('ticket-2');
+
+      expect(processConversationTicketInternalSpy).toHaveBeenCalledWith(mockTickets[1]);
+    });
+  });
+});
+describe('OrchestratorService', () => {
+  let orchestrator: OrchestratorService;
+  let mockAppendThreadMessage: jest.SpyInstance;
+  let mockDetermineConversationAgent: jest.SpyInstance;
+  let mockHandlePlanningConversation: jest.SpyInstance;
+  let mockHandleVerificationConversation: jest.SpyInstance;
+  let mockHandleAnswerConversation: jest.SpyInstance;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    orchestrator['conversationThreadLengths'] = new Map();
+
+    mockAppendThreadMessage = jest.spyOn(
+      orchestrator as unknown as Record<string, unknown>,
+      'appendThreadMessage'
+    ).mockResolvedValue(undefined);
+    mockDetermineConversationAgent = jest.spyOn(
+      orchestrator as unknown as Record<string, unknown>,
+      'determineConversationAgent'
+    ).mockResolvedValue('answer');
+    mockHandlePlanningConversation = jest.spyOn(
+      orchestrator as unknown as Record<string, unknown>,
+      'handlePlanningConversation'
+    ).mockResolvedValue(undefined);
+    mockHandleVerificationConversation = jest.spyOn(
+      orchestrator as unknown as Record<string, unknown>,
+      'handleVerificationConversation'
+    ).mockResolvedValue(undefined);
+    mockHandleAnswerConversation = jest.spyOn(
+      orchestrator as unknown as Record<string, unknown>,
+      'handleAnswerConversation'
+    ).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return early if the thread is empty', async () => {
+    const ticket: Ticket = { id: '1', thread: [] };
+
+    await (orchestrator as unknown as Record<string, unknown>).processConversationTicketInternal(ticket);
+
+    expect(mockAppendThreadMessage).not.toHaveBeenCalled();
+    expect(mockDetermineConversationAgent).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return early if the thread length is less than or equal to last processed', async () => {
+    const ticket: Ticket = { id: '1', thread: [{ role: 'user', content: 'test' }] };
+    orchestrator['conversationThreadLengths'].set('1', 1);
+
+    await (orchestrator as unknown as Record<string, unknown>).processConversationTicketInternal(ticket);
+
+    expect(mockAppendThreadMessage).not.toHaveBeenCalled();
+    expect(mockDetermineConversationAgent).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return early if the last message role is not user', async () => {
+    const ticket: Ticket = { id: '1', thread: [{ role: 'system', content: 'test' }] };
+
+    await (orchestrator as unknown as Record<string, unknown>).processConversationTicketInternal(ticket);
+
+    expect(mockAppendThreadMessage).not.toHaveBeenCalled();
+    expect(mockDetermineConversationAgent).not.toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should append a system message and handle planning conversation', async () => {
+    const ticket: Ticket = { id: '1', thread: [{ role: 'user', content: 'test' }] };
+    mockDetermineConversationAgent.mockResolvedValue('planning');
+
+    await (orchestrator as unknown as Record<string, unknown>).processConversationTicketInternal(ticket);
+
+    expect(mockAppendThreadMessage).toHaveBeenCalledWith(ticket, {
+      role: 'system',
+      content: 'Status: Reviewing request...',
+    });
+    expect(mockDetermineConversationAgent).toHaveBeenCalledWith(ticket, 'test');
+    expect(mockHandlePlanningConversation).toHaveBeenCalledWith(ticket, 'test');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should append a system message and handle verification conversation', async () => {
+    const ticket: Ticket = { id: '1', thread: [{ role: 'user', content: 'test' }] };
+    mockDetermineConversationAgent.mockResolvedValue('verification');
+
+    await (orchestrator as unknown as Record<string, unknown>).processConversationTicketInternal(ticket);
+
+    expect(mockAppendThreadMessage).toHaveBeenCalledWith(ticket, {
+      role: 'system',
+      content: 'Status: Reviewing request...',
+    });
+    expect(mockDetermineConversationAgent).toHaveBeenCalledWith(ticket, 'test');
+    expect(mockHandleVerificationConversation).toHaveBeenCalledWith(ticket, 'test');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should append a system message and handle answer conversation', async () => {
+    const ticket: Ticket = { id: '1', thread: [{ role: 'user', content: 'test' }] };
+
+    await (orchestrator as unknown as Record<string, unknown>).processConversationTicketInternal(ticket);
+
+    expect(mockAppendThreadMessage).toHaveBeenCalledWith(ticket, {
+      role: 'system',
+      content: 'Status: Reviewing request...',
+    });
+    expect(mockDetermineConversationAgent).toHaveBeenCalledWith(ticket, 'test');
+    expect(mockHandleAnswerConversation).toHaveBeenCalledWith(ticket, 'test');
+  });
+});
+describe('OrchestratorService', () => {
+  let orchestrator: OrchestratorServiceWithMocks;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService() as OrchestratorServiceWithMocks;
+    orchestrator.taskQueue = [];
+    orchestrator.pickedTasks = [];
+    orchestrator.emitQueueChange = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  describe('refreshQueueFromTickets', () => {
+    /** @aiContributed-2026-02-04 */
+    it('should refresh the queue with open tickets', async () => {
+      const tickets = [
+        { id: '1', title: 'Ticket 1', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+        { id: '2', title: 'Ticket 2', status: 'closed', createdAt: '2023-01-02', updatedAt: '2023-01-02' },
+        { id: '3', title: 'Ticket 3', status: 'open', createdAt: '2023-01-03', updatedAt: '2023-01-03' },
+      ];
+      (listTickets as jest.Mock).mockResolvedValue(tickets);
+
+      await orchestrator.refreshQueueFromTickets();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(orchestrator.taskQueue).toEqual([
+        { id: '1', ticketId: '1', title: 'Ticket 1', status: 'pending', createdAt: '2023-01-01' },
+        { id: '3', ticketId: '3', title: 'Ticket 3', status: 'pending', createdAt: '2023-01-03' },
+      ]);
+      expect(orchestrator.emitQueueChange).toHaveBeenCalledTimes(1);
+      expect(logInfo).toHaveBeenCalledWith('[Orchestrator] Queue refreshed from TicketDb');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors and log them', async () => {
+      const error = new Error('Failed to fetch tickets');
+      (listTickets as jest.Mock).mockRejectedValue(error);
+
+      await orchestrator.refreshQueueFromTickets();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(orchestrator.taskQueue).toEqual([]);
+      expect(orchestrator.emitQueueChange).not.toHaveBeenCalled();
+      expect(logError).toHaveBeenCalledWith('[Orchestrator] Queue refresh failed: Failed to fetch tickets');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle tickets with existing IDs', async () => {
+      orchestrator.taskQueue = [{ id: '1', ticketId: '1', title: 'Existing Task', status: 'pending', createdAt: '2023-01-01' }];
+      const tickets = [
+        { id: '1', title: 'Ticket 1', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+        { id: '2', title: 'Ticket 2', status: 'open', createdAt: '2023-01-02', updatedAt: '2023-01-02' },
+      ];
+      (listTickets as jest.Mock).mockResolvedValue(tickets);
+
+      await orchestrator.refreshQueueFromTickets();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(orchestrator.taskQueue).toEqual([
+        { id: '1', ticketId: '1', title: 'Existing Task', status: 'pending', createdAt: '2023-01-01' },
+        { id: '2', ticketId: '2', title: 'Ticket 2', status: 'pending', createdAt: '2023-01-02' },
+      ]);
+      expect(orchestrator.emitQueueChange).toHaveBeenCalledTimes(1);
+      expect(logInfo).toHaveBeenCalledWith('[Orchestrator] Queue refreshed from TicketDb');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle empty ticket list', async () => {
+      (listTickets as jest.Mock).mockResolvedValue([]);
+
+      await orchestrator.refreshQueueFromTickets();
+
+      expect(listTickets).toHaveBeenCalledTimes(1);
+      expect(orchestrator.taskQueue).toEqual([]);
+      expect(orchestrator.emitQueueChange).toHaveBeenCalledTimes(1);
+      expect(logInfo).toHaveBeenCalledWith('[Orchestrator] Queue refreshed from TicketDb');
+    });
+  });
+});
+describe('OrchestratorService', () => {
+    let orchestrator: OrchestratorService;
+
+    beforeEach(() => {
+        orchestrator = new OrchestratorService();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    describe('registerConversationThreadListener', () => {
+        /** @aiContributed-2026-02-04 */
+        it('should register the conversation thread listener and log success', () => {
+            orchestrator['registerConversationThreadListener']();
+
+            expect(onTicketChange).toHaveBeenCalledTimes(1);
+            expect(onTicketChange).toHaveBeenCalledWith(expect.any(Function));
+            expect(logInfo).toHaveBeenCalledWith('Conversation thread listener registered');
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should log an error if an exception occurs', () => {
+            (onTicketChange as jest.Mock).mockImplementationOnce(() => {
+                throw new Error('Test error');
+            });
+
+            orchestrator['registerConversationThreadListener']();
+
+            expect(logError).toHaveBeenCalledWith(
+                'Failed to register conversation thread listener: Test error'
+            );
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle non-Error exceptions gracefully', () => {
+            (onTicketChange as jest.Mock).mockImplementationOnce(() => {
+                throw 'Non-error exception';
+            });
+
+            orchestrator['registerConversationThreadListener']();
+
+            expect(logError).toHaveBeenCalledWith(
+                'Failed to register conversation thread listener: Non-error exception'
+            );
+        });
+    });
+});
+describe('OrchestratorService - registerManualModeListener', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    orchestrator['handleManualModeTicketChange'] = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should register the manual mode listener and log success', () => {
+    orchestrator['registerManualModeListener']();
+
+    expect(onTicketChange).toHaveBeenCalledTimes(1);
+    expect(onTicketChange).toHaveBeenCalledWith(expect.any(Function));
+    expect(logInfo).toHaveBeenCalledWith('Manual mode listener registered');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle errors during listener registration and log the error', () => {
+    const errorMessage = 'Listener registration failed';
+    (onTicketChange as jest.Mock).mockImplementationOnce(() => {
+      throw new Error(errorMessage);
+    });
+
+    orchestrator['registerManualModeListener']();
+
+    expect(onTicketChange).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith(
+      `Failed to register manual mode listener: ${errorMessage}`
+    );
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should call handleManualModeTicketChange when the listener is triggered', () => {
+    orchestrator['registerManualModeListener']();
+
+    const listener = (onTicketChange as jest.Mock).mock.calls[0][0];
+    listener();
+
+    expect(orchestrator['handleManualModeTicketChange']).toHaveBeenCalledTimes(1);
+  });
+});
+describe('OrchestratorService - registerQueueRefreshListener', () => {
+  let orchestratorService: OrchestratorService;
+
+  beforeEach(() => {
+    orchestratorService = new OrchestratorService();
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should register the queue refresh listener and log success', () => {
+    orchestratorService['registerQueueRefreshListener']();
+
+    expect(onTicketChange).toHaveBeenCalledTimes(1);
+    expect(onTicketChange).toHaveBeenCalledWith(expect.any(Function));
+    expect(logInfo).toHaveBeenCalledWith('Queue refresh listener registered');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log an error if an exception occurs', () => {
+    (onTicketChange as jest.Mock).mockImplementation(() => {
+      throw new Error('Test error');
+    });
+
+    orchestratorService['registerQueueRefreshListener']();
+
+    expect(onTicketChange).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith(
+      'Failed to register queue refresh listener: Test error'
+    );
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle non-Error exceptions gracefully', () => {
+    (onTicketChange as jest.Mock).mockImplementation(() => {
+      throw 'Non-error exception';
+    });
+
+    orchestratorService['registerQueueRefreshListener']();
+
+    expect(onTicketChange).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith(
+      'Failed to register queue refresh listener: Non-error exception'
+    );
+  });
+});
+describe('OrchestratorService', () => {
+    let orchestrator: OrchestratorService;
+
+    beforeEach(() => {
+        orchestrator = new OrchestratorService();
+        Logger.debug = jest.fn();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    describe('resetForTests', () => {
+        /** @aiContributed-2026-02-04 */
+        it('should reset all properties to their initial state', () => {
+            // Arrange
+            orchestrator['taskQueue'] = [{ id: 1, name: 'Task1' }];
+            orchestrator['pickedTasks'] = [{ id: 2, name: 'Task2' }];
+            orchestrator['context'] = { subscriptions: [] } as Record<string, unknown>;
+            orchestrator['answerAgent'] = { name: 'Agent1' } as Record<string, unknown>;
+            orchestrator['lastPickedTaskTitle'] = 'Task1';
+            orchestrator['lastPickedTaskAt'] = '2023-02-03T10:00:00Z';
+
+            // Act
+            orchestrator.resetForTests();
+
+            // Assert
+            expect(orchestrator['taskQueue']).toEqual([]);
+            expect(orchestrator['pickedTasks']).toEqual([]);
+            expect(orchestrator['context']).toBeNull();
+            expect(orchestrator['answerAgent']).toBeNull();
+            expect(orchestrator['lastPickedTaskTitle']).toBeNull();
+            expect(orchestrator['lastPickedTaskAt']).toBeNull();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle being called multiple times without errors', () => {
+            // Act & Assert
+            expect(() => {
+                orchestrator.resetForTests();
+                orchestrator.resetForTests();
+            }).not.toThrow();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should not log debug messages when resetForTests is called', () => {
+            // Act
+            orchestrator.resetForTests();
+
+            // Assert
+            expect(Logger.debug).not.toHaveBeenCalled();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should ensure taskQueue and pickedTasks are arrays after reset', () => {
+            // Act
+            orchestrator.resetForTests();
+
+            // Assert
+            expect(Array.isArray(orchestrator['taskQueue'])).toBe(true);
+            expect(Array.isArray(orchestrator['pickedTasks'])).toBe(true);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should reset lastPickedTaskTitle and lastPickedTaskAt to null', () => {
+            // Arrange
+            orchestrator['lastPickedTaskTitle'] = 'Task1';
+            orchestrator['lastPickedTaskAt'] = '2023-02-03T10:00:00Z';
+
+            // Act
+            orchestrator.resetForTests();
+
+            // Assert
+            expect(orchestrator['lastPickedTaskTitle']).toBeNull();
+            expect(orchestrator['lastPickedTaskAt']).toBeNull();
+        });
+    });
+});
+describe('OrchestratorService - routeQuestionToAnswer', () => {
+  let orchestratorService: OrchestratorService;
+
+  beforeEach(() => {
+    orchestratorService = new OrchestratorService();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return the response content on successful LLM call', async () => {
+    const mockResponse = { content: 'Answer from LLM' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestratorService.routeQuestionToAnswer('What is AI?');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: What is AI?');
+    expect(completeLLM).toHaveBeenCalledWith('What is AI?', { systemPrompt: ANSWER_SYSTEM_PROMPT });
+    expect(logInfo).toHaveBeenCalledWith('Answer agent response received');
+    expect(result).toBe('Answer from LLM');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return fallback message and log error on LLM failure', async () => {
+    const mockError = new Error('LLM service error');
+    (completeLLM as jest.Mock).mockRejectedValue(mockError);
+
+    const result = await orchestratorService.routeQuestionToAnswer('What is AI?');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: What is AI?');
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: LLM service error');
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle non-Error exceptions gracefully', async () => {
+    (completeLLM as jest.Mock).mockRejectedValue('Unknown error');
+
+    const result = await orchestratorService.routeQuestionToAnswer('What is AI?');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: What is AI?');
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: Unknown error');
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle null or undefined question input', async () => {
+    const mockResponse = { content: 'Answer from LLM' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestratorService.routeQuestionToAnswer(null as unknown as string);
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: null');
+    expect(completeLLM).toHaveBeenCalledWith(null, { systemPrompt: ANSWER_SYSTEM_PROMPT });
+    expect(logInfo).toHaveBeenCalledWith('Answer agent response received');
+    expect(result).toBe('Answer from LLM');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log error and return fallback message if completeLLM throws a timeout error', async () => {
+    const mockError = new Error('Timeout error');
+    (completeLLM as jest.Mock).mockRejectedValue(mockError);
+
+    const result = await orchestratorService.routeQuestionToAnswer('What is AI?');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: What is AI?');
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: Timeout error');
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle empty string as question input', async () => {
+    const mockResponse = { content: 'Answer from LLM' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestratorService.routeQuestionToAnswer('');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: ');
+    expect(completeLLM).toHaveBeenCalledWith('', { systemPrompt: ANSWER_SYSTEM_PROMPT });
+    expect(logInfo).toHaveBeenCalledWith('Answer agent response received');
+    expect(result).toBe('Answer from LLM');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log error and return fallback message if completeLLM throws a network error', async () => {
+    const mockError = new Error('Network error');
+    (completeLLM as jest.Mock).mockRejectedValue(mockError);
+
+    const result = await orchestratorService.routeQuestionToAnswer('What is AI?');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: What is AI?');
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: Network error');
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle unexpected object as error and log it', async () => {
+    const mockError = { unexpected: 'error' };
+    (completeLLM as jest.Mock).mockRejectedValue(mockError);
+
+    const result = await orchestratorService.routeQuestionToAnswer('What is AI?');
+
+    expect(logInfo).toHaveBeenCalledWith('Routing question to Answer agent: What is AI?');
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: [object Object]');
+    expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+  });
+});
+describe('OrchestratorService - routeToAnswerAgent', () => {
+    let orchestratorService: OrchestratorService;
+
+    beforeEach(() => {
+        orchestratorService = new OrchestratorService();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return a warning message for an empty question', async () => {
+        const result = await orchestratorService.routeToAnswerAgent('');
+        expect(logWarn).toHaveBeenCalledWith('[Answer] Empty question provided');
+        expect(result).toBe('Please ask a question.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return a warning message for a question with only whitespace', async () => {
+        const result = await orchestratorService.routeToAnswerAgent('   ');
+        expect(logWarn).toHaveBeenCalledWith('[Answer] Empty question provided');
+        expect(result).toBe('Please ask a question.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return a fallback message if completeLLM throws an error', async () => {
+        (completeLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+        const result = await orchestratorService.routeToAnswerAgent('What is AI?');
+        expect(logError).toHaveBeenCalledWith('[Answer] Answer agent failed: LLM error');
+        expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return a fallback message if completeLLM returns an empty response', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({ content: '' });
+        const result = await orchestratorService.routeToAnswerAgent('What is AI?');
+        expect(logWarn).toHaveBeenCalledWith('[Answer] Answer agent returned an empty response.');
+        expect(result).toBe('Could not generate an answer.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log and return the full answer for a valid question', async () => {
+        const mockAnswer = 'Artificial Intelligence is the simulation of human intelligence in machines.';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: mockAnswer });
+        const result = await orchestratorService.routeToAnswerAgent('What is AI?');
+        expect(logInfo).toHaveBeenCalledWith('[INFO] Answer: Artificial Intelligence is the simulation of human intelligence in machines.');
+        expect(result).toBe(mockAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should truncate and log the answer if it exceeds 500 characters', async () => {
+        const longAnswer = 'A'.repeat(600);
+        (completeLLM as jest.Mock).mockResolvedValue({ content: longAnswer });
+        const result = await orchestratorService.routeToAnswerAgent('What is AI?');
+        expect(logInfo).toHaveBeenCalledWith(`[INFO] Answer: ${'A'.repeat(500)}...`);
+        expect(result).toBe(longAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should create a ticket if the answer contains action keywords', async () => {
+        const mockAnswer = 'Please create a ticket to fix this issue.';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: mockAnswer });
+        const result = await orchestratorService.routeToAnswerAgent('What is AI?');
+        expect(createTicket).toHaveBeenCalledWith({
+            title: 'ANSWER NEEDS ACTION: What is AI?',
+            status: 'blocked',
+            description: mockAnswer,
+        });
+        expect(logInfo).toHaveBeenCalledWith('[Answer] Created ticket for action: ANSWER NEEDS ACTION: What is AI?');
+        expect(result).toBe(mockAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should not create a ticket if the answer does not contain action keywords', async () => {
+        const mockAnswer = 'Artificial Intelligence is the simulation of human intelligence in machines.';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: mockAnswer });
+        const result = await orchestratorService.routeToAnswerAgent('What is AI?');
+        expect(createTicket).not.toHaveBeenCalled();
+        expect(result).toBe(mockAnswer);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should create a ticket with truncated question if the question exceeds 50 characters', async () => {
+        const longQuestion = 'A'.repeat(100);
+        const mockAnswer = 'Please create a ticket to fix this issue.';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: mockAnswer });
+        const result = await orchestratorService.routeToAnswerAgent(longQuestion);
+        expect(createTicket).toHaveBeenCalledWith({
+            title: `ANSWER NEEDS ACTION: ${'A'.repeat(50)}...`,
+            status: 'blocked',
+            description: mockAnswer,
+        });
+        expect(logInfo).toHaveBeenCalledWith(`[Answer] Created ticket for action: ANSWER NEEDS ACTION: ${'A'.repeat(50)}...`);
+        expect(result).toBe(mockAnswer);
+    });
+});
+describe('OrchestratorService - routeToPlanningAgent', () => {
+  let orchestrator: OrchestratorService;
+
+  beforeEach(() => {
+    orchestrator = new OrchestratorService();
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle the happy path and return the full plan', async () => {
+    const question = 'What is the plan?';
+    const mockResponse = { content: 'This is the plan.' };
+    (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestrator.routeToPlanningAgent(question);
+
+    expect(logInfo).toHaveBeenCalledWith(`Routing request to Planning agent: ${question}`);
+    expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+    expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) Planning...');
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(streamLLM).toHaveBeenCalledWith(
+      question,
+      expect.any(Function),
+      { systemPrompt: expect.any(String) }
+    );
+    expect(logInfo).toHaveBeenCalledWith(`Full plan: ${mockResponse.content}`);
+    expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', mockResponse.content.substring(0, 100));
+    expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+    expect(llmStatusBar.end).toHaveBeenCalled();
+    expect(result).toBe(mockResponse.content);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle a long response from the planning agent', async () => {
+    const question = 'What is the plan?';
+    const longContent = 'A'.repeat(1500);
+    const mockResponse = { content: longContent };
+    (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestrator.routeToPlanningAgent(question);
+
+    expect(logInfo).toHaveBeenCalledWith(`Full plan (truncated): ${longContent.substring(0, 1000)}...`);
+    expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', longContent.substring(0, 100));
+    expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+    expect(result).toBe(longContent);
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle an empty response from the planning agent', async () => {
+    const question = 'What is the plan?';
+    const mockResponse = { content: '' };
+    (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await orchestrator.routeToPlanningAgent(question);
+
+    expect(logWarn).toHaveBeenCalledWith('Planning agent returned an empty response.');
+    expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'Empty response');
+    expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+    expect(result).toBe('');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle errors thrown by the planning agent', async () => {
+    const question = 'What is the plan?';
+    const errorMessage = 'Network error';
+    (streamLLM as jest.Mock).mockRejectedValue(new Error(errorMessage));
+
+    const result = await orchestrator.routeToPlanningAgent(question);
+
+    expect(logError).toHaveBeenCalledWith(`Planning agent failed: ${errorMessage}`);
+    expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', errorMessage.substring(0, 100));
+    expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+    expect(llmStatusBar.end).toHaveBeenCalled();
+    expect(result).toBe('Planning service is currently unavailable. A ticket has been created for manual review.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle undefined question input gracefully', async () => {
+    await orchestrator.routeToPlanningAgent(undefined as unknown as string);
+
+    expect(logInfo).toHaveBeenCalledWith('Routing request to Planning agent: undefined');
+    expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+    expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) Planning...');
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(streamLLM).toHaveBeenCalledWith(
+      undefined,
+      expect.any(Function),
+      { systemPrompt: expect.any(String) }
+    );
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log each chunk received from the planning agent', async () => {
+    const question = 'What is the plan?';
+    const mockResponse = { content: 'Final plan.' };
+    (streamLLM as jest.Mock).mockImplementation(async (_q, onChunk) => {
+      onChunk('Chunk 1');
+      onChunk('Chunk 2');
+      return mockResponse;
+    });
+
+    const result = await orchestrator.routeToPlanningAgent(question);
+
+    expect(logInfo).toHaveBeenCalledWith('LLM: Chunk 1');
+    expect(logInfo).toHaveBeenCalledWith('LLM: Chunk 2');
+    expect(result).toBe(mockResponse.content);
+  });
+});
+describe('OrchestratorService - routeToVerificationAgent', () => {
+    let orchestratorService: OrchestratorService;
+
+    beforeEach(() => {
+        orchestratorService = new OrchestratorService();
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle empty codeDiff and create a ticket', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = '   ';
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Active', '');
+        expect(logWarn).toHaveBeenCalledWith('No code diff provided for verification.');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Waiting', 'FAIL - No diff');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(createTicket).toHaveBeenCalledWith({
+            title: `VERIFICATION FAILED: ${taskDescription}`,
+            status: 'blocked',
+            description: `Explanation: No code diff provided for verification.\n\nCode diff:\n${codeDiff}`
+        });
+        expect(result).toEqual({ passed: false, explanation: 'No code diff provided for verification.' });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle a successful verification', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: 'PASS: All criteria met.' });
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Active', '');
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(completeLLM).toHaveBeenCalledWith(`Task: ${taskDescription}\nCode diff: ${codeDiff}`, {
+            systemPrompt: expect.any(String),
+            temperature: 0.3
+        });
+        expect(logInfo).toHaveBeenCalledWith('Verification: PASS - All criteria met.');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Waiting', 'PASS - All criteria met.');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ✓ Verified');
+        expect(result).toEqual({ passed: true, explanation: 'All criteria met.' });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle an ambiguous LLM response', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: 'Unclear response' });
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(logWarn).toHaveBeenCalledWith('Verification response was ambiguous: Unclear response...');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Waiting', 'FAIL - Ambiguous response from verification - defaulting to FAIL.');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ⚠ Needs Review');
+        expect(result).toEqual({ passed: false, explanation: 'Ambiguous response from verification - defaulting to FAIL.' });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle an LLM error', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        (completeLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(logError).toHaveBeenCalledWith('Verification agent failed: LLM error');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Failed', 'LLM error');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toEqual({
+            passed: false,
+            explanation: 'Verification failed due to an LLM error. See logs for details.'
+        });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle missing explanation in LLM response', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: 'PASS' });
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(logInfo).toHaveBeenCalledWith('Verification: PASS - All criteria met.');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Waiting', 'PASS - All criteria met.');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ✓ Verified');
+        expect(result).toEqual({ passed: true, explanation: 'All criteria met.' });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should truncate long explanations in logs', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        const longExplanation = 'PASS: ' + 'A'.repeat(300);
+        (completeLLM as jest.Mock).mockResolvedValue({ content: longExplanation });
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Verification: PASS - '));
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('A'.repeat(200) + '...'));
+        expect(result).toEqual({ passed: true, explanation: 'A'.repeat(300) });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle a failed verification and create a ticket', async () => {
+        const taskDescription = 'Test Task';
+        const codeDiff = 'Some code diff';
+        (completeLLM as jest.Mock).mockResolvedValue({ content: 'FAIL: Criteria not met.' });
+
+        const result = await orchestratorService.routeToVerificationAgent(taskDescription, codeDiff);
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Active', '');
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(completeLLM).toHaveBeenCalledWith(`Task: ${taskDescription}\nCode diff: ${codeDiff}`, {
+            systemPrompt: expect.any(String),
+            temperature: 0.3
+        });
+        expect(logInfo).toHaveBeenCalledWith('Verification: FAIL - Criteria not met.');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Waiting', 'FAIL - Criteria not met.');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ⚠ Needs Review');
+        expect(createTicket).toHaveBeenCalledWith({
+            title: `VERIFICATION FAILED: ${taskDescription}`,
+            status: 'blocked',
+            description: `Explanation: Criteria not met.\n\nCode diff:\n${codeDiff}`
+        });
+        expect(result).toEqual({ passed: false, explanation: 'Criteria not met.' });
+    });
+});
+describe('resetOrchestratorForTests', () => {
+    let context: vscode.ExtensionContext;
+
+    beforeEach(async () => {
+        context = {
+            extensionPath: '/mock/path',
+        } as unknown as vscode.ExtensionContext;
+
+        await initializeOrchestrator(context);
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should reset the orchestrator instance and clear the singleton', () => {
+        const orchestrator = getOrchestratorInstance();
+        expect(orchestrator).toBeDefined();
+
+        resetOrchestratorForTests();
+
+        expect(() => getOrchestratorInstance()).toThrowError(
+            'Orchestrator not initialized'
+        );
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should clear the task queue and picked tasks', () => {
+        const orchestrator = getOrchestratorInstance();
+        orchestrator['taskQueue'] = [{ id: '1', ticketId: '1', title: 'Task 1', status: 'pending', createdAt: '2023-01-01T00:00:00Z' }];
+        orchestrator['pickedTasks'] = [{ id: '2', ticketId: '2', title: 'Task 2', status: 'picked', createdAt: '2023-01-01T00:00:00Z' }];
+
+        resetOrchestratorForTests();
+
+        expect(orchestrator['taskQueue']).toEqual([]);
+        expect(orchestrator['pickedTasks']).toEqual([]);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log debug information during reset', () => {
+        resetOrchestratorForTests();
+
+        expect(Logger.debug).toHaveBeenCalledWith('Orchestrator reset for tests');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should reset the context and answerAgent to null', () => {
+        const orchestrator = getOrchestratorInstance();
+        orchestrator['context'] = context;
+        orchestrator['answerAgent'] = {};
+
+        resetOrchestratorForTests();
+
+        expect(orchestrator['context']).toBeNull();
+        expect(orchestrator['answerAgent']).toBeNull();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should reset conversationThreadLengths map', () => {
+        const orchestrator = getOrchestratorInstance();
+        orchestrator['conversationThreadLengths'].set('ticket-1', 5);
+
+        resetOrchestratorForTests();
+
+        expect(orchestrator['conversationThreadLengths'].size).toBe(0);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should reset lastPickedTaskTitle and lastPickedTaskAt to null', () => {
+        const orchestrator = getOrchestratorInstance();
+        orchestrator['lastPickedTaskTitle'] = 'Task 1';
+        orchestrator['lastPickedTaskAt'] = '2023-01-01T00:00:00Z';
+
+        resetOrchestratorForTests();
+
+        expect(orchestrator['lastPickedTaskTitle']).toBeNull();
+        expect(orchestrator['lastPickedTaskAt']).toBeNull();
+    });
+});
+describe('routeQuestionToAnswer', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should return the response content on success', async () => {
+    const mockResponse = { content: 'This is the answer.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(logInfo).toHaveBeenCalledWith('Answer agent response received');
+    expect(result).toBe('This is the answer.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log an error and return a fallback message on failure', async () => {
+    (completeLLM as jest.Mock).mockRejectedValue(new Error('Network error'));
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: Network error');
+    expect(result).toBe(
+      'LLM service is currently unavailable. A ticket has been created for manual review.'
+    );
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle non-Error exceptions gracefully', async () => {
+    (completeLLM as jest.Mock).mockRejectedValue('Unknown error');
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(logError).toHaveBeenCalledWith('Answer agent failed: Unknown error');
+    expect(result).toBe(
+      'LLM service is currently unavailable. A ticket has been created for manual review.'
+    );
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should create a ticket and log a warning if the response contains action keywords', async () => {
+    const mockResponse = { content: 'Please create a ticket for this issue.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(createTicket).toHaveBeenCalledWith({
+      title: expect.stringContaining('ANSWER NEEDS ACTION'),
+      status: 'blocked',
+      description: 'Please create a ticket for this issue.',
+    });
+    expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Created ticket for action'));
+    expect(result).toBe('Please create a ticket for this issue.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log a warning and return a fallback message if the response is empty', async () => {
+    const mockResponse = { content: '' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(logWarn).toHaveBeenCalledWith('[Answer] Answer agent returned an empty response.');
+    expect(result).toBe('Could not generate an answer.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should not create a ticket if the response does not contain action keywords', async () => {
+    const mockResponse = { content: 'This is a general answer.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(createTicket).not.toHaveBeenCalled();
+    expect(result).toBe('This is a general answer.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle a response with mixed-case action keywords', async () => {
+    const mockResponse = { content: 'Please Create a Ticket for this issue.' };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(createTicket).toHaveBeenCalledWith({
+      title: expect.stringContaining('ANSWER NEEDS ACTION'),
+      status: 'blocked',
+      description: 'Please Create a Ticket for this issue.',
+    });
+    expect(result).toBe('Please Create a Ticket for this issue.');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle a response longer than 500 characters', async () => {
+    const longResponse = 'A'.repeat(501);
+    const mockResponse = { content: longResponse };
+    (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+    const result = await routeQuestionToAnswer('What is TypeScript?');
+
+    expect(completeLLM).toHaveBeenCalledWith('What is TypeScript?', {
+      systemPrompt: expect.any(String),
+    });
+    expect(logInfo).toHaveBeenCalledWith(expect.stringContaining(longResponse.substring(0, 500)));
+    expect(result).toBe(longResponse);
+  });
+});
+describe('routeToAnswerAgent', () => {
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return a response from the Answer agent on success', async () => {
+        const question = 'What is TypeScript?';
+        const mockResponse = { content: 'TypeScript is a typed superset of JavaScript.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(completeLLM).toHaveBeenCalledWith(question, { systemPrompt: expect.any(String) });
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Routing question to Answer agent'));
+        expect(result).toBe(mockResponse.content);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log a warning and return a fallback message for an empty question', async () => {
+        const question = '';
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(logWarn).toHaveBeenCalledWith('[Answer] Empty question provided');
+        expect(result).toBe('Please ask a question.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log a warning and return a fallback message if the Answer agent returns an empty response', async () => {
+        const question = 'Explain closures in JavaScript.';
+        const mockResponse = { content: '' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(logWarn).toHaveBeenCalledWith('[Answer] Answer agent returned an empty response.');
+        expect(result).toBe('Could not generate an answer.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should create a ticket if the response contains action keywords', async () => {
+        const question = 'How do I fix this bug?';
+        const mockResponse = { content: 'You should create a ticket to track this issue.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(createTicket).toHaveBeenCalledWith({
+            title: expect.stringContaining('ANSWER NEEDS ACTION'),
+            status: 'blocked',
+            description: mockResponse.content,
+        });
+        expect(result).toBe(mockResponse.content);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log an error and return a fallback message if the LLM service fails', async () => {
+        const question = 'What is the purpose of unit tests?';
+        const errorMessage = 'Network error';
+        (completeLLM as jest.Mock).mockRejectedValue(new Error(errorMessage));
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(logError).toHaveBeenCalledWith(expect.stringContaining('[Answer] Answer agent failed'));
+        expect(result).toBe('LLM service is currently unavailable. A ticket has been created for manual review.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should truncate and log the response if it exceeds 500 characters', async () => {
+        const question = 'Explain the concept of microservices.';
+        const longResponse = 'A'.repeat(600);
+        const mockResponse = { content: longResponse };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(logInfo).toHaveBeenCalledWith(expect.stringContaining(longResponse.substring(0, 500)));
+        expect(result).toBe(longResponse);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should not create a ticket if the response does not contain action keywords', async () => {
+        const question = 'What is a closure in JavaScript?';
+        const mockResponse = { content: 'A closure is a function that retains access to its lexical scope.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(createTicket).not.toHaveBeenCalled();
+        expect(result).toBe(mockResponse.content);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle responses with mixed case action keywords and create a ticket', async () => {
+        const question = 'Can you implement this feature?';
+        const mockResponse = { content: 'You should Implement a new feature for this.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(createTicket).toHaveBeenCalledWith({
+            title: expect.stringContaining('ANSWER NEEDS ACTION'),
+            status: 'blocked',
+            description: mockResponse.content,
+        });
+        expect(result).toBe(mockResponse.content);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle responses without action keywords and not create a ticket', async () => {
+        const question = 'What is the difference between var and let?';
+        const mockResponse = { content: 'var is function-scoped, while let is block-scoped.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(createTicket).not.toHaveBeenCalled();
+        expect(result).toBe(mockResponse.content);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors when creating a ticket and still return the response', async () => {
+        const question = 'How do I fix this bug?';
+        const mockResponse = { content: 'You should create a ticket to track this issue.' };
+        (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
+        (createTicket as jest.Mock).mockRejectedValue(new Error('Ticket creation failed'));
+
+        const result = await routeToAnswerAgent(question);
+
+        expect(createTicket).toHaveBeenCalledWith({
+            title: expect.stringContaining('ANSWER NEEDS ACTION'),
+            status: 'blocked',
+            description: mockResponse.content,
+        });
+        expect(logError).toHaveBeenCalledWith(expect.stringContaining('Ticket creation failed'));
+        expect(result).toBe(mockResponse.content);
+    });
+});
+describe('routeToPlanningAgent', () => {
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return the full plan on success', async () => {
+        const mockResponse = { content: 'Plan generated successfully.' };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(streamLLM).toHaveBeenCalledWith(
+            'Test question',
+            expect.any(Function),
+            { systemPrompt: expect.any(String) }
+        );
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', 'Plan generated successfully.');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe('Plan generated successfully.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle empty response from the LLM', async () => {
+        const mockResponse = { content: '' };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'Empty response');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe('');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors from the LLM', async () => {
+        (streamLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'LLM error');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe('Planning service is currently unavailable. A ticket has been created for manual review.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log chunks during streaming', async () => {
+        const mockResponse = { content: 'Plan generated successfully.' };
+        (streamLLM as jest.Mock).mockImplementation(async (_question, onChunk) => {
+            onChunk('Chunk 1');
+            onChunk('Chunk 2');
+            return mockResponse;
+        });
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(Logger.info).toHaveBeenCalledWith('LLM: Chunk 1');
+        expect(Logger.info).toHaveBeenCalledWith('LLM: Chunk 2');
+        expect(result).toBe('Plan generated successfully.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should truncate and log long plans', async () => {
+        const longPlan = 'A'.repeat(1500);
+        const mockResponse = { content: longPlan };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(Logger.info).toHaveBeenCalledWith(`Full plan (truncated): ${longPlan.substring(0, 1000)}...`);
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', longPlan.substring(0, 100));
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe(longPlan);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle short plans without truncation', async () => {
+        const shortPlan = 'Short plan content.';
+        const mockResponse = { content: shortPlan };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(Logger.info).toHaveBeenCalledWith(`Full plan: ${shortPlan}`);
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', shortPlan.substring(0, 100));
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe(shortPlan);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle UI updates for active and failed states', async () => {
+        const mockResponse = { content: 'Plan generated successfully.' };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', 'Plan generated successfully.');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle UI updates for empty responses', async () => {
+        const mockResponse = { content: '' };
+        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+
+        await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'Empty response');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle UI updates for errors', async () => {
+        (streamLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+
+        await routeToPlanningAgent('Test question');
+
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'LLM error');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle and log unexpected errors gracefully', async () => {
+        (streamLLM as jest.Mock).mockRejectedValue(new Error('Unexpected error'));
+
+        const result = await routeToPlanningAgent('Test question');
+
+        expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Unexpected error'));
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'Unexpected error');
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
+        expect(result).toBe('Planning service is currently unavailable. A ticket has been created for manual review.');
+    });
+});
+describe('routeToVerificationAgent', () => {
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return pass with explanation when LLM returns PASS', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: 'PASS: All criteria met.',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({ passed: true, explanation: 'All criteria met.' });
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Active', '');
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(llmStatusBar.end).toHaveBeenCalled();
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ✓ Verified');
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('PASS'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return fail with explanation when LLM returns FAIL', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: 'FAIL: Criteria not met.',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({ passed: false, explanation: 'Criteria not met.' });
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Active', '');
+        expect(llmStatusBar.start).toHaveBeenCalled();
+        expect(llmStatusBar.end).toHaveBeenCalled();
+        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) ⚠ Needs Review');
+        expect(createTicket).toHaveBeenCalledWith({
+            title: 'VERIFICATION FAILED: Test task',
+            status: 'blocked',
+            description: expect.stringContaining('Criteria not met.'),
+        });
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('FAIL'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle ambiguous LLM response and default to fail', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: 'Unclear response.',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({
+            passed: false,
+            explanation: 'Ambiguous response from verification - defaulting to FAIL.',
+        });
+        expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('Ambiguous response'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle empty code diff and return fail', async () => {
+        const result = await routeToVerificationAgent('Test task', '');
+
+        expect(result).toEqual({
+            passed: false,
+            explanation: 'No code diff provided for verification.',
+        });
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Waiting', 'FAIL - No diff');
+        expect(createTicket).toHaveBeenCalledWith({
+            title: 'VERIFICATION FAILED: Test task',
+            status: 'blocked',
+            description: expect.stringContaining('No code diff provided'),
+        });
+        expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('No code diff provided'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle LLM errors gracefully', async () => {
+        (completeLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({
+            passed: false,
+            explanation: 'Verification failed due to an LLM error. See logs for details.',
+        });
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Verification', 'Failed', expect.any(String));
+        expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('LLM error'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle long explanations and truncate logs', async () => {
+        const longExplanation = 'PASS: ' + 'A'.repeat(300);
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: longExplanation,
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({ passed: true, explanation: 'A'.repeat(300) });
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('PASS'));
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('A'.repeat(200)));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle missing explanation in LLM response and default to generic message', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: 'PASS',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({ passed: true, explanation: 'All criteria met.' });
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('PASS'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle invalid LLM response and log a warning', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: '',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({
+            passed: false,
+            explanation: 'Ambiguous response from verification - defaulting to FAIL.',
+        });
+        expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('Ambiguous response'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle missing match in LLM response and default to fail', async () => {
+        (completeLLM as jest.Mock).mockResolvedValue({
+            content: 'Some unrelated response.',
+        });
+
+        const result = await routeToVerificationAgent('Test task', 'diff content');
+
+        expect(result).toEqual({
+            passed: false,
+            explanation: 'Ambiguous response from verification - defaulting to FAIL.',
+        });
+        expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('Ambiguous response'));
+    });
+});

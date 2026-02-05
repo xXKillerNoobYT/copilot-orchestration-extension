@@ -2,7 +2,7 @@
 import { ConversationsTreeDataProvider } from '../../src/ui/conversationsTreeProvider';
 import { Logger } from '../../utils/logger';
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('ConversationsTreeDataProvider', () => {
     let provider: ConversationsTreeDataProvider;
 
@@ -13,9 +13,9 @@ describe('ConversationsTreeDataProvider', () => {
         jest.spyOn(Logger, 'error').mockImplementation(() => {});
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('getConversationLabel', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should return the truncated user message when a user message exists', () => {
             const ticket = { id: '123' };
             const history = {
@@ -32,7 +32,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(provider['truncateText']).toHaveBeenCalledWith('This is a user message that exceeds sixty characters in length.', 60);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should return "New chat" with ticket ID when no user message exists', () => {
             const ticket = { id: '123' };
             const history = { messages: [{ role: 'system', content: 'System message' }] };
@@ -42,7 +42,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result).toBe('New chat (123)');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle null or undefined history gracefully', () => {
             const ticket = { id: '123' };
 
@@ -51,7 +51,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result).toBe('New chat (123)');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle null or undefined messages array in history gracefully', () => {
             const ticket = { id: '123' };
             const history = { messages: null };
@@ -61,7 +61,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result).toBe('New chat (123)');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle empty messages array in history gracefully', () => {
             const ticket = { id: '123' };
             const history = { messages: [] };
@@ -71,7 +71,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result).toBe('New chat (123)');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should log an error if truncateText throws an error', () => {
             const ticket = { id: '123' };
             const history = {
@@ -90,7 +90,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should return "Chat" with ticket ID when messages is not an array', () => {
             const ticket = { id: '123' };
             const history = { messages: 'invalid' };
@@ -98,6 +98,30 @@ describe('ConversationsTreeDataProvider', () => {
             const result = provider['getConversationLabel'](ticket, history);
 
             expect(result).toBe('Chat (123)');
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return "Chat" with ticket ID when messages array is undefined', () => {
+            const ticket = { id: '123' };
+            const history = { messages: undefined };
+
+            const result = provider['getConversationLabel'](ticket, history);
+
+            expect(result).toBe('Chat (123)');
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return "New chat" with ticket ID when first user message content is empty', () => {
+            const ticket = { id: '123' };
+            const history = {
+                messages: [
+                    { role: 'user', content: '   ' },
+                ],
+            };
+
+            const result = provider['getConversationLabel'](ticket, history);
+
+            expect(result).toBe('New chat (123)');
         });
     });
 });

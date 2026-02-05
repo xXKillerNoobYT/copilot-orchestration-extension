@@ -20,7 +20,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('ConversationsTreeDataProvider', () => {
     let provider: ConversationsTreeDataProvider;
 
@@ -28,9 +28,9 @@ describe('ConversationsTreeDataProvider', () => {
         provider = new ConversationsTreeDataProvider();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('createConversationItemFromHistory', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should create a TreeItem with correct properties for valid inputs', () => {
             const ticket = { id: '1', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
             const history = {
@@ -49,10 +49,16 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result.description).toBe('2 messages, last updated 2 days ago');
             expect(result.iconPath).toBeInstanceOf(vscode.ThemeIcon);
             expect(result.tooltip).toBe('Click to open conversation in webview');
+            expect(result.contextValue).toBe('coe-conversation');
+            expect(result.command).toEqual({
+                command: 'coe.openConversation',
+                title: 'Open Conversation',
+                arguments: ['1'],
+            });
             expect((result as { timestamp: number }).timestamp).toBe(1672531200000);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should return null if history is null', () => {
             const ticket = { id: '1', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
 
@@ -62,7 +68,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(result).toBeNull();
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should log a warning and create an empty TreeItem if messages array is missing', () => {
             const ticket = { id: '1', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
             const history = { messages: null };
@@ -80,7 +86,7 @@ describe('ConversationsTreeDataProvider', () => {
             expect(Logger.warn).toHaveBeenCalledWith('[ConversationsTreeProvider] Missing messages array for ticket 1; showing empty conversation');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle errors gracefully and log them', () => {
             const ticket = { id: '1', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
             const history = {
@@ -95,6 +101,26 @@ describe('ConversationsTreeDataProvider', () => {
 
             expect(result).toBeNull();
             expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle empty messages array and create a TreeItem with 0 messages', () => {
+            const ticket = { id: '1', title: 'Test Ticket', status: 'open', createdAt: '2023-01-01', updatedAt: '2023-01-02' };
+            const history = { messages: [] };
+            jest.spyOn(provider, 'getConversationTimestamp' as keyof ConversationsTreeDataProvider).mockReturnValue(1672531200000);
+            jest.spyOn(provider, 'formatRelativeTime' as keyof ConversationsTreeDataProvider).mockReturnValue('2 days ago');
+            jest.spyOn(provider, 'getConversationLabel' as keyof ConversationsTreeDataProvider).mockReturnValue('Test Label');
+            jest.spyOn(provider, 'getConversationDescription' as keyof ConversationsTreeDataProvider).mockReturnValue('0 messages, last updated 2 days ago');
+
+            const result = (provider as unknown as { createConversationItemFromHistory: (ticket: typeof ticket, history: typeof history) => vscode.TreeItem })
+                .createConversationItemFromHistory(ticket, history);
+
+            expect(result).toBeInstanceOf(vscode.TreeItem);
+            expect(result.label).toBe('Test Label');
+            expect(result.description).toBe('0 messages, last updated 2 days ago');
+            expect(result.iconPath).toBeInstanceOf(vscode.ThemeIcon);
+            expect(result.tooltip).toBe('Click to open conversation in webview');
+            expect((result as { timestamp: number }).timestamp).toBe(1672531200000);
         });
     });
 });

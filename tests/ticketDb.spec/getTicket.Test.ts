@@ -18,7 +18,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('getTicket', () => {
     let mockContext: vscode.ExtensionContext;
 
@@ -35,7 +35,7 @@ describe('getTicket', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return the ticket when it exists in memory', async () => {
         const ticket = {
             title: 'Test Ticket',
@@ -49,20 +49,20 @@ describe('getTicket', () => {
         expect(Logger.info).toHaveBeenCalledWith(`Created ticket: ${createdTicket.id}`);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return null when the ticket does not exist', async () => {
         const result = await getTicket('non-existent-id');
         expect(result).toBeNull();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should throw an error if the database is not initialized', async () => {
         resetTicketDbForTests();
 
         await expect(getTicket('any-id')).rejects.toThrow('TicketDb not initialized');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle SQLite fallback to in-memory mode gracefully', async () => {
         jest.spyOn(Logger, 'warn').mockImplementation(() => {});
         jest.spyOn(Logger, 'info').mockImplementation(() => {});
@@ -80,7 +80,7 @@ describe('getTicket', () => {
         expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('SQLite init failed'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should parse thread data correctly when present', async () => {
         const ticket = {
             title: 'Thread Test Ticket',
@@ -97,7 +97,7 @@ describe('getTicket', () => {
         expect(result?.thread).toEqual(ticket.thread);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle invalid thread data gracefully', async () => {
         jest.spyOn(Logger, 'warn').mockImplementation(() => {});
 
@@ -112,5 +112,22 @@ describe('getTicket', () => {
 
         expect(result?.thread).toBeUndefined();
         expect(Logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to parse thread'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return null if the ticket exists but has invalid data', async () => {
+        jest.spyOn(Logger, 'warn').mockImplementation(() => {});
+
+        const ticket = {
+            title: 'Invalid Data Ticket',
+            status: 'open',
+            thread: null,
+        };
+
+        const createdTicket = await createTicket(ticket);
+        const result = await getTicket(createdTicket.id);
+
+        expect(result).toEqual(createdTicket);
+        expect(Logger.warn).not.toHaveBeenCalled();
     });
 });

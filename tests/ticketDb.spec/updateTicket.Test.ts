@@ -18,7 +18,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('updateTicket', () => {
     let context: vscode.ExtensionContext;
 
@@ -32,7 +32,7 @@ describe('updateTicket', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should update an existing ticket successfully', async () => {
         const ticket = await createTicket({
             title: 'Test Ticket',
@@ -49,7 +49,7 @@ describe('updateTicket', () => {
         expect(Logger.info).toHaveBeenCalledWith(`Updated ticket: ${ticket.id}`);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return null if the ticket does not exist', async () => {
         const result = await updateTicket('non-existent-id', { status: 'done' });
 
@@ -57,7 +57,7 @@ describe('updateTicket', () => {
         expect(Logger.warn).toHaveBeenCalledWith('Ticket non-existent-id not found for update');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle updates with partial fields', async () => {
         const ticket = await createTicket({
             title: 'Partial Update Ticket',
@@ -73,7 +73,7 @@ describe('updateTicket', () => {
         });
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should throw an error if the database is not initialized', async () => {
         resetTicketDbForTests();
 
@@ -82,7 +82,7 @@ describe('updateTicket', () => {
         );
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle in-memory mode updates', async () => {
         const ticket = await createTicket({
             title: 'In-Memory Ticket',
@@ -98,7 +98,7 @@ describe('updateTicket', () => {
         });
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should not update createdAt field during update', async () => {
         const ticket = await createTicket({
             title: 'CreatedAt Test Ticket',
@@ -115,7 +115,7 @@ describe('updateTicket', () => {
         expect(updatedTicket?.createdAt).toBe(ticket.createdAt);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log an error if SQLite update fails', async () => {
         const ticket = await createTicket({
             title: 'SQLite Failure Test',
@@ -133,7 +133,7 @@ describe('updateTicket', () => {
         expect(Logger.error).toHaveBeenCalled();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle thread updates correctly', async () => {
         const ticket = await createTicket({
             title: 'Thread Update Test',
@@ -155,7 +155,7 @@ describe('updateTicket', () => {
         });
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle conversationHistory updates correctly', async () => {
         const ticket = await createTicket({
             title: 'Conversation History Test',
@@ -173,6 +173,39 @@ describe('updateTicket', () => {
         expect(updatedTicket).toEqual({
             ...ticket,
             conversationHistory: updatedHistory,
+            updatedAt: expect.any(String),
+        });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle updates with undefined fields gracefully', async () => {
+        const ticket = await createTicket({
+            title: 'Undefined Field Test',
+            status: 'open',
+        });
+
+        const updatedTicket = await updateTicket(ticket.id, { type: undefined });
+
+        expect(updatedTicket).toEqual({
+            ...ticket,
+            type: undefined,
+            updatedAt: expect.any(String),
+        });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle updates with empty thread correctly', async () => {
+        const ticket = await createTicket({
+            title: 'Empty Thread Test',
+            status: 'open',
+            thread: [{ role: 'user', content: 'Initial message', createdAt: '2026-02-01T10:30:00Z' }],
+        });
+
+        const updatedTicket = await updateTicket(ticket.id, { thread: [] });
+
+        expect(updatedTicket).toEqual({
+            ...ticket,
+            thread: [],
             updatedAt: expect.any(String),
         });
     });

@@ -7,9 +7,9 @@ jest.mock('../../src/logger', () => ({
     logWarn: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AnswerAgent', () => {
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('serializeHistory', () => {
         let answerAgent: AnswerAgent;
 
@@ -19,7 +19,7 @@ describe('AnswerAgent', () => {
             jest.clearAllMocks();
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should serialize conversation history correctly', () => {
             const chatId = 'chat1';
             const metadata = {
@@ -34,7 +34,7 @@ describe('AnswerAgent', () => {
             expect(JSON.parse(result[chatId])).toEqual(metadata);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should truncate messages if serialized size exceeds 1MB', () => {
             const chatId = 'chat1';
             const largeMessage = { text: 'a'.repeat(1024 * 1024) }; // 1MB message
@@ -54,14 +54,14 @@ describe('AnswerAgent', () => {
             );
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle empty conversation history', () => {
             const result = answerAgent.serializeHistory();
 
             expect(result).toEqual({});
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle metadata with undefined messages', () => {
             const chatId = 'chat1';
             const metadata = {
@@ -76,7 +76,7 @@ describe('AnswerAgent', () => {
             expect(JSON.parse(result[chatId])).toEqual(metadata);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle multiple chat histories', () => {
             const chat1 = 'chat1';
             const chat2 = 'chat2';
@@ -93,7 +93,7 @@ describe('AnswerAgent', () => {
             expect(JSON.parse(result[chat2])).toEqual(metadata2);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle metadata with messages exceeding maxMessages', () => {
             const chatId = 'chat1';
             const metadata = {
@@ -112,7 +112,7 @@ describe('AnswerAgent', () => {
             );
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle metadata with large messages and truncate correctly', () => {
             const chatId = 'chat1';
             const largeMessage = { text: 'a'.repeat(512 * 1024) }; // 512KB message
@@ -130,6 +130,35 @@ describe('AnswerAgent', () => {
             expect(logWarn).toHaveBeenCalledWith(
                 `[Answer Agent] History truncated due to size for chat ${chatId} (kept last 3 exchanges)`
             );
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle metadata with no messages property', () => {
+            const chatId = 'chat1';
+            const metadata = {
+                otherData: 'test',
+            };
+            (answerAgent as unknown as { conversationHistory: Map<string, typeof metadata> }).conversationHistory.set(chatId, metadata);
+
+            const result = answerAgent.serializeHistory();
+
+            expect(result).toHaveProperty(chatId);
+            expect(JSON.parse(result[chatId])).toEqual(metadata);
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle metadata with messages as null', () => {
+            const chatId = 'chat1';
+            const metadata = {
+                messages: null,
+                otherData: 'test',
+            };
+            (answerAgent as unknown as { conversationHistory: Map<string, typeof metadata> }).conversationHistory.set(chatId, metadata);
+
+            const result = answerAgent.serializeHistory();
+
+            expect(result).toHaveProperty(chatId);
+            expect(JSON.parse(result[chatId])).toEqual(metadata);
         });
     });
 });

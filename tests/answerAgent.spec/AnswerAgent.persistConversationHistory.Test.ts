@@ -14,7 +14,7 @@ jest.mock('../../src/logger', () => ({
   logWarn: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AnswerAgent', () => {
   let agent: AnswerAgent;
 
@@ -24,17 +24,17 @@ describe('AnswerAgent', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
-  describe('persistConversationHistory', () => {
+  /** @aiContributed-2026-02-04 */
+    describe('persistConversationHistory', () => {
     const chatId = 'testChatId';
     const metadata = { messages: [{ text: 'Hello' }] };
 
-    /** @aiContributed-2026-02-03 */
-    it('should persist conversation history successfully', async () => {
+    /** @aiContributed-2026-02-04 */
+        it('should persist conversation history successfully', async () => {
       (agent as unknown as { conversationHistory: Map<string, unknown> }).conversationHistory.set(chatId, metadata);
       (updateTicket as jest.Mock).mockResolvedValue(true);
 
-      await (agent as unknown as { persistConversationHistory: (id: string) => Promise<void> }).persistConversationHistory(chatId);
+      await (agent as { persistConversationHistory: (chatId: string) => Promise<void> }).persistConversationHistory(chatId);
 
       expect(updateTicket).toHaveBeenCalledWith(chatId, {
         conversationHistory: JSON.stringify(metadata),
@@ -45,23 +45,21 @@ describe('AnswerAgent', () => {
       expect(logWarn).not.toHaveBeenCalled();
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should log a warning if metadata is not found', async () => {
-      await (agent as unknown as { persistConversationHistory: (id: string) => Promise<void> }).persistConversationHistory(chatId);
+    /** @aiContributed-2026-02-04 */
+        it('should return early if metadata is not found', async () => {
+      await (agent as { persistConversationHistory: (chatId: string) => Promise<void> }).persistConversationHistory(chatId);
 
       expect(updateTicket).not.toHaveBeenCalled();
-      expect(logWarn).toHaveBeenCalledWith(
-        `[Answer Agent] Could not persist history for chat ${chatId} (ticket not found)`
-      );
+      expect(logWarn).not.toHaveBeenCalled();
       expect(logInfo).not.toHaveBeenCalled();
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should log a warning if updateTicket returns null', async () => {
+    /** @aiContributed-2026-02-04 */
+        it('should log a warning if updateTicket returns null', async () => {
       (agent as unknown as { conversationHistory: Map<string, unknown> }).conversationHistory.set(chatId, metadata);
       (updateTicket as jest.Mock).mockResolvedValue(null);
 
-      await (agent as unknown as { persistConversationHistory: (id: string) => Promise<void> }).persistConversationHistory(chatId);
+      await (agent as { persistConversationHistory: (chatId: string) => Promise<void> }).persistConversationHistory(chatId);
 
       expect(updateTicket).toHaveBeenCalledWith(chatId, {
         conversationHistory: JSON.stringify(metadata),
@@ -72,13 +70,13 @@ describe('AnswerAgent', () => {
       expect(logInfo).not.toHaveBeenCalled();
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should handle errors thrown by updateTicket', async () => {
+    /** @aiContributed-2026-02-04 */
+        it('should handle errors thrown by updateTicket', async () => {
       const errorMessage = 'Database error';
       (agent as unknown as { conversationHistory: Map<string, unknown> }).conversationHistory.set(chatId, metadata);
       (updateTicket as jest.Mock).mockRejectedValue(new Error(errorMessage));
 
-      await (agent as unknown as { persistConversationHistory: (id: string) => Promise<void> }).persistConversationHistory(chatId);
+      await (agent as { persistConversationHistory: (chatId: string) => Promise<void> }).persistConversationHistory(chatId);
 
       expect(updateTicket).toHaveBeenCalledWith(chatId, {
         conversationHistory: JSON.stringify(metadata),
@@ -87,6 +85,40 @@ describe('AnswerAgent', () => {
         `[Answer Agent] Failed to persist history for chat ${chatId}: ${errorMessage}`
       );
       expect(logInfo).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+        it('should handle non-Error objects thrown by updateTicket', async () => {
+      const errorMessage = 'Unknown error';
+      (agent as unknown as { conversationHistory: Map<string, unknown> }).conversationHistory.set(chatId, metadata);
+      (updateTicket as jest.Mock).mockRejectedValue(errorMessage);
+
+      await (agent as { persistConversationHistory: (chatId: string) => Promise<void> }).persistConversationHistory(chatId);
+
+      expect(updateTicket).toHaveBeenCalledWith(chatId, {
+        conversationHistory: JSON.stringify(metadata),
+      });
+      expect(logWarn).toHaveBeenCalledWith(
+        `[Answer Agent] Failed to persist history for chat ${chatId}: ${errorMessage}`
+      );
+      expect(logInfo).not.toHaveBeenCalled();
+    });
+
+    /** @aiContributed-2026-02-04 */
+        it('should handle empty metadata gracefully', async () => {
+      const emptyMetadata = {};
+      (agent as unknown as { conversationHistory: Map<string, unknown> }).conversationHistory.set(chatId, emptyMetadata);
+      (updateTicket as jest.Mock).mockResolvedValue(true);
+
+      await (agent as { persistConversationHistory: (chatId: string) => Promise<void> }).persistConversationHistory(chatId);
+
+      expect(updateTicket).toHaveBeenCalledWith(chatId, {
+        conversationHistory: JSON.stringify(emptyMetadata),
+      });
+      expect(logInfo).toHaveBeenCalledWith(
+        `[Answer Agent] Persisted history for chat ${chatId}`
+      );
+      expect(logWarn).not.toHaveBeenCalled();
     });
   });
 });

@@ -19,7 +19,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('TicketsTreeDataProvider', () => {
     let dataProvider: TicketsTreeDataProvider;
     let mockEventEmitter: EventEmitter<void>;
@@ -34,23 +34,29 @@ describe('TicketsTreeDataProvider', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('refresh', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should fire the onDidChangeTreeData event', () => {
             dataProvider.refresh();
             expect(mockEventEmitter.fire).toHaveBeenCalledTimes(1);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should log a debug message when refresh is called', () => {
             dataProvider.refresh();
             expect(Logger.debug).toHaveBeenCalledWith('Refresh method called, onDidChangeTreeData event fired.');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should not throw any errors when refresh is called', () => {
             expect(() => dataProvider.refresh()).not.toThrow();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should ensure the event emitter is called with no arguments', () => {
+            dataProvider.refresh();
+            expect(mockEventEmitter.fire).toHaveBeenCalledWith();
         });
     });
 });

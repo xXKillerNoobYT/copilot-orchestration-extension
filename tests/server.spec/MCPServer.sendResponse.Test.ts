@@ -11,7 +11,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('MCPServer', () => {
     let mockOutputStream: { write: jest.Mock };
     let server: MCPServer;
@@ -21,9 +21,9 @@ describe('MCPServer', () => {
         server = new MCPServer(process.stdin, mockOutputStream as NodeJS.WritableStream);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('sendResponse', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should write a valid JSON-RPC response to the output stream', () => {
             const id = 1;
             const result = { success: true };
@@ -34,13 +34,13 @@ describe('MCPServer', () => {
                 jsonrpc: '2.0',
                 id,
                 result,
-            }) + '\n';
+            });
 
             expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
             expect(Logger.info).toHaveBeenCalledWith(`MCP sent response: id=${id}`);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle null id correctly', () => {
             const id = null;
             const result = { success: true };
@@ -51,30 +51,24 @@ describe('MCPServer', () => {
                 jsonrpc: '2.0',
                 id,
                 result,
-            }) + '\n';
+            });
 
             expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
             expect(Logger.info).toHaveBeenCalledWith(`MCP sent response: id=${id}`);
         });
 
-        /** @aiContributed-2026-02-03 */
-        it('should handle undefined result correctly', () => {
-            const id = 2;
-            const result = undefined;
+        /** @aiContributed-2026-02-04 */
+        it('should handle undefined id by not writing to the output stream', () => {
+            const id = undefined;
+            const result = { success: true };
 
-            (server as unknown as { sendResponse: (id: number, result: undefined) => void }).sendResponse(id, result);
+            (server as unknown as { sendResponse: (id: undefined, result: object) => void }).sendResponse(id, result);
 
-            const expectedResponse = JSON.stringify({
-                jsonrpc: '2.0',
-                id,
-                result,
-            }) + '\n';
-
-            expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
-            expect(Logger.info).toHaveBeenCalledWith(`MCP sent response: id=${id}`);
+            expect(mockOutputStream.write).not.toHaveBeenCalled();
+            expect(Logger.info).not.toHaveBeenCalled();
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle string id and complex result', () => {
             const id = 'abc123';
             const result = { data: [1, 2, 3], message: 'Test' };
@@ -85,13 +79,13 @@ describe('MCPServer', () => {
                 jsonrpc: '2.0',
                 id,
                 result,
-            }) + '\n';
+            });
 
             expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
             expect(Logger.info).toHaveBeenCalledWith(`MCP sent response: id=${id}`);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should throw an error if outputStream.write fails', () => {
             mockOutputStream.write.mockImplementation(() => {
                 throw new Error('Write failed');

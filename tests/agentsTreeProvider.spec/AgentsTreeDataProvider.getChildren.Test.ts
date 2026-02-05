@@ -19,7 +19,7 @@ jest.mock('vscode', () => ({
   },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AgentsTreeDataProvider', () => {
   let dataProvider: AgentsTreeDataProvider;
 
@@ -28,15 +28,15 @@ describe('AgentsTreeDataProvider', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     describe('getChildren', () => {
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
         it('should return an empty array when element is provided', () => {
       const result = dataProvider.getChildren({} as vscode.TreeItem);
       expect(result).toEqual([]);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
         it('should return agent items with correct properties for root level', () => {
       const mockStatuses = {
         Planning: { status: 'Active', currentTask: 'Planning requirements...', lastResult: '', timestamp: 1672531200000 },
@@ -77,7 +77,7 @@ describe('AgentsTreeDataProvider', () => {
       expect(result[5].iconPath.id).toBe('circle-outline');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
         it('should handle missing status gracefully', () => {
       (agentStatusTracker.getAgentStatus as jest.Mock).mockReturnValue(null);
 
@@ -90,7 +90,7 @@ describe('AgentsTreeDataProvider', () => {
       });
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
         it('should truncate long currentTask and lastResult descriptions', () => {
       const longTask = 'A'.repeat(100);
       const longResult = 'B'.repeat(100);
@@ -107,7 +107,7 @@ describe('AgentsTreeDataProvider', () => {
       expect(result[1].description).toContain(`Task: ${longTask.substring(0, 50)}...`);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
         it('should include timestamp in tooltip if available', () => {
       const mockStatus = {
         status: 'Active',
@@ -123,7 +123,7 @@ describe('AgentsTreeDataProvider', () => {
       expect(result[1].tooltip).toContain('Updated: 12:00:00 AM');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
         it('should prioritize currentTask over lastResult in description', () => {
       const mockStatus = {
         status: 'Waiting',
@@ -139,7 +139,7 @@ describe('AgentsTreeDataProvider', () => {
       expect(result[1].description).toContain('Waiting, Task: Current task in progress');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
         it('should show "Disabled" status for agents disabled in settings', () => {
       (vscode.workspace.getConfiguration().get as jest.Mock).mockImplementation((key: string) => {
         if (key === 'enablePlanningAgent') return false;

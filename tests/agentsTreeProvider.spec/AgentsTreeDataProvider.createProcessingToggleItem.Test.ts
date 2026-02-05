@@ -25,7 +25,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AgentsTreeDataProvider', () => {
     let provider: AgentsTreeDataProvider;
 
@@ -34,9 +34,9 @@ describe('AgentsTreeDataProvider', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('createProcessingToggleItem', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should create a TreeItem with Auto mode when autoProcessTickets is true', () => {
             const mockConfig = {
                 get: jest.fn().mockReturnValue(true),
@@ -61,7 +61,7 @@ describe('AgentsTreeDataProvider', () => {
             });
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should create a TreeItem with Manual mode when autoProcessTickets is false', () => {
             const mockConfig = {
                 get: jest.fn().mockReturnValue(false),
@@ -86,7 +86,7 @@ describe('AgentsTreeDataProvider', () => {
             });
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle errors gracefully and log them', () => {
             (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(() => {
                 throw new Error('Configuration error');

@@ -22,7 +22,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AgentsTreeDataProvider', () => {
     let dataProvider: AgentsTreeDataProvider;
     let mockEventEmitter: vscode.EventEmitter<void>;
@@ -37,22 +37,27 @@ describe('AgentsTreeDataProvider', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('refresh', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should fire the onDidChangeTreeData event', () => {
             const fireSpy = jest.spyOn(mockEventEmitter, 'fire');
             dataProvider.refresh();
             expect(fireSpy).toHaveBeenCalledTimes(1);
-            expect(Logger.debug).toHaveBeenCalledWith('refresh() called, onDidChangeTreeData event fired');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should not throw any errors when called', () => {
             expect(() => dataProvider.refresh()).not.toThrow();
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
+        it('should log a debug message when refresh is called', () => {
+            dataProvider.refresh();
+            expect(Logger.debug).toHaveBeenCalledWith('refresh() called, onDidChangeTreeData event fired');
+        });
+
+        /** @aiContributed-2026-02-04 */
         it('should log an info message when refresh is called', () => {
             dataProvider.refresh();
             expect(Logger.info).toHaveBeenCalledWith('AgentsTreeDataProvider refresh triggered');

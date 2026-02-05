@@ -14,7 +14,7 @@ jest.mock('../../src/mcpServer/integration', () => ({
     logRegisteredTools: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('MCPServer', () => {
     let server: MCPServer;
     let mockInputStream: NodeJS.ReadableStream;
@@ -35,9 +35,9 @@ describe('MCPServer', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('start', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should start the server successfully when not already started', () => {
             server.start();
 
@@ -48,7 +48,7 @@ describe('MCPServer', () => {
             expect(logInfo).toHaveBeenCalledWith('MCP server started successfully');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should not start the server if it is already started', () => {
             server.start();
             server.start();
@@ -60,7 +60,7 @@ describe('MCPServer', () => {
             expect(logRegisteredTools).toHaveBeenCalledTimes(1);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle inputStream being process.stdin', () => {
             const stdinServer = new MCPServer(process.stdin, mockOutputStream);
             stdinServer.start();
@@ -68,6 +68,22 @@ describe('MCPServer', () => {
             expect(process.stdin.resume).toHaveBeenCalled();
             expect(logInfo).toHaveBeenCalledWith('MCP server starting...');
             expect(logRegisteredTools).toHaveBeenCalled();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should register shutdown handlers when starting the server', () => {
+            const registerShutdownHandlersSpy = jest.spyOn(server as unknown as { registerShutdownHandlers: () => void }, 'registerShutdownHandlers');
+            server.start();
+
+            expect(registerShutdownHandlersSpy).toHaveBeenCalled();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should not call inputStream.resume if inputStream is not process.stdin', () => {
+            server.start();
+
+            expect(mockInputStream.resume).toHaveBeenCalledTimes(1);
+            expect(mockInputStream.resume).not.toHaveBeenCalledWith(process.stdin);
         });
     });
 });

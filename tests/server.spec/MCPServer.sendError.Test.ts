@@ -7,7 +7,7 @@ jest.mock('../../src/logger', () => ({
     logWarn: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('MCPServer', () => {
     let mockOutputStream: { write: jest.Mock };
     let server: MCPServer;
@@ -17,15 +17,16 @@ describe('MCPServer', () => {
         server = new MCPServer(process.stdin, mockOutputStream);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('sendError', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should write the correct error response to the output stream', () => {
             const id = 1;
             const code = 500;
             const message = 'Internal Server Error';
 
-            server.sendError(id, code, message);
+            (server as unknown as { sendError: (id: number, code: number, message: string) => void })
+                .sendError(id, code, message);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',
@@ -36,26 +37,41 @@ describe('MCPServer', () => {
             expect(mockOutputStream.write).toHaveBeenCalledWith(expectedResponse);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should log a warning with the correct message', () => {
             const id = null;
             const code = 404;
             const message = 'Not Found';
 
-            server.sendError(id, code, message);
+            (server as unknown as { sendError: (id: number | null, code: number, message: string) => void })
+                .sendError(id, code, message);
 
             expect(logWarn).toHaveBeenCalledWith(
                 `MCP sent error: id=${id}, code=${code}, message=${message}`
             );
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle undefined id gracefully', () => {
             const id = undefined;
             const code = 400;
             const message = 'Bad Request';
 
-            server.sendError(id, code, message);
+            (server as unknown as { sendError: (id: number | undefined, code: number, message: string) => void })
+                .sendError(id, code, message);
+
+            expect(mockOutputStream.write).not.toHaveBeenCalled();
+            expect(logWarn).not.toHaveBeenCalled();
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should handle null message gracefully', () => {
+            const id = 123;
+            const code = 401;
+            const message = null;
+
+            (server as unknown as { sendError: (id: number, code: number, message: string | null) => void })
+                .sendError(id, code, message);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',
@@ -69,13 +85,14 @@ describe('MCPServer', () => {
             );
         });
 
-        /** @aiContributed-2026-02-03 */
-        it('should handle null message gracefully', () => {
-            const id = 123;
-            const code = 401;
-            const message = null;
+        /** @aiContributed-2026-02-04 */
+        it('should handle string id correctly', () => {
+            const id = 'abc123';
+            const code = 403;
+            const message = 'Forbidden';
 
-            server.sendError(id, code, message);
+            (server as unknown as { sendError: (id: string, code: number, message: string) => void })
+                .sendError(id, code, message);
 
             const expectedResponse = JSON.stringify({
                 jsonrpc: '2.0',

@@ -11,14 +11,14 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('getConversationHistory', () => {
     beforeEach(() => {
         resetAnswerAgentForTests();
         initializeAnswerAgent();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return the conversation history for a valid chatId', () => {
         const chatId = 'chat-12345';
         const mockHistory = [
@@ -40,7 +40,7 @@ describe('getConversationHistory', () => {
         expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Singleton initialized'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return an empty array if the chatId is not found', () => {
         const chatId = 'non-existent-chat';
         const agent = getAnswerAgent();
@@ -50,19 +50,19 @@ describe('getConversationHistory', () => {
         expect(result).toEqual([]);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle undefined chatId gracefully', () => {
         const result = getConversationHistory(undefined as unknown as string);
         expect(result).toEqual([]);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle null chatId gracefully', () => {
         const result = getConversationHistory(null as unknown as string);
         expect(result).toEqual([]);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log an error if getActiveConversations throws an error', () => {
         const chatId = 'chat-12345';
         const agent = getAnswerAgent();
@@ -72,5 +72,57 @@ describe('getConversationHistory', () => {
 
         expect(() => getConversationHistory(chatId)).toThrow('Test error');
         expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Test error'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return an empty array if the conversation metadata is undefined', () => {
+        const chatId = 'chat-12345';
+        const agent = getAnswerAgent();
+        agent.getActiveConversations = jest.fn().mockReturnValue([
+            {
+                chatId,
+                createdAt: '2023-01-01T00:00:00Z',
+                lastActivityAt: '2023-01-01T01:00:00Z',
+                messages: undefined,
+            },
+        ]);
+
+        const result = getConversationHistory(chatId);
+        expect(result).toEqual([]);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle conversations with empty messages array', () => {
+        const chatId = 'chat-12345';
+        const agent = getAnswerAgent();
+        agent.getActiveConversations = jest.fn().mockReturnValue([
+            {
+                chatId,
+                createdAt: '2023-01-01T00:00:00Z',
+                lastActivityAt: '2023-01-01T01:00:00Z',
+                messages: [],
+            },
+        ]);
+
+        const result = getConversationHistory(chatId);
+        expect(result).toEqual([]);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle conversations with messages exceeding the maximum exchanges', () => {
+        const chatId = 'chat-12345';
+        const mockHistory = Array(15).fill({ role: 'user', content: 'Message' });
+        const agent = getAnswerAgent();
+        agent.getActiveConversations = jest.fn().mockReturnValue([
+            {
+                chatId,
+                createdAt: '2023-01-01T00:00:00Z',
+                lastActivityAt: '2023-01-01T01:00:00Z',
+                messages: mockHistory,
+            },
+        ]);
+
+        const result = getConversationHistory(chatId);
+        expect(result.length).toBeLessThanOrEqual(10); // MAX_HISTORY_EXCHANGES * 2
     });
 });

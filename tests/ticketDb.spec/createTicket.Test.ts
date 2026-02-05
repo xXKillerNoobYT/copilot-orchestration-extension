@@ -17,7 +17,7 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('createTicket', () => {
     let mockContext: vscode.ExtensionContext;
 
@@ -34,7 +34,7 @@ describe('createTicket', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should create a ticket successfully in in-memory mode', async () => {
         const ticketData = {
             title: 'Test Ticket',
@@ -61,7 +61,7 @@ describe('createTicket', () => {
         expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Created ticket:'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should throw an error if TicketDb is not initialized', async () => {
         resetTicketDbForTests();
 
@@ -75,7 +75,7 @@ describe('createTicket', () => {
         await expect(createTicket(ticketData)).rejects.toThrow('TicketDb not initialized. Call initializeTicketDb() first.');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle undefined optional fields gracefully', async () => {
         const ticketData = {
             title: 'Test Ticket',
@@ -95,7 +95,7 @@ describe('createTicket', () => {
         expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Created ticket:'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle concurrent ticket creation', async () => {
         const ticketData1 = {
             title: 'Ticket 1',
@@ -114,7 +114,7 @@ describe('createTicket', () => {
         expect(ticket1.id).not.toBe(ticket2.id);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log an error if ticket creation fails in SQLite mode', async () => {
         jest.spyOn(Logger, 'error');
         jest.spyOn(global.Date, 'now').mockImplementationOnce(() => {
@@ -130,7 +130,7 @@ describe('createTicket', () => {
         expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to create ticket'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle tickets with complex thread structures', async () => {
         const ticketData = {
             title: 'Complex Thread Ticket',
@@ -147,6 +147,19 @@ describe('createTicket', () => {
             { role: 'user', content: 'Message 1', createdAt: '2026-02-01T10:30:00Z' },
             { role: 'assistant', content: 'Message 2', createdAt: '2026-02-01T10:35:00Z' },
         ]);
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Created ticket:'));
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle tickets with missing thread gracefully', async () => {
+        const ticketData = {
+            title: 'No Thread Ticket',
+            status: 'open',
+        };
+
+        const ticket = await createTicket(ticketData);
+
+        expect(ticket.thread).toBeUndefined();
         expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('Created ticket:'));
     });
 });

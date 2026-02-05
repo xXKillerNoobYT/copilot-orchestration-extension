@@ -23,7 +23,7 @@ jest.mock('../../src/services/ticketDb', () => ({
   createTicket: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('streamLLM', () => {
   const mockFetch = jest.fn();
   const originalFetch = global.fetch;
@@ -37,7 +37,7 @@ describe('streamLLM', () => {
     global.fetch = originalFetch;
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle a successful streaming response', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -67,7 +67,7 @@ describe('streamLLM', () => {
     expect(result.content).toBe('chunk1chunk2');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle a startup timeout', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -87,7 +87,7 @@ describe('streamLLM', () => {
     expect(createTicket).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle an inactivity timeout', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -114,7 +114,7 @@ describe('streamLLM', () => {
     expect(createTicket).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle an HTTP error response', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -132,7 +132,7 @@ describe('streamLLM', () => {
     expect(createTicket).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle a network error', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -147,7 +147,7 @@ describe('streamLLM', () => {
     expect(createTicket).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle invalid SSE data', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -174,7 +174,7 @@ describe('streamLLM', () => {
     expect(result.content).toBe('');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle a streaming response with no chunks', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -197,7 +197,7 @@ describe('streamLLM', () => {
     expect(result.content).toBe('');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle a cleanup process after abort', async () => {
     const prompt = 'Test prompt';
     const onChunk = jest.fn();
@@ -222,5 +222,36 @@ describe('streamLLM', () => {
     expect(logWarn).toHaveBeenCalled();
     expect(logError).toHaveBeenCalled();
     expect(createTicket).toHaveBeenCalled();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle a streaming response with partial chunks', async () => {
+    const prompt = 'Test prompt';
+    const onChunk = jest.fn();
+    const mockResponse = {
+      body: {
+        getReader: () => ({
+          read: jest
+            .fn()
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"chunk1"}}]}\n') })
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"chunk2"}}]}\n') })
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"chunk3"}}]}\n') })
+            .mockResolvedValueOnce({ done: true }),
+        }),
+      },
+      ok: true,
+    };
+
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await streamLLM(prompt, onChunk);
+
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(llmStatusBar.end).toHaveBeenCalled();
+    expect(onChunk).toHaveBeenCalledTimes(3);
+    expect(onChunk).toHaveBeenCalledWith('chunk1');
+    expect(onChunk).toHaveBeenCalledWith('chunk2');
+    expect(onChunk).toHaveBeenCalledWith('chunk3');
+    expect(result.content).toBe('chunk1chunk2chunk3');
   });
 });

@@ -18,6 +18,7 @@ import {
     resetOrchestratorForTests
 } from '../src/services/orchestrator';
 import * as ticketDb from '../src/services/ticketDb';
+import { listTickets, onTicketChange } from '../src/services/ticketDb';
 import * as vscode from 'vscode';
 import { completeLLM } from '../src/services/llmService';
 import { streamLLM } from '../src/services/llmService';
@@ -981,5 +982,208 @@ describe('Orchestrator Service', () => {
                 })
             );
         });
+    });
+});
+
+/** @aiContributed-2026-02-04 */
+describe('getOrchestratorInstance', () => {
+    let mockContext: vscode.ExtensionContext;
+
+    beforeEach(() => {
+        resetOrchestratorForTests();
+        mockContext = { extensionPath: '/mock/path' } as unknown as vscode.ExtensionContext;
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return an instance of OrchestratorService after initialization', async () => {
+        await initializeOrchestrator(mockContext);
+        const instance = getOrchestratorInstance();
+        expect(instance).toBeInstanceOf(OrchestratorService);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should throw an error if the orchestrator is not initialized', () => {
+        expect(() => getOrchestratorInstance()).toThrow('Orchestrator not initialized');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return the same instance on multiple calls after initialization', async () => {
+        await initializeOrchestrator(mockContext);
+        const instance1 = getOrchestratorInstance();
+        const instance2 = getOrchestratorInstance();
+        expect(instance1).toBe(instance2);
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should log a warning if initializeOrchestrator is called multiple times', async () => {
+        await initializeOrchestrator(mockContext);
+        await initializeOrchestrator(mockContext);
+        expect(logWarn).toHaveBeenCalledWith('Orchestrator already initialized');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should throw an error if getOrchestratorInstance is called after reset', async () => {
+        await initializeOrchestrator(mockContext);
+        resetOrchestratorForTests();
+        expect(() => getOrchestratorInstance()).toThrow('Orchestrator not initialized');
+    });
+});
+
+/** @aiContributed-2026-02-04 */
+describe('initializeOrchestrator', () => {
+    let mockContext: vscode.ExtensionContext;
+
+    beforeEach(() => {
+        mockContext = {
+            extensionPath: '/mock/extension/path',
+        } as unknown as vscode.ExtensionContext;
+
+        resetOrchestratorForTests();
+        jest.clearAllMocks();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should initialize orchestrator with default timeout when config file does not exist', async () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
+        expect(logWarn).not.toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should initialize orchestrator with timeout from config file', async () => {
+        const mockConfig = JSON.stringify({ orchestrator: { taskTimeoutSeconds: 60 } });
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
+        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
+        expect(logWarn).not.toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 60s');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should fallback to default timeout if config file is invalid', async () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockImplementation(() => {
+            throw new Error('Invalid JSON');
+        });
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
+        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
+        expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to read orchestrator config'));
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should load tasks from TicketDb during initialization', async () => {
+        const mockTickets = [
+            { id: 'TICKET-001', title: 'Test Ticket 1', status: 'open', createdAt: '2023-01-01T00:00:00Z' },
+        ];
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+        (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(listTickets).toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith('Loaded 1 tasks from tickets');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors when loading tasks from TicketDb', async () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+        (listTickets as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(listTickets).toHaveBeenCalled();
+        expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to load tasks from tickets'));
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should warn if orchestrator is already initialized', async () => {
+        await initializeOrchestrator(mockContext);
+        await initializeOrchestrator(mockContext);
+
+        expect(logWarn).toHaveBeenCalledWith('Orchestrator already initialized');
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should fallback to llm.timeoutSeconds if orchestrator.taskTimeoutSeconds is not defined', async () => {
+        const mockConfig = JSON.stringify({ llm: { timeoutSeconds: 45 } });
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
+        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
+        expect(logWarn).not.toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 45s');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should use default timeout if neither orchestrator.taskTimeoutSeconds nor llm.timeoutSeconds is defined', async () => {
+        const mockConfig = JSON.stringify({});
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
+        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
+        expect(logWarn).not.toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should register manual mode listener during initialization', async () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(onTicketChange).toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith('Manual mode listener registered');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should register conversation thread listener during initialization', async () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(onTicketChange).toHaveBeenCalled();
+        expect(logInfo).toHaveBeenCalledWith('Conversation thread listener registered');
+        expect(orchestrator).toBeDefined();
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle invalid taskTimeoutSeconds in config file gracefully', async () => {
+        const mockConfig = JSON.stringify({ orchestrator: { taskTimeoutSeconds: -10 } });
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
+
+        const orchestrator = await initializeOrchestrator(mockContext);
+
+        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
+        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
+        expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Invalid taskTimeoutSeconds'));
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
+        expect(orchestrator).toBeDefined();
     });
 });

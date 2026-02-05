@@ -1,14 +1,8 @@
 // ./extension.Test.ts
 import { deactivate } from '../../src/extension';
-import { getOrchestratorInstance } from '../../src/services/orchestrator';
 import { listTickets, updateTicket } from '../../src/services/ticketDb';
 import { logInfo, logWarn } from '../../src/logger';
 import { ConversationWebviewPanel } from '../../src/ui/conversationWebview';
-
-jest.mock('../../src/services/orchestrator', () => ({
-    ...jest.requireActual('../../src/services/orchestrator'),
-    getOrchestratorInstance: jest.fn(),
-}));
 
 jest.mock('../../src/services/ticketDb', () => ({
     ...jest.requireActual('../../src/services/ticketDb'),
@@ -29,19 +23,9 @@ jest.mock('../../src/ui/conversationWebview', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('deactivate', () => {
-    let mockOrchestrator: { getAnswerAgent: jest.Mock };
-    let mockAnswerAgent: { serializeHistory: jest.Mock };
-
     beforeEach(() => {
-        mockAnswerAgent = {
-            serializeHistory: jest.fn(),
-        };
-        mockOrchestrator = {
-            getAnswerAgent: jest.fn(() => mockAnswerAgent),
-        };
-        (getOrchestratorInstance as jest.Mock).mockReturnValue(mockOrchestrator);
         (listTickets as jest.Mock).mockResolvedValue([]);
         (updateTicket as jest.Mock).mockResolvedValue(null);
     });
@@ -50,7 +34,7 @@ describe('deactivate', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should dispose all conversation webview panels', async () => {
         await deactivate();
 
@@ -58,15 +42,11 @@ describe('deactivate', () => {
         expect(logInfo).toHaveBeenCalledWith('Disposed all conversation webview panels');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log the number of saved conversation histories', async () => {
-        mockAnswerAgent.serializeHistory.mockReturnValue({
-            ticket1: 'history1',
-            ticket2: 'history2',
-        });
         (listTickets as jest.Mock).mockResolvedValue([
-            { id: 'ticket1' },
-            { id: 'ticket2' },
+            { id: 'ticket1', conversationHistory: 'history1' },
+            { id: 'ticket2', conversationHistory: 'history2' },
         ]);
         (updateTicket as jest.Mock).mockResolvedValue({});
 
@@ -75,13 +55,10 @@ describe('deactivate', () => {
         expect(logInfo).toHaveBeenCalledWith('Saved 2 conversation histories on deactivate');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle tickets without conversation history', async () => {
-        mockAnswerAgent.serializeHistory.mockReturnValue({
-            ticket1: 'history1',
-        });
         (listTickets as jest.Mock).mockResolvedValue([
-            { id: 'ticket1' },
+            { id: 'ticket1', conversationHistory: 'history1' },
             { id: 'ticket2' },
         ]);
         (updateTicket as jest.Mock).mockResolvedValue({});
@@ -93,12 +70,9 @@ describe('deactivate', () => {
         expect(logInfo).toHaveBeenCalledWith('Saved 1 conversation histories on deactivate');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log a warning if updating a ticket fails', async () => {
-        mockAnswerAgent.serializeHistory.mockReturnValue({
-            ticket1: 'history1',
-        });
-        (listTickets as jest.Mock).mockResolvedValue([{ id: 'ticket1' }]);
+        (listTickets as jest.Mock).mockResolvedValue([{ id: 'ticket1', conversationHistory: 'history1' }]);
         (updateTicket as jest.Mock).mockRejectedValue(new Error('Update failed'));
 
         await deactivate();
@@ -108,7 +82,7 @@ describe('deactivate', () => {
         );
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log a warning if listTickets throws an error', async () => {
         (listTickets as jest.Mock).mockRejectedValue(new Error('DB error'));
 
@@ -119,9 +93,8 @@ describe('deactivate', () => {
         );
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle an empty ticket list gracefully', async () => {
-        mockAnswerAgent.serializeHistory.mockReturnValue({});
         (listTickets as jest.Mock).mockResolvedValue([]);
 
         await deactivate();
@@ -130,17 +103,32 @@ describe('deactivate', () => {
         expect(logInfo).toHaveBeenCalledWith('Saved 0 conversation histories on deactivate');
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should handle errors during serialization gracefully', async () => {
-        mockAnswerAgent.serializeHistory.mockImplementation(() => {
-            throw new Error('Serialization error');
+    /** @aiContributed-2026-02-04 */
+    it('should handle errors during ticket update gracefully', async () => {
+        (listTickets as jest.Mock).mockResolvedValue([{ id: 'ticket1', conversationHistory: 'history1' }]);
+        (updateTicket as jest.Mock).mockImplementation(() => {
+            throw new Error('Update error');
         });
-        (listTickets as jest.Mock).mockResolvedValue([{ id: 'ticket1' }]);
 
         await deactivate();
 
         expect(logWarn).toHaveBeenCalledWith(
-            'Failed to persist Answer Agent history on deactivate: Serialization error'
+            'Failed to persist Answer Agent history for ticket ticket1: Update error'
         );
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should skip tickets without serialized history', async () => {
+        (listTickets as jest.Mock).mockResolvedValue([
+            { id: 'ticket1', conversationHistory: undefined },
+            { id: 'ticket2', conversationHistory: 'history2' },
+        ]);
+        (updateTicket as jest.Mock).mockResolvedValue({});
+
+        await deactivate();
+
+        expect(updateTicket).toHaveBeenCalledTimes(1);
+        expect(updateTicket).toHaveBeenCalledWith('ticket2', { conversationHistory: 'history2' });
+        expect(logInfo).toHaveBeenCalledWith('Saved 1 conversation histories on deactivate');
     });
 });

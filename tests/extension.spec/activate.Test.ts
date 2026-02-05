@@ -9,6 +9,7 @@ import { initializeMCPServer } from '../../src/mcpServer';
 import { AgentsTreeDataProvider } from '../../src/ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from '../../src/ui/ticketsTreeProvider';
 import { ConversationsTreeDataProvider } from '../../src/ui/conversationsTreeProvider';
+import { OrchestratorStatusTreeDataProvider } from '../../src/ui/orchestratorStatusTreeProvider';
 
 jest.mock('vscode');
 jest.mock('../../src/logger');
@@ -19,8 +20,9 @@ jest.mock('../../src/mcpServer');
 jest.mock('../../src/ui/agentsTreeProvider');
 jest.mock('../../src/ui/ticketsTreeProvider');
 jest.mock('../../src/ui/conversationsTreeProvider');
+jest.mock('../../src/ui/orchestratorStatusTreeProvider');
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('activate', () => {
   let context: vscode.ExtensionContext;
 
@@ -36,7 +38,7 @@ describe('activate', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should initialize logger, ticket DB, orchestrator, and LLM service', async () => {
     await activate(context);
 
@@ -47,7 +49,7 @@ describe('activate', () => {
     expect(initializeMCPServer).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should register tree data providers and commands', async () => {
     const registerTreeDataProviderSpy = jest.spyOn(vscode.window, 'registerTreeDataProvider');
     const registerCommandSpy = jest.spyOn(vscode.commands, 'registerCommand');
@@ -57,6 +59,10 @@ describe('activate', () => {
     expect(registerTreeDataProviderSpy).toHaveBeenCalledWith(
       'coe-agents',
       expect.any(AgentsTreeDataProvider)
+    );
+    expect(registerTreeDataProviderSpy).toHaveBeenCalledWith(
+      'coe-agents-status',
+      expect.any(OrchestratorStatusTreeDataProvider)
     );
     expect(registerTreeDataProviderSpy).toHaveBeenCalledWith(
       'coe-tickets',
@@ -70,6 +76,7 @@ describe('activate', () => {
     expect(registerCommandSpy).toHaveBeenCalledWith('coe.refreshAgents', expect.any(Function));
     expect(registerCommandSpy).toHaveBeenCalledWith('coe.refreshTickets', expect.any(Function));
     expect(registerCommandSpy).toHaveBeenCalledWith('coe.refreshConversations', expect.any(Function));
+    expect(registerCommandSpy).toHaveBeenCalledWith('coe.refreshOrchestratorStatus', expect.any(Function));
     expect(registerCommandSpy).toHaveBeenCalledWith('coe.planTask', expect.any(Function));
     expect(registerCommandSpy).toHaveBeenCalledWith('coe.verifyTask', expect.any(Function));
     expect(registerCommandSpy).toHaveBeenCalledWith('coe.verifyLastTicket', expect.any(Function));
@@ -82,7 +89,7 @@ describe('activate', () => {
     expect(registerCommandSpy).toHaveBeenCalledWith('coe.researchWithAgent', expect.any(Function));
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle errors during activation gracefully', async () => {
     (initializeTicketDb as jest.Mock).mockRejectedValue(new Error('DB initialization failed'));
     (listTickets as jest.Mock).mockRejectedValue(new Error('Failed to list tickets'));
@@ -95,7 +102,7 @@ describe('activate', () => {
     expect(logError).toHaveBeenCalledWith('DB initialization failed');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should restore conversation histories if available', async () => {
     const mockTickets = [
       { id: '1', conversationHistory: 'history1' },
@@ -106,7 +113,6 @@ describe('activate', () => {
     const mockOrchestrator = {
       getAnswerAgent: jest.fn().mockReturnValue({
         deserializeHistory: jest.fn(),
-        cleanupInactiveConversations: jest.fn(),
       }),
     };
     (getOrchestratorInstance as jest.Mock).mockReturnValue(mockOrchestrator);
@@ -120,7 +126,7 @@ describe('activate', () => {
     expect(logInfo).toHaveBeenCalledWith('Restored 2 conversation histories on activate');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should initialize and display the status bar item', async () => {
     const createStatusBarItemSpy = jest.spyOn(vscode.window, 'createStatusBarItem');
 
@@ -133,7 +139,7 @@ describe('activate', () => {
     expect(logInfo).toHaveBeenCalledWith('Extension fully activated');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should set up auto-planning listener', async () => {
     const onTicketChangeMock = jest.fn();
     (onTicketChange as jest.Mock).mockImplementation(onTicketChangeMock);
@@ -144,7 +150,7 @@ describe('activate', () => {
     expect(logInfo).toHaveBeenCalledWith('[Auto-Plan] Listener registered');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle ticket updates during auto-planning', async () => {
     const mockTickets = [
       { id: '1', type: 'ai_to_human', status: 'open', title: 'Test Ticket' },
@@ -170,7 +176,7 @@ describe('activate', () => {
     expect(logInfo).toHaveBeenCalledWith('[Auto-Plan] DONE - Plan stored in 1');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle Answer Agent initialization errors gracefully', async () => {
     (initializeAnswerAgent as jest.Mock).mockImplementation(() => {
       throw new Error('Answer Agent initialization failed');
@@ -181,7 +187,7 @@ describe('activate', () => {
     expect(logError).toHaveBeenCalledWith('Answer Agent initialization failed');
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle MCP server initialization errors gracefully', async () => {
     (initializeMCPServer as jest.Mock).mockImplementation(() => {
       throw new Error('MCP Server initialization failed');
@@ -190,5 +196,53 @@ describe('activate', () => {
     await activate(context);
 
     expect(logError).toHaveBeenCalledWith('MCP Server initialization failed');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle orchestrator status refresh errors gracefully', async () => {
+    const mockOrchestrator = {
+      refreshQueueFromTickets: jest.fn().mockRejectedValue(new Error('Queue refresh failed')),
+    };
+    (getOrchestratorInstance as jest.Mock).mockReturnValue(mockOrchestrator);
+
+    const registerCommandSpy = jest.spyOn(vscode.commands, 'registerCommand');
+
+    await activate(context);
+
+    const refreshCommand = registerCommandSpy.mock.calls.find(
+      ([command]) => command === 'coe.refreshOrchestratorStatus'
+    )?.[1];
+
+    if (refreshCommand) {
+      await refreshCommand();
+    }
+
+    expect(mockOrchestrator.refreshQueueFromTickets).toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledWith('[OrchestratorStatus] Manual refresh failed: Queue refresh failed');
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle ticket processing errors gracefully', async () => {
+    const mockOrchestrator = {
+      routeToPlanningAgent: jest.fn().mockRejectedValue(new Error('Planning failed')),
+    };
+    (getOrchestratorInstance as jest.Mock).mockReturnValue(mockOrchestrator);
+
+    const mockTickets = [
+      { id: '1', type: 'ai_to_human', status: 'open', title: 'Test Ticket' },
+    ];
+    (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+    const onTicketChangeCallback = jest.fn();
+    (onTicketChange as jest.Mock).mockImplementation((callback) => {
+      onTicketChangeCallback.mockImplementation(callback);
+    });
+
+    await activate(context);
+
+    await onTicketChangeCallback();
+
+    expect(mockOrchestrator.routeToPlanningAgent).toHaveBeenCalledWith('Test Ticket');
+    expect(logError).toHaveBeenCalledWith('[Auto-Plan] Failed: Planning failed');
   });
 });

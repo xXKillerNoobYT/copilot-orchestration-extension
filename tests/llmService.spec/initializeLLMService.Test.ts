@@ -7,7 +7,7 @@ import { logInfo, logWarn, logError } from '../../src/logger';
 jest.mock('fs');
 jest.mock('../../src/logger');
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('initializeLLMService', () => {
   let mockContext: vscode.ExtensionContext;
 
@@ -19,7 +19,7 @@ describe('initializeLLMService', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should initialize with default config if config file does not exist', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
 
@@ -33,7 +33,7 @@ describe('initializeLLMService', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should initialize with merged config if config file exists', async () => {
     const mockConfig = {
       llm: {
@@ -53,7 +53,7 @@ describe('initializeLLMService', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should use default values if config file is invalid', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as jest.Mock).mockImplementation(() => {
@@ -70,7 +70,7 @@ describe('initializeLLMService', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should validate and correct invalid timeoutSeconds', async () => {
     const mockConfig = {
       llm: {
@@ -87,7 +87,7 @@ describe('initializeLLMService', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should validate and correct invalid maxTokens', async () => {
     const mockConfig = {
       llm: {
@@ -104,7 +104,7 @@ describe('initializeLLMService', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should validate and correct invalid startupTimeoutSeconds', async () => {
     const mockConfig = {
       llm: {
@@ -121,7 +121,7 @@ describe('initializeLLMService', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should throw an error if fetch is not supported', async () => {
     const originalFetch = global.fetch;
     // @ts-expect-error Node.js fetch is being deleted for testing purposes
@@ -138,7 +138,7 @@ describe('initializeLLMService', () => {
     global.fetch = originalFetch;
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should log a warning if config file is missing required fields', async () => {
     const mockConfig = {
       llm: {
@@ -161,7 +161,7 @@ describe('initializeLLMService', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle missing .coe directory gracefully', async () => {
     (fs.existsSync as jest.Mock).mockImplementation((path) => {
       if (path.includes('.coe')) return false;
@@ -175,6 +175,30 @@ describe('initializeLLMService', () => {
     );
     expect(logInfo).toHaveBeenCalledWith(
       'LLM service initialized: http://127.0.0.1:1234/v1 (model: ministral-3-14b-reasoning)'
+    );
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log a warning if config file contains extra fields', async () => {
+    const mockConfig = {
+      llm: {
+        endpoint: 'http://mock.endpoint',
+        extraField: 'unexpected',
+      },
+    };
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockConfig));
+
+    await initializeLLMService(mockContext);
+
+    expect(logWarn).toHaveBeenCalledWith(
+      'Invalid timeoutSeconds: undefined, using default: 60'
+    );
+    expect(logWarn).toHaveBeenCalledWith(
+      'Invalid maxTokens: undefined, using default: 2048'
+    );
+    expect(logWarn).toHaveBeenCalledWith(
+      'Invalid startupTimeoutSeconds: undefined, using default: 300'
     );
   });
 });

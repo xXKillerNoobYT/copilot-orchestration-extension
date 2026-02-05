@@ -72,6 +72,13 @@ describe('getMCPServerInstance', () => {
     expect(instance1).toBe(instance2);
     expect(MCPServer).toHaveBeenCalledTimes(1);
   });
+
+  /** @aiContributed-2026-02-04 */
+  it('should log appropriate messages during initialization', () => {
+    initializeMCPServer();
+    expect(logInfo).toHaveBeenCalledWith('Initializing MCP server...');
+    expect(logInfo).toHaveBeenCalledWith('MCP server initialized and started');
+  });
 });
 
 /** @aiContributed-2026-02-03 */
@@ -104,6 +111,16 @@ describe('initializeMCPServer', () => {
   /** @aiContributed-2026-02-03 */
   it('should handle resetting the MCP server for tests', () => {
     initializeMCPServer();
+    resetMCPServerForTests();
+
+    expect(mockStop).toHaveBeenCalledTimes(1);
+    expect(getMCPServerInstance()).toBeNull();
+  });
+
+  /** @aiContributed-2026-02-04 */
+  it('should handle multiple calls to resetMCPServerForTests gracefully', () => {
+    initializeMCPServer();
+    resetMCPServerForTests();
     resetMCPServerForTests();
 
     expect(mockStop).toHaveBeenCalledTimes(1);

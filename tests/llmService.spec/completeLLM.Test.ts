@@ -24,7 +24,7 @@ jest.mock('../../src/services/ticketDb', () => ({
   createTicket: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('completeLLM', () => {
   const mockFetch = jest.fn();
   const originalFetch = global.fetch;
@@ -38,7 +38,7 @@ describe('completeLLM', () => {
     global.fetch = originalFetch;
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should call the LLM endpoint and return a response on success', async () => {
     const mockResponse = {
       ok: true,
@@ -69,7 +69,7 @@ describe('completeLLM', () => {
     expect(llmStatusBar.end).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle a timeout error', async () => {
     const prompt = 'Test prompt';
     const options = { systemPrompt: 'System context' };
@@ -82,15 +82,15 @@ describe('completeLLM', () => {
     );
 
     await expect(completeLLM(prompt, options)).rejects.toThrow(
-      'LLM request timed out after 60 seconds'
+      'LLM request timed out after 900 seconds'
     );
 
     expect(llmStatusBar.start).toHaveBeenCalled();
-    expect(logWarn).toHaveBeenCalledWith('LLM request timeout after 60s');
+    expect(logWarn).toHaveBeenCalledWith('LLM request timeout after 900s');
     expect(llmStatusBar.end).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle an HTTP error response', async () => {
     const mockResponse = { ok: false, status: 500 };
     mockFetch.mockResolvedValue(mockResponse);
@@ -107,7 +107,7 @@ describe('completeLLM', () => {
     expect(llmStatusBar.end).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should create a ticket on error', async () => {
     const error = new Error('Test error');
     mockFetch.mockRejectedValue(error);
@@ -126,7 +126,7 @@ describe('completeLLM', () => {
     );
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle invalid configuration gracefully', async () => {
     const mockResponse = {
       ok: true,
@@ -148,7 +148,7 @@ describe('completeLLM', () => {
     });
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should trim messages exceeding token limit', async () => {
     const mockResponse = {
       ok: true,
@@ -173,7 +173,7 @@ describe('completeLLM', () => {
     expect(llmStatusBar.end).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle system message exceeding token limit', async () => {
     const mockResponse = {
       ok: true,
@@ -200,7 +200,7 @@ describe('completeLLM', () => {
     expect(llmStatusBar.end).toHaveBeenCalled();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should log info for successful requests', async () => {
     const mockResponse = {
       ok: true,
@@ -221,5 +221,23 @@ describe('completeLLM', () => {
       content: 'Info log response',
       usage: { total_tokens: 150 },
     });
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should handle fetch abort due to timeout', async () => {
+    const prompt = 'Test prompt';
+    const options = {};
+
+    mockFetch.mockImplementation(() => {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    });
+
+    await expect(completeLLM(prompt, options)).rejects.toThrow(
+      'LLM request timed out after 900 seconds'
+    );
+
+    expect(llmStatusBar.start).toHaveBeenCalled();
+    expect(logWarn).toHaveBeenCalledWith('LLM request timeout after 900s');
+    expect(llmStatusBar.end).toHaveBeenCalled();
   });
 });

@@ -6,7 +6,7 @@ import { logInfo, logError } from '../../src/logger';
 jest.mock('../../src/services/llmService');
 jest.mock('../../src/logger');
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('ResearchAgent', () => {
     let researchAgent: ResearchAgent;
 
@@ -15,9 +15,9 @@ describe('ResearchAgent', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     describe('runResearch', () => {
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should return a formatted report on successful research', async () => {
             const query = 'Test query';
             const mockResponse = { content: 'Generated content' };
@@ -36,7 +36,7 @@ describe('ResearchAgent', () => {
             expect(result).toContain('Generated content');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should return an error report if completeLLM throws an error', async () => {
             const query = 'Test query';
             const errorMessage = 'LLM error';
@@ -49,7 +49,7 @@ describe('ResearchAgent', () => {
             expect(result).toContain(errorMessage);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle null or undefined query gracefully', async () => {
             const query = null as unknown as string;
 
@@ -59,7 +59,7 @@ describe('ResearchAgent', () => {
             expect(result).toContain('query is null or undefined');
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should handle timeouts gracefully', async () => {
             const query = 'Test query';
             jest.useFakeTimers();
@@ -72,7 +72,7 @@ describe('ResearchAgent', () => {
             jest.useRealTimers();
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should truncate long queries in logs', async () => {
             const longQuery = 'a'.repeat(150);
             const mockResponse = { content: 'Generated content' };
@@ -83,7 +83,7 @@ describe('ResearchAgent', () => {
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining(`Starting research for query: "${longQuery.substring(0, 100)}..."`));
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should log and return an error report if an unexpected error occurs', async () => {
             const query = 'Test query';
             const unexpectedError = 'Unexpected error';
@@ -97,7 +97,7 @@ describe('ResearchAgent', () => {
             expect(result).toContain(unexpectedError);
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should log the correct delay duration', async () => {
             const query = 'Test query';
             const mockResponse = { content: 'Generated content' };
@@ -108,7 +108,7 @@ describe('ResearchAgent', () => {
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Simulating research delay (600s)...'));
         });
 
-        /** @aiContributed-2026-02-03 */
+        /** @aiContributed-2026-02-04 */
         it('should return a formatted error report if formatReport throws an error', async () => {
             const query = 'Test query';
             const mockResponse = { content: 'Generated content' };
@@ -121,6 +121,21 @@ describe('ResearchAgent', () => {
 
             expect(logError).toHaveBeenCalledWith(expect.stringContaining('Research failed: Formatting error'));
             expect(result).toContain('Formatting error');
+        });
+
+        /** @aiContributed-2026-02-04 */
+        it('should return a formatted error report if formatErrorReport throws an error', async () => {
+            const query = 'Test query';
+            const errorMessage = 'LLM error';
+            (completeLLM as jest.Mock).mockRejectedValue(new Error(errorMessage));
+            jest.spyOn(researchAgent, 'formatErrorReport' as keyof ResearchAgent).mockImplementation(() => {
+                throw new Error('Error formatting error report');
+            });
+
+            const result = await researchAgent.runResearch(query);
+
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining('Research failed: Error formatting error report'));
+            expect(result).toContain('Error formatting error report');
         });
     });
 });

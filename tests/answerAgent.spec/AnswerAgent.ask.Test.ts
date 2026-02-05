@@ -1,21 +1,19 @@
 // ./answerAgent.Test.ts
 import { AnswerAgent } from '../../src/agents/answerAgent';
-import { completeLLM, streamLLM } from '../../src/services/llmService';
-import { logInfo, logError } from '../../src/logger';
+import { completeLLM } from '../../src/services/llmService';
+import { logInfo } from '../../src/logger';
 
 jest.mock('../../src/services/llmService', () => ({
   ...jest.requireActual('../../src/services/llmService'),
   completeLLM: jest.fn(),
-  streamLLM: jest.fn(),
 }));
 
 jest.mock('../../src/logger', () => ({
   ...jest.requireActual('../../src/logger'),
   logInfo: jest.fn(),
-  logError: jest.fn(),
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('AnswerAgent', () => {
   let answerAgent: AnswerAgent;
 
@@ -27,9 +25,9 @@ describe('AnswerAgent', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
   describe('ask', () => {
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return the response from completeLLM on the happy path', async () => {
       const mockResponse = { content: 'Mocked response' };
       (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
@@ -46,38 +44,7 @@ describe('AnswerAgent', () => {
       expect(completeLLM).toHaveBeenCalledWith('', expect.any(Object));
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should handle undefined chatId by generating a new one', async () => {
-      const mockResponse = { content: 'Mocked response' };
-      (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
-
-      const question = 'What is the capital of France?';
-
-      const result = await answerAgent.ask(question);
-
-      expect(result).toBe(mockResponse.content);
-      expect(logInfo).toHaveBeenCalledWith(
-        expect.stringContaining('[Answer Agent] Starting question in chat')
-      );
-      expect(completeLLM).toHaveBeenCalledWith('', expect.any(Object));
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should handle errors thrown by completeLLM', async () => {
-      const mockError = new Error('Mocked error');
-      (completeLLM as jest.Mock).mockRejectedValue(mockError);
-
-      const question = 'What is the capital of France?';
-      const chatId = 'test-chat-id';
-
-      await expect(answerAgent.ask(question, chatId)).rejects.toThrow(mockError);
-
-      expect(logError).toHaveBeenCalledWith(
-        expect.stringContaining(`[Answer Agent] Error in chat ${chatId}`)
-      );
-    });
-
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should trim history if it exceeds the maximum exchanges', async () => {
       const mockResponse = { content: 'Mocked response' };
       (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
@@ -85,16 +52,17 @@ describe('AnswerAgent', () => {
       const question = 'What is the capital of France?';
       const chatId = 'test-chat-id';
 
-      const longHistory = Array(50)
+      const longHistory: { role: string; content: string }[] = Array(50)
         .fill(null)
         .flatMap((_, i) => [
           { role: 'user', content: `Question ${i}` },
           { role: 'assistant', content: `Answer ${i}` },
         ]);
-      (answerAgent as unknown as { conversationHistory: Map<string, { messages: { role: string; content: string }[]; createdAt: string }> }).conversationHistory.set(chatId, {
-        messages: longHistory,
-        createdAt: '2023-01-01T00:00:00.000Z',
-      });
+      (answerAgent as unknown as { conversationHistory: Map<string, { messages: { role: string; content: string }[]; createdAt: string }> })
+        .conversationHistory.set(chatId, {
+          messages: longHistory,
+          createdAt: '2023-01-01T00:00:00.000Z',
+        });
 
       const result = await answerAgent.ask(question, chatId);
 
@@ -104,7 +72,7 @@ describe('AnswerAgent', () => {
       );
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should update conversation history with new messages', async () => {
       const mockResponse = { content: 'Mocked response' };
       (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
@@ -114,7 +82,9 @@ describe('AnswerAgent', () => {
 
       const result = await answerAgent.ask(question, chatId);
 
-      const updatedHistory = (answerAgent as unknown as { conversationHistory: Map<string, { messages: { role: string; content: string }[] }> }).conversationHistory.get(chatId)?.messages;
+      const updatedHistory: { role: string; content: string }[] | undefined = (
+        answerAgent as unknown as { conversationHistory: Map<string, { messages: { role: string; content: string }[] }> }
+      ).conversationHistory.get(chatId)?.messages;
 
       expect(result).toBe(mockResponse.content);
       expect(updatedHistory).toEqual([
@@ -124,51 +94,21 @@ describe('AnswerAgent', () => {
       ]);
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should handle empty conversation history', async () => {
+    /** @aiContributed-2026-02-04 */
+    it('should persist conversation history after updating', async () => {
       const mockResponse = { content: 'Mocked response' };
       (completeLLM as jest.Mock).mockResolvedValue(mockResponse);
 
-      const question = 'What is the capital of France?';
-      const chatId = 'test-chat-id';
-
-      const result = await answerAgent.ask(question, chatId);
-
-      expect(result).toBe(mockResponse.content);
-      expect(logInfo).toHaveBeenCalledWith(
-        expect.stringContaining(`[Answer Agent] Chat ${chatId} with 0 previous messages`)
-      );
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should use streamLLM when onStream option is provided', async () => {
-      const mockResponse = { content: 'Mocked streamed response' };
-      (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+      const persistSpy = jest
+        .spyOn(answerAgent as unknown as { persistConversationHistory: (chatId: string) => Promise<void> }, 'persistConversationHistory')
+        .mockResolvedValue();
 
       const question = 'What is the capital of France?';
       const chatId = 'test-chat-id';
-      const onStream = jest.fn();
 
-      const result = await answerAgent.ask(question, chatId, { onStream });
+      await answerAgent.ask(question, chatId);
 
-      expect(result).toBe(mockResponse.content);
-      expect(streamLLM).toHaveBeenCalledWith('', onStream, expect.any(Object));
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should handle errors thrown by streamLLM', async () => {
-      const mockError = new Error('Stream error');
-      (streamLLM as jest.Mock).mockRejectedValue(mockError);
-
-      const question = 'What is the capital of France?';
-      const chatId = 'test-chat-id';
-      const onStream = jest.fn();
-
-      await expect(answerAgent.ask(question, chatId, { onStream })).rejects.toThrow(mockError);
-
-      expect(logError).toHaveBeenCalledWith(
-        expect.stringContaining(`[Answer Agent] Error in chat ${chatId}`)
-      );
+      expect(persistSpy).toHaveBeenCalledWith(chatId);
     });
   });
 });

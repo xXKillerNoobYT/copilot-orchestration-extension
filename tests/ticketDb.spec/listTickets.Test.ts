@@ -13,11 +13,12 @@ jest.mock('../../utils/logger', () => ({
     Logger: {
         debug: jest.fn(),
         info: jest.fn(),
+        warn: jest.fn(),
         error: jest.fn(),
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('listTickets', () => {
     let mockContext: vscode.ExtensionContext;
 
@@ -34,14 +35,14 @@ describe('listTickets', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return an empty array when no tickets exist', async () => {
         const tickets = await listTickets();
         expect(tickets).toEqual([]);
         expect(Logger.info).toHaveBeenCalledWith('Ticket DB initialized: In-memory mode');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return all tickets in descending order of creation', async () => {
         const ticket1 = {
             title: 'Ticket 1',
@@ -61,7 +62,7 @@ describe('listTickets', () => {
         expect(tickets[1].id).toBe(createdTicket1.id);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle in-memory mode gracefully', async () => {
         const ticket = {
             title: 'In-memory Ticket',
@@ -76,13 +77,13 @@ describe('listTickets', () => {
         expect(Logger.info).toHaveBeenCalledWith('Ticket DB initialized: In-memory mode');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should throw an error if the database is not initialized', async () => {
         resetTicketDbForTests();
         await expect(listTickets()).rejects.toThrow('TicketDb not initialized');
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should return tickets with all fields populated correctly', async () => {
         const ticket = {
             title: 'Detailed Ticket',
@@ -114,7 +115,7 @@ describe('listTickets', () => {
         });
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle tickets with invalid thread JSON gracefully', async () => {
         const ticket = {
             title: 'Invalid Thread Ticket',
@@ -130,5 +131,53 @@ describe('listTickets', () => {
         expect(Logger.warn).toHaveBeenCalledWith(
             `Failed to parse thread for ticket ${createdTicket.id}: SyntaxError: Unexpected token I in JSON at position 0`
         );
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should return tickets with default values for optional fields', async () => {
+        const ticket = {
+            title: 'Default Values Ticket',
+            status: 'pending',
+        };
+
+        const createdTicket = await createTicket(ticket);
+        const tickets = await listTickets();
+
+        expect(tickets).toHaveLength(1);
+        expect(tickets[0]).toMatchObject({
+            id: createdTicket.id,
+            title: ticket.title,
+            status: ticket.status,
+            type: undefined,
+            description: undefined,
+            conversationHistory: undefined,
+            thread: undefined,
+        });
+    });
+
+    /** @aiContributed-2026-02-04 */
+    it('should handle tickets with missing or undefined fields gracefully', async () => {
+        const ticket = {
+            title: 'Undefined Fields Ticket',
+            status: 'open',
+            type: undefined,
+            description: undefined,
+            conversationHistory: undefined,
+            thread: undefined,
+        };
+
+        const createdTicket = await createTicket(ticket);
+        const tickets = await listTickets();
+
+        expect(tickets).toHaveLength(1);
+        expect(tickets[0]).toMatchObject({
+            id: createdTicket.id,
+            title: ticket.title,
+            status: ticket.status,
+            type: undefined,
+            description: undefined,
+            conversationHistory: undefined,
+            thread: undefined,
+        });
     });
 });

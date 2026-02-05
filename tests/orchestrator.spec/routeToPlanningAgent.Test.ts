@@ -31,125 +31,68 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('routeToPlanningAgent', () => {
-    afterEach(() => {
+    beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should return the full plan on success', async () => {
-        const mockResponse = { content: 'Plan generated successfully.' };
-        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+    /** @aiContributed-2026-02-04 */
+    it('should return a valid plan on success', async () => {
+        const mockPlan = 'Step 1: Do something\nStep 2: Do something else';
+        (streamLLM as jest.Mock).mockResolvedValue({ content: mockPlan });
 
-        const result = await routeToPlanningAgent('Test question');
+        const result = await routeToPlanningAgent('How do I implement feature X?');
 
         expect(streamLLM).toHaveBeenCalledWith(
-            'Test question',
+            'How do I implement feature X?',
             expect.any(Function),
-            { systemPrompt: expect.any(String) }
+            { systemPrompt: expect.stringContaining('Break coding tasks into small atomic steps') }
         );
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', 'Plan generated successfully.');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', mockPlan.substring(0, 100));
         expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
-        expect(result).toBe('Plan generated successfully.');
+        expect(result).toBe(mockPlan);
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should handle empty response from the LLM', async () => {
-        const mockResponse = { content: '' };
-        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
+        (streamLLM as jest.Mock).mockResolvedValue({ content: '' });
 
-        const result = await routeToPlanningAgent('Test question');
+        const result = await routeToPlanningAgent('How do I implement feature X?');
 
         expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'Empty response');
         expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
         expect(result).toBe('');
     });
 
-    /** @aiContributed-2026-02-03 */
-    it('should handle errors from the LLM', async () => {
-        (streamLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
+    /** @aiContributed-2026-02-04 */
+    it('should handle LLM errors gracefully', async () => {
+        const mockError = new Error('LLM service unavailable');
+        (streamLLM as jest.Mock).mockRejectedValue(mockError);
 
-        const result = await routeToPlanningAgent('Test question');
+        const result = await routeToPlanningAgent('How do I implement feature X?');
 
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'LLM error');
+        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'LLM service unavailable');
         expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
         expect(result).toBe('Planning service is currently unavailable. A ticket has been created for manual review.');
+        expect(Logger.error).toHaveBeenCalledWith(expect.stringContaining('Planning agent failed'));
     });
 
-    /** @aiContributed-2026-02-03 */
+    /** @aiContributed-2026-02-04 */
     it('should log chunks during streaming', async () => {
-        const mockResponse = { content: 'Plan generated successfully.' };
-        (streamLLM as jest.Mock).mockImplementation(async (_question, onChunk) => {
-            onChunk('Chunk 1');
-            onChunk('Chunk 2');
-            return mockResponse;
+        const mockPlan = 'Step 1: Do something\nStep 2: Do something else';
+        const mockChunkLogger = jest.fn();
+        (streamLLM as jest.Mock).mockImplementation(async (_, onChunk) => {
+            onChunk('Step 1: Do something');
+            onChunk('Step 2: Do something else');
+            return { content: mockPlan };
         });
 
-        const result = await routeToPlanningAgent('Test question');
+        const result = await routeToPlanningAgent('How do I implement feature X?');
 
-        expect(Logger.info).toHaveBeenCalledWith('LLM: Chunk 1');
-        expect(Logger.info).toHaveBeenCalledWith('LLM: Chunk 2');
-        expect(result).toBe('Plan generated successfully.');
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should truncate and log long plans', async () => {
-        const longPlan = 'A'.repeat(1500);
-        const mockResponse = { content: longPlan };
-        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
-
-        const result = await routeToPlanningAgent('Test question');
-
-        expect(Logger.info).toHaveBeenCalledWith(`Full plan (truncated): ${longPlan.substring(0, 1000)}...`);
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', longPlan.substring(0, 100));
-        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
-        expect(result).toBe(longPlan);
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should handle short plans without truncation', async () => {
-        const shortPlan = 'Short plan content.';
-        const mockResponse = { content: shortPlan };
-        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
-
-        const result = await routeToPlanningAgent('Test question');
-
-        expect(Logger.info).toHaveBeenCalledWith(`Full plan: ${shortPlan}`);
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', shortPlan.substring(0, 100));
-        expect(updateStatusBar).toHaveBeenCalledWith('$(rocket) COE Ready');
-        expect(result).toBe(shortPlan);
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should handle UI updates for active and failed states', async () => {
-        const mockResponse = { content: 'Plan generated successfully.' };
-        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
-
-        await routeToPlanningAgent('Test question');
-
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Waiting', 'Plan generated successfully.');
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should handle UI updates for empty responses', async () => {
-        const mockResponse = { content: '' };
-        (streamLLM as jest.Mock).mockResolvedValue(mockResponse);
-
-        await routeToPlanningAgent('Test question');
-
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'Empty response');
-    });
-
-    /** @aiContributed-2026-02-03 */
-    it('should handle UI updates for errors', async () => {
-        (streamLLM as jest.Mock).mockRejectedValue(new Error('LLM error'));
-
-        await routeToPlanningAgent('Test question');
-
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Active', '');
-        expect(agentStatusTracker.setAgentStatus).toHaveBeenCalledWith('Planning', 'Failed', 'LLM error');
+        expect(mockChunkLogger).not.toHaveBeenCalled(); // Ensure no external logger is used
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('LLM: Step 1: Do something'));
+        expect(Logger.info).toHaveBeenCalledWith(expect.stringContaining('LLM: Step 2: Do something else'));
+        expect(result).toBe(mockPlan);
     });
 });

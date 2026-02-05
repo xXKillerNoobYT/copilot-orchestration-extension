@@ -11,7 +11,7 @@ jest.mock('vscode', () => ({
   },
 }));
 
-/** @aiContributed-2026-02-03 */
+/** @aiContributed-2026-02-04 */
 describe('logWarn', () => {
   let mockOutputChannel: vscode.OutputChannel;
 
@@ -20,7 +20,7 @@ describe('logWarn', () => {
     jest.clearAllMocks();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should log a warning message to the output channel and console', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const message = 'This is a warning message';
@@ -39,7 +39,7 @@ describe('logWarn', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should not log if logLevel is set to "error"', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const message = 'This is a warning message';
@@ -55,7 +55,7 @@ describe('logWarn', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should handle undefined message gracefully', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
@@ -70,7 +70,7 @@ describe('logWarn', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should include a timestamp in the log message', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const message = 'Timestamp test message';
@@ -86,7 +86,7 @@ describe('logWarn', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  /** @aiContributed-2026-02-03 */
+  /** @aiContributed-2026-02-04 */
     it('should log only if logLevel is "warn" or "error"', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const message = 'Conditional log test';
@@ -116,6 +116,22 @@ describe('logWarn', () => {
       expect.stringContaining('[WARN]')
     );
 
+    consoleWarnSpy.mockRestore();
+  });
+
+  /** @aiContributed-2026-02-04 */
+    it('should log a warning message with proper formatting', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const message = 'Formatted warning message';
+
+    logWarn(message);
+
+    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/^\[WARN\] \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z Formatted warning message$/)
+    );
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^\[WARN\] \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z Formatted warning message$/)
+    );
     consoleWarnSpy.mockRestore();
   });
 });
