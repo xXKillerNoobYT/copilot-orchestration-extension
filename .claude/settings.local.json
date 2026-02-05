@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run test:once:*)",
+      "Bash(npx jest:*)",
+      "Bash(npm install)",
+      "Bash(npm run compile:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

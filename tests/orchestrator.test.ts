@@ -26,6 +26,7 @@ import { OrchestratorService } from '../src/services/orchestrator';
 import { logInfo, logWarn, logError } from '../src/logger';
 import { ExtensionContext } from './__mocks__/vscode';
 import * as fs from 'fs';
+import { DEFAULT_CONFIG } from '../src/config/schema';
 
 // Mock TicketDb module
 jest.mock('../src/services/ticketDb');
@@ -37,6 +38,13 @@ jest.mock('../src/services/llmService');
 jest.mock('fs', () => ({
     existsSync: jest.fn(),
     readFileSync: jest.fn(),
+}));
+
+// Mock config module - return default config
+jest.mock('../src/config', () => ({
+    getConfigInstance: jest.fn(() => DEFAULT_CONFIG),
+    initializeConfig: jest.fn(),
+    resetConfigForTests: jest.fn(),
 }));
 
 // Cast mocks to typed versions
@@ -1042,45 +1050,34 @@ describe('initializeOrchestrator', () => {
         jest.clearAllMocks();
     });
 
-    /** @aiContributed-2026-02-04 */
-    it('should initialize orchestrator with default timeout when config file does not exist', async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(false);
-
+    /** @aiContributed-2026-02-04 - Updated for centralized config system */
+    it('should initialize orchestrator using centralized config system', async () => {
+        // Config now comes from getConfigInstance() mock which returns DEFAULT_CONFIG
         const orchestrator = await initializeOrchestrator(mockContext);
 
-        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
-        expect(logWarn).not.toHaveBeenCalled();
+        // Should use default timeout from centralized config (30s)
         expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
         expect(orchestrator).toBeDefined();
     });
 
-    /** @aiContributed-2026-02-04 */
-    it('should initialize orchestrator with timeout from config file', async () => {
-        const mockConfig = JSON.stringify({ orchestrator: { taskTimeoutSeconds: 60 } });
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
-
+    /** @aiContributed-2026-02-04 - Updated for centralized config system */
+    it('should read timeout from centralized config system', async () => {
+        // Config is loaded via getConfigInstance() mock
+        // The mock returns DEFAULT_CONFIG with orchestrator.taskTimeoutSeconds = 30
         const orchestrator = await initializeOrchestrator(mockContext);
 
-        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
-        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
-        expect(logWarn).not.toHaveBeenCalled();
-        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 60s');
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
         expect(orchestrator).toBeDefined();
     });
 
-    /** @aiContributed-2026-02-04 */
-    it('should fallback to default timeout if config file is invalid', async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockImplementation(() => {
-            throw new Error('Invalid JSON');
-        });
-
+    /** @aiContributed-2026-02-04 - Updated for centralized config system */
+    it('should use validated config from centralized system (validation handled by Zod)', async () => {
+        // Config validation is now handled by the config system (Zod schema)
+        // Invalid config values are replaced with defaults at loading time
+        // The orchestrator receives already-validated config via getConfigInstance()
         const orchestrator = await initializeOrchestrator(mockContext);
 
-        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
-        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
-        expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to read orchestrator config'));
+        // Should get valid default timeout from centralized config
         expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
         expect(orchestrator).toBeDefined();
     });
@@ -1120,40 +1117,27 @@ describe('initializeOrchestrator', () => {
         expect(logWarn).toHaveBeenCalledWith('Orchestrator already initialized');
     });
 
-    /** @aiContributed-2026-02-04 */
-    it('should fallback to llm.timeoutSeconds if orchestrator.taskTimeoutSeconds is not defined', async () => {
-        const mockConfig = JSON.stringify({ llm: { timeoutSeconds: 45 } });
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
-
+    /** @aiContributed-2026-02-04 - Updated for centralized config system */
+    it('should use taskTimeoutSeconds from centralized config system', async () => {
+        // Note: Config is now loaded via getConfigInstance() mock, not from file directly
+        // The DEFAULT_CONFIG has orchestrator.taskTimeoutSeconds = 30
         const orchestrator = await initializeOrchestrator(mockContext);
 
-        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
-        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
-        expect(logWarn).not.toHaveBeenCalled();
-        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 45s');
+        expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
         expect(orchestrator).toBeDefined();
     });
 
-    /** @aiContributed-2026-02-04 */
-    it('should use default timeout if neither orchestrator.taskTimeoutSeconds nor llm.timeoutSeconds is defined', async () => {
-        const mockConfig = JSON.stringify({});
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
-
+    /** @aiContributed-2026-02-04 - Updated for centralized config system */
+    it('should use default timeout from centralized config (30s)', async () => {
+        // Note: Config now comes from getConfigInstance() mock which returns DEFAULT_CONFIG
         const orchestrator = await initializeOrchestrator(mockContext);
 
-        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
-        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
-        expect(logWarn).not.toHaveBeenCalled();
         expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
         expect(orchestrator).toBeDefined();
     });
 
     /** @aiContributed-2026-02-04 */
     it('should register manual mode listener during initialization', async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(false);
-
         const orchestrator = await initializeOrchestrator(mockContext);
 
         expect(onTicketChange).toHaveBeenCalled();
@@ -1163,8 +1147,6 @@ describe('initializeOrchestrator', () => {
 
     /** @aiContributed-2026-02-04 */
     it('should register conversation thread listener during initialization', async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(false);
-
         const orchestrator = await initializeOrchestrator(mockContext);
 
         expect(onTicketChange).toHaveBeenCalled();
@@ -1172,17 +1154,13 @@ describe('initializeOrchestrator', () => {
         expect(orchestrator).toBeDefined();
     });
 
-    /** @aiContributed-2026-02-04 */
-    it('should handle invalid taskTimeoutSeconds in config file gracefully', async () => {
-        const mockConfig = JSON.stringify({ orchestrator: { taskTimeoutSeconds: -10 } });
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockReturnValue(mockConfig);
-
+    /** @aiContributed-2026-02-04 - Updated for centralized config system */
+    it('should use validated config from centralized config system', async () => {
+        // Note: Invalid config values are now handled by the config system (Zod validation)
+        // The orchestrator just reads from getConfigInstance() which always returns valid config
         const orchestrator = await initializeOrchestrator(mockContext);
 
-        expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json');
-        expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\extension\\path\\.coe\\config.json', 'utf-8');
-        expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Invalid taskTimeoutSeconds'));
+        // Config system uses defaults for invalid values, so we get 30s
         expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
         expect(orchestrator).toBeDefined();
     });

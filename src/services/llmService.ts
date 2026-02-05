@@ -1,8 +1,6 @@
 // Requires Node.js 18+ for native fetch. If using Node 16, install node-fetch as fallback.
 
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import { logInfo, logWarn, logError } from '../logger';
 import { getConfigInstance } from '../config';
 import { createTicket } from './ticketDb';
@@ -188,12 +186,12 @@ function trimMessagesToTokenLimit(messages: Message[], maxTokens: number): Messa
 }
 
 /**
- * Initialize the LLM service by reading and validating config
- * 
- * This function reads the config from .coe/config.json and validates it.
- * If config is missing or invalid, uses default values with warnings.
- * 
- * @param context - VS Code extension context
+ * Initialize the LLM service by reading config from central config system
+ *
+ * This function reads the config from the centralized config system (already validated).
+ * The config system handles defaults and validation via Zod schema.
+ *
+ * @param context - VS Code extension context (kept for API compatibility)
  */
 export async function initializeLLMService(context: vscode.ExtensionContext): Promise<void> {
     // Check for native fetch support (Node.js 18+)
@@ -203,43 +201,18 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
         throw new Error('Node.js 18+ required for LLM integration. Please upgrade Node.js or install node-fetch as a polyfill.');
     }
 
-    // Read config from .coe/config.json
-    const configPath = path.join(context.extensionPath, '.coe', 'config.json');
-    let config = { ...DEFAULT_CONFIG }; // Start with defaults
+    // Get config from central config system (already validated by Zod)
+    const centralConfig = getConfigInstance();
+    const llmConfig = centralConfig.llm;
 
-    if (fs.existsSync(configPath)) {
-        try {
-            const fileContent = fs.readFileSync(configPath, 'utf-8');
-            const fileConfig = JSON.parse(fileContent);
-
-            // Merge LLM config if it exists
-            if (fileConfig.llm) {
-                config = { ...config, ...fileConfig.llm };
-            }
-        } catch (error: any) {
-            logWarn(`Failed to read config file: ${error.message}. Using defaults.`);
-        }
-    } else {
-        logWarn(`Config file not found at ${configPath}. Using defaults.`);
-    }
-
-    // Validate timeoutSeconds (must be a positive number)
-    if (typeof config.timeoutSeconds !== 'number' || config.timeoutSeconds <= 0) {
-        logWarn(`Invalid timeoutSeconds: ${config.timeoutSeconds}, using default: 60`);
-        config.timeoutSeconds = 60;
-    }
-
-    // Validate maxTokens (must be a positive number)
-    if (typeof config.maxTokens !== 'number' || config.maxTokens <= 0) {
-        logWarn(`Invalid maxTokens: ${config.maxTokens}, using default: 2048`);
-        config.maxTokens = 2048;
-    }
-
-    // Validate startupTimeoutSeconds (must be a positive number)
-    if (typeof config.startupTimeoutSeconds !== 'number' || config.startupTimeoutSeconds <= 0) {
-        logWarn(`Invalid startupTimeoutSeconds: ${config.startupTimeoutSeconds}, using default: 300`);
-        config.startupTimeoutSeconds = 300;
-    }
+    // Map central config to LLMConfig interface
+    const config: LLMConfig = {
+        endpoint: llmConfig.endpoint,
+        model: llmConfig.model,
+        timeoutSeconds: llmConfig.timeoutSeconds,
+        maxTokens: llmConfig.maxTokens,
+        startupTimeoutSeconds: llmConfig.startupTimeoutSeconds,
+    };
 
     // Store validated config
     llmServiceInstance.setConfig(config);
