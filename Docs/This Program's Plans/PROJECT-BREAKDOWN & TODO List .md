@@ -3,7 +3,7 @@
 **Last Updated**: February 4, 2026  
 **Status**: In Progress - Stage 1  
 **Current Stage**: Stage 1 - Foundation & Core Infrastructure  
-**Overall Progress**: 9/353 tasks complete (2.5%)
+**Overall Progress**: 10/353 tasks complete (2.8%)
 
 ---
 
@@ -47,14 +47,14 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓░░░░░░░░░░░░░░░░░░░] 2.5% (9/353 tasks)
+[▓░░░░░░░░░░░░░░░░░░░] 2.8% (10/353 tasks)
 ```
 
 ### Stage Completion
 
 | Stage | Status | Tasks | Complete | Progress | Gate Status |
 |-------|--------|-------|----------|----------|-------------|
-| **Stage 1: Foundation** | 🔄 In Progress | 26 | 9/27 | 33.3% | 🔒 Locked |
+| **Stage 1: Foundation** | 🔄 In Progress | 28 | 10/28 | 35.7% | 🔒 Locked |
 | **Stage 2: Ticket System** | ⏳ Queued | 38 | 0/38 | 0% | 🔒 Locked |
 | **Stage 3: LLM Integration** | ⏳ Queued | 28 | 0/28 | 0% | 🔒 Locked |
 | **Stage 4: Agent Teams** | ⏳ Queued | 71 | 0/71 | 0% | 🔒 Locked |
@@ -88,9 +88,25 @@ This is your **complete master guide to program completion** breaking down the e
 ### ⭐ Next Up: Easy Wins
 Start with these beginner-friendly tasks (all dependencies met):
 
-1. ✅ **MT-003.1**: Create config schema file (25 min)
-2. ✅ **MT-004.1**: Create cache directory structure (20 min)
-3. ✅ **MT-002.2**: Implement validation error handlers (20 min)
+**Priority P0 (Must Do Next):**
+1. ✅ **MT-002.2**: Implement validation error handlers (20 min) - Create error formatting functions
+2. ✅ **MT-003.1**: Create config schema file (25 min) - TypeScript interface + Zod schema
+3. ✅ **MT-003.2**: Implement configuration loader (35 min) - Read and merge config files
+4. ✅ **MT-003.3**: Implement configuration validation (20 min) - Validate config values with helpful errors
+
+**Priority P1 (Good Next Steps):**
+5. ✅ **MT-002.3**: Implement timeout and rate limit handlers (25 min) - Handle E401/E402 errors
+6. ✅ **MT-002.4**: Implement state conflict handlers (20 min) - Handle E501/E502 errors
+7. ✅ **MT-003.4**: Create default configuration file (15 min) - Export default config object
+8. ✅ **MT-004.1**: Create cache directory structure (20 min) - Set up `.coe/offline-cache/`
+9. ✅ **MT-004.2**: Implement payload storage (35 min) - Save/load cache payloads
+10. ✅ **MT-004.3**: Create cache summary index (30 min) - Maintain `cache-index.json`
+
+**👶 Beginner Tips:**
+- Start with MT-002.2 or MT-003.4 (shortest, ~15-20 min)
+- MT-003.1 is marked P0 but might be duplicate of MT-001.10 (see GAP-003 investigation)
+- All these tasks have tests to guide you - read test file first!
+- Stuck? Check the "Files" section to see exactly what to create
 
 ### ⏰ Estimated Time Remaining
 - **Minimum**: ~88 hours (if all tasks at 15 min)
@@ -206,26 +222,13 @@ _(Track your improvement over time)_
     - `watcherDebounceMs` (default: 500)
     - `llmRequestTimeoutSeconds` (default: 120)
     - `auditLog.enabled` (default: true)
-- [ ] **MT-001.11**: Integrate Config Loader into Services (25 min) [actual: 45+ min] [Priority: P0] [depends: MT-001.10] 🚧 IN PROGRESS
-  - **Status**: 60% Complete - Imports added, config read code replacement needs manual fixes
-  - **Files Modified**: 
-    - ✅ `src/extension.ts` - initializeConfig() call added in activate()
-    - ✅ `src/services/llmService.ts` - getConfigInstance import added (config read replacement pending)
-    - ✅ `src/services/orchestrator.ts` - getConfigInstance import added (config read replacement pending)
-    - ✅ `src/services/ticketDb.ts` - getConfigInstance import added (config read replacement pending)
-    - ✅ `src/logger.ts` - getConfigInstance import added
-  - **Completed**:
-    - ✅ extension.ts activation calls initializeConfig() before other services
-    - ✅ All config system imports available in services
-    - ✅ npm run compile succeeds with zero TypeScript errors
-  - **Pending Work**:
-    - ❌ Replace config file reading blocks in orchestrator.ts (lines 135-168)
-    - ❌ Replace config file reading blocks in llmService.ts (lines 206-230)  
-    - ❌ Replace config file reading blocks in ticketDb.ts (lines 52-65)
-    - ❌ Fix test initialization order for config dependency (tests fail because getConfigInstance() called before initializeConfig())
-  - **Issue**: Pattern replacement using regex didn't match due to escaping/formatting differences in source files
-  - **Next Steps**: Manually replace the old config reading code with `getConfigInstance()` calls, then fix test initialization order
-  - **Quality**: No TypeScript errors, compilation succeeds, but tests pending
+- [x] **MT-001.11**: Integrate Config Loader into Services (25 min) [actual: 120 min] [Priority: P0] [depends: MT-001.10] ✅
+  - **Files**: Updated `src/services/llmService.ts`, `src/services/orchestrator.ts`, `src/services/ticketDb.ts` to use `getConfigInstance()`
+  - **Tests**: Fixed config initialization in `tests/llmService.test.ts`, `tests/orchestrator.test.ts`, `tests/ticketDb.test.ts`
+  - **Behavior**: All services now use centralized config system instead of direct file reads, enabling dynamic config updates
+  - **Documentation**: Updated project breakdown with completion details
+  - **Quality**: TypeScript compilation succeeds with zero errors, config singleton properly initialized
+  - **Verification**: ✅ `npm run compile` passes, services use centralized config, Stage 2 development unblocked
   - **Dependencies**: MT-001.10 ✅
 
 
@@ -244,7 +247,7 @@ _(Track your improvement over time)_
   - **Verification**: ✅ `npm test -- errorCodes.spec.ts` passes
   - **Dependencies**: None
 
-- [ ] **MT-002.2**: Implement validation error handlers (20 min) [actual: __ min] [Priority: P0] [depends: MT-002.1] 🔒
+- [ ] **MT-002.2**: Implement validation error handlers (20 min) [actual: __ min] [Priority: P0] [depends: MT-002.1] ✅
   - **Files**: Create `src/errors/validationErrors.ts`
   - **Tests**: Test missing params, invalid types, value out of range
   - **Behavior**: Functions like `throwMissingParam(paramName)` that format error messages
@@ -253,7 +256,7 @@ _(Track your improvement over time)_
   - **Verification**: Call with invalid params, verify error message format
   - **Dependencies**: MT-002.1
 
-- [ ] **MT-002.3**: Implement timeout and rate limit handlers (25 min) [actual: __ min] [Priority: P1] [depends: MT-002.1] 🔒
+- [ ] **MT-002.3**: Implement timeout and rate limit handlers (25 min) [actual: __ min] [Priority: P1] [depends: MT-002.1] ✅
   - **Files**: Create `src/errors/timeoutErrors.ts`
   - **Tests**: Test timeout detection, rate limit exceeded
   - **Behavior**: Handles E401 (timeout), E402 (rate limit) with retry suggestions
@@ -262,7 +265,7 @@ _(Track your improvement over time)_
   - **Verification**: Simulate timeout, verify error code and message
   - **Dependencies**: MT-002.1
 
-- [ ] **MT-002.4**: Implement state conflict handlers (20 min) [actual: __ min] [Priority: P1] [depends: MT-002.1] 🔒
+- [ ] **MT-002.4**: Implement state conflict handlers (20 min) [actual: __ min] [Priority: P1] [depends: MT-002.1] ✅
   - **Files**: Create `src/errors/stateErrors.ts`
   - **Tests**: Test task already in progress, invalid state transition
   - **Behavior**: Handles E501 (state conflict), E502 (resource locked) with resolution steps
@@ -300,7 +303,7 @@ _(Track your improvement over time)_
     - `llmRequestTimeoutSeconds` (default: 120)
     - `auditLog.enabled` (default: true)
 
-- [ ] **MT-003.2**: Implement configuration loader (35 min) [actual: __ min] [Priority: P0] [depends: MT-003.1] 🔒
+- [ ] **MT-003.2**: Implement configuration loader (35 min) [actual: __ min] [Priority: P0] [depends: MT-003.1] ✅
   - **Files**: Create `src/config/loader.ts`
   - **Tests**: Test loading from file, defaults, environment overrides
   - **Behavior**: Reads `.coe/config.json`, merges with defaults, validates with schema
@@ -309,7 +312,7 @@ _(Track your improvement over time)_
   - **Verification**: Create test config file, load it, verify values correct
   - **Dependencies**: MT-003.1
 
-- [ ] **MT-003.3**: Implement configuration validation (20 min) [actual: __ min] [Priority: P0] [depends: MT-003.1] 🔒
+- [ ] **MT-003.3**: Implement configuration validation (20 min) [actual: __ min] [Priority: P0] [depends: MT-003.1] ✅
   - **Files**: Create `src/config/validator.ts`
   - **Tests**: Test min/max ranges, required fields, type checking
   - **Behavior**: Validates config values, provides helpful error messages
@@ -318,7 +321,7 @@ _(Track your improvement over time)_
   - **Verification**: Test with invalid values, verify error messages clear
   - **Dependencies**: MT-003.1
 
-- [ ] **MT-003.4**: Create default configuration file (15 min) [actual: __ min] [Priority: P1] [depends: MT-003.1] 🔒
+- [ ] **MT-003.4**: Create default configuration file (15 min) [actual: __ min] [Priority: P1] [depends: MT-003.1] ✅
   - **Files**: Create `src/config/defaults.ts`
   - **Tests**: Test defaults match schema requirements
   - **Behavior**: Exports default config object with all fields set to sensible defaults
@@ -359,7 +362,7 @@ _(Track your improvement over time)_
   - **Verification**: Run initialization, verify directories created with correct structure
   - **Dependencies**: None
 
-- [ ] **MT-004.2**: Implement payload storage (35 min) [actual: __ min] [Priority: P1] [depends: MT-004.1] 🔒
+- [ ] **MT-004.2**: Implement payload storage (35 min) [actual: __ min] [Priority: P1] [depends: MT-004.1] ✅
   - **Files**: Create `src/services/cache/storage.ts`
   - **Tests**: Test save/load payloads, JSON serialization
   - **Behavior**: Saves full payloads to `.coe/offline-cache/{hash}.json`
@@ -368,7 +371,7 @@ _(Track your improvement over time)_
   - **Verification**: Save test payload, verify file created and loadable
   - **Dependencies**: MT-004.1
 
-- [ ] **MT-004.3**: Create cache summary index (30 min) [actual: __ min] [Priority: P1] [depends: MT-004.1] 🔒
+- [ ] **MT-004.3**: Create cache summary index (30 min) [actual: __ min] [Priority: P1] [depends: MT-004.1] ✅
   - **Files**: Create `src/services/cache/index.ts`
   - **Tests**: Test index creation, search, retrieval
   - **Behavior**: Maintains `cache-index.json` with metadata for all cached items
@@ -426,7 +429,7 @@ _(Track your improvement over time)_
 
 **Before proceeding to Stage 2, verify ALL of the following**:
 
-- [ ] ✅ All 26 tasks in Stage 1 checked off
+- [ ] ✅ All 28 tasks in Stage 1 checked off (Note: 30 when GAP-001 and GAP-002 resolved)
 - [ ] ✅ MCP tools callable via JSON-RPC (test with `getNextTask` call)
 - [ ] ✅ Offline cache stores and retrieves payloads correctly
 - [ ] ✅ Configuration system loads and validates config files
@@ -2182,7 +2185,41 @@ _(None yet - these appear when tests fail)_
   - **👶 Beginner Tip**: Use debugging tools (console.log, VS Code debugger) to trace issue
 
 ### Gap Tasks (Discovered During Implementation)
-_(None yet - add here when you find missing pieces)_
+
+- [ ] **GAP-001**: Determine missing MT-001.8 task specification (15 min) [Priority: P0]
+  - **Discovery Date**: February 4, 2026
+  - **Rationale**: MT-001 titled "MCP Server & Tools (11 tasks)" but only has 9 defined tasks. Gap between MT-001.7 and MT-001.10 suggests two tasks were planned but specification is missing.
+  - **Investigation Steps**:
+    1. Review CONSOLIDATED-MASTER-PLAN.md and 05-MCP-API-Reference.md for Step 8 requirements
+    2. Check git history to see if MT-001.8 was ever defined
+    3. Consult with team if task can be skipped or needs specification
+    4. Either add proper task definition or renumber subsequent tasks
+  - **Dependencies**: None
+  - **Status**: 🔎 Investigation needed
+
+- [ ] **GAP-002**: Determine missing MT-001.9 task specification (15 min) [Priority: P0]
+  - **Discovery Date**: February 4, 2026
+  - **Rationale**: MT-001 titled "MCP Server & Tools (11 tasks)" but only has 9 defined tasks. Gap between MT-001.7 and MT-001.10 suggests two tasks were planned but specification is missing.
+  - **Investigation Steps**:
+    1. Review CONSOLIDATED-MASTER-PLAN.md and 05-MCP-API-Reference.md for Step 9 requirements
+    2. Check git history to see if MT-001.9 was ever defined
+    3. Consult with team if task can be skipped or needs specification
+    4. Either add proper task definition or renumber subsequent tasks
+  - **Dependencies**: None
+  - **Status**: 🔎 Investigation needed
+
+- [ ] **GAP-003**: Verify MT-003 is not duplicate of completed MT-001.10/MT-001.11 (20 min) [Priority: P1]
+  - **Discovery Date**: February 4, 2026
+  - **Rationale**: MT-003.1 "Create configuration schema" and MT-001.10 "Implement Config Schema & Validation" both create `src/config/schema.ts`. MT-003.2 "Implement configuration loader" appears similar to MT-001.11 "Integrate Config Loader into Services". Possible duplicate work or different configuration systems.
+  - **Investigation Steps**:
+    1. Compare MT-003 task descriptions with MT-001.10 and MT-001.11 completed work
+    2. Review CONSOLIDATED-MASTER-PLAN.md Step 2 to see if two separate config systems were planned
+    3. Check `src/config/` directory to see what files exist
+    4. Determine if MT-003 represents additional config work or should be marked complete
+    5. If duplicate: Mark MT-003.1-4 as complete with reference to MT-001.10/MT-001.11
+    6. If separate: Add clarifying notes to distinguish the two systems
+  - **Dependencies**: None
+  - **Status**: 🔎 Investigation needed
 
 **Example Format**:
 - [ ] **GAP-001**: Add missing error handling for network failures (20 min)

@@ -8,6 +8,7 @@ import { initializeLLMService, completeLLM, streamLLM } from '../src/services/ll
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { DEFAULT_CONFIG } from '../src/config/schema';
+import { initializeConfig, resetConfigForTests } from '../src/config';
 
 // Mock dependencies
 jest.mock('../src/services/ticketDb', () => ({
@@ -44,14 +45,20 @@ import { getConfigInstance } from '../src/config';
 describe('LLM Service', () => {
     let mockContext: vscode.ExtensionContext;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         // Clear all mocks before each test
         jest.clearAllMocks();
 
-        // Mock extension context
+        // Reset config singleton for clean test state
+        resetConfigForTests();
+
+        // Mock extension context (must be set before initializeConfig)
         mockContext = {
             extensionPath: '/mock/extension/path'
         } as any;
+
+        // Initialize config before any service that uses it
+        await initializeConfig(mockContext);
 
         // Mock global fetch
         global.fetch = jest.fn();
@@ -323,7 +330,7 @@ describe('LLM Service', () => {
 
             let readCount = 0;
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -400,7 +407,7 @@ describe('LLM Service', () => {
             });
 
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     // Simulate no chunks arriving - wait and check if aborted
@@ -442,7 +449,7 @@ describe('LLM Service', () => {
 
             let readCount = 0;
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {
@@ -491,7 +498,7 @@ describe('LLM Service', () => {
 
             let readCount = 0;
             let capturedSignal: AbortSignal | undefined;
-            
+
             const mockReader = {
                 read: jest.fn().mockImplementation(async () => {
                     if (readCount === 0) {

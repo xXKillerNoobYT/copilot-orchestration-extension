@@ -318,9 +318,209 @@ describe('Service Tests', () => {
 4. **Don't hardcode LLM endpoint**: Always read from `.coe/config.json` with fallback defaults
 5. **Don't mix Promise styles**: Prefer `async/await` over `.then()` chains (project convention)
 
+## 🚀 Quick Command Reference
+
+### Development
+```bash
+npm run watch      # TypeScript watch (run FIRST in background)
+npm run test       # Jest watch mode (run alongside watch)
+npm run test:once  # Single test run
+npm run lint       # ESLint check
+npm run compile    # One-time TypeScript build
+```
+
+### LM Studio Setup
+1. Download [LM Studio](https://lmstudio.ai)
+2. Load `ministral-3-14b-reasoning` model
+3. Start server (default: `http://127.0.0.1:1234/v1`)
+4. Set in `.coe/config.json`:
+   ```json
+   {
+     "llm": {
+       "endpoint": "http://127.0.0.1:1234/v1",
+       "model": "ministral-3-14b-reasoning"
+     }
+   }
+   ```
+5. Check output: VS Code → Output → "COE Logs"
+
+### Debugging
+- Press F5 → VS Code Extension Development Host launches
+- Check "COE Logs" output panel for runtime logs
+- Inspect `.coe/tickets.db` with SQLite browser if needed
+
+## 🎯 Critical Skills to Know
+
+**Start here if new to project:**
+
+- **[01-coe-architecture.md](skills/01-coe-architecture.md)** - System overview
+- **[02-service-patterns.md](skills/02-service-patterns.md)** - Core pattern
+- **[03-testing-conventions.md](skills/03-testing-conventions.md)** - Test setup
+- **[12-agent-coordination.md](skills/12-agent-coordination.md)** - Agent routing
+- **[20-noob-proofing.md](skills/20-noob-proofing.md)** - Beginner guide
+
+**Full skills index:** [skills/README.md](skills/README.md) (28 skills total)
+**Quality control skills (NEW):**
+- **[23-plan-drift-detection.md](skills/23-plan-drift-detection.md)** - Detect deviations from plan
+- **[24-observation-skill.md](skills/24-observation-skill.md)** - Monitor patterns and behavior
+- **[25-fixing-plan-drift.md](skills/25-fixing-plan-drift.md)** - Correct drift and realign
+- **[26-safety-checklist.md](skills/26-safety-checklist.md)** - Pre-commit safety checks
+## 🎯 Plan Verification (CRITICAL)
+
+**Always verify code matches plan to minimize drift.**
+
+### Before Writing Code
+1. Read plan completely
+2. Understand success criteria
+3. Note patterns to follow
+4. Identify dependencies
+
+### During Implementation
+1. Keep plan visible
+2. Check off completed steps
+3. Ask before adding features
+4. Verify patterns match skills
+
+### Before Committing
+1. Re-read original plan
+2. Verify all requirements met
+3. Check no extra features added
+4. Run safety checklist (skill 26)
+5. Detect any drift (skill 23)
+
+### If Drift Detected
+1. Stop immediately
+2. Document deviation (skill 23)
+3. Decide: fix code OR fix plan (skill 25)
+4. Get approval from orchestrator
+5. Correct and re-verify
+
+**Key principle**: Code that doesn't match plan creates confusion, bugs, and maintenance burden. Always verify alignment.
+
+## 🔍 Where to Find Answers
+
+| Question | Resource |
+|----------|----------|
+| How does COE system work? | Docs/This Program's Plans/01-Architecture-Document.md |
+| How do agents coordinate? | .github/skills/12-agent-coordination.md |
+| What patterns should I follow? | .github/skills/ (all 28 skills) |
+| How do I write tests? | .github/skills/03-testing-conventions.md |
+| What's the plan/roadmap? | PRD.md |
+| How do I debug? | .github/skills/15-dev-workflows.md |
+| What are common mistakes? | .github/skills/14-common-pitfalls.md |
+| New to the project? | .github/skills/20-noob-proofing.md |
+| How do I detect plan drift? | .github/skills/23-plan-drift-detection.md |
+| How do I fix drift? | .github/skills/25-fixing-plan-drift.md |
+| What should I check before commit? | .github/skills/26-safety-checklist.md |
+| How do I update PROJECT-BREAKDOWN? | .github/skills/27-project-breakdown-maintenance.md |
+| How do I validate user requests? | .github/skills/28-user-request-validation.md |
+| User asking to do blocked task? | .github/skills/28-user-request-validation.md |
+| How do I validate user requests? | .github/skills/28-user-request-validation.md |
+| User asking to do blocked task? | .github/skills/28-user-request-validation.md |
+
+## 📊 Testing Requirements
+
+**Coverage target**: 85%+ for all metrics (lines, branches, functions, statements)
+
+**Current**: 70%+ ✅ (in progress toward 85%)
+
+**Test naming**: All tests must start with "Test N:" for sequential tracking
+- Example: `it('Test 1: should initialize...')`
+- Example: `it('Test 2: should handle error...')`
+
+**Setup pattern**: All services follow singleton initialization
+```typescript
+beforeEach(() => {
+    jest.clearAllMocks();
+    resetServiceForTests(); // Reset singleton
+});
+
+afterEach(() => {
+    jest.useRealTimers(); // Clean up timers
+});
+```
+
+## 🐛 Troubleshooting
+
+### "Service not initialized" Error
+**Fix**: Ensure service `initialize()` called in `extension.ts` activate() before use
+- Check order: Config → TicketDb → Orchestrator → UI
+- Check: All services initialized before any features used
+
+### Tests timeout or fail unexpectedly
+**Fix**: Tests leaking fake timers from previous test
+- Add `jest.useRealTimers()` in every afterEach()
+- Add singleton reset: `resetServiceForTests()` in every beforeEach()
+
+### LLM responses incomplete or timeout
+**Fix**: Check LM Studio is running
+```bash
+# Test if endpoint is up
+curl http://127.0.0.1:1234/v1/models
+```
+- Verify model loaded in LM Studio UI
+- Check `.coe/config.json` endpoint URL matches
+
+### TreeView not updating
+**Fix**: Service didn't trigger EventEmitter
+- Check service calls `onDataChange()` listener
+- Check UI provider subscribed to listener
+- Check `_onDidChangeTreeData.fire()` called in provider
+
+### SQLite database locked error  
+**Fix**: Multiple instances accessing database
+- Ensure only ONE `ticketDb` singleton
+- Check `beforeEach()` calls `resetServiceForTests()`
+- Check no background processes accessing `.coe/tickets.db`
+
+## 📈 Performance Baselines
+
+These are expected performance metrics for healthy COE:
+
+| Operation | Expected | Alert if > |
+|-----------|----------|-----------|
+| Plan generation | 25s avg | 45s |
+| Agent response | 8.5s avg | 15s |
+| Verification check | 4s avg | 8s |
+| Extension startup | 1.8s | 3s |
+| DB query (100 tickets) | 50ms | 200ms |
+
+If performance degrades:
+1. Check CPU usage (background processes?)
+2. Check memory usage (memory leak?)
+3. Profile with Chrome DevTools
+4. See: `.github/skills/15-dev-workflows.md` for profiling guide
+
+## 🎓 Learning Path
+
+**Week 1**: Foundation
+- Read README.md (5 min)
+- Read .github/skills/README.md (5 min)
+- Read this file end-to-end (15 min)
+- Read .github/skills/01-coe-architecture.md (20 min)
+- Read .github/skills/02-service-patterns.md (20 min)
+
+**Week 2**: Patterns
+- Read .github/skills/03-testing-conventions.md (20 min)
+- Read .github/skills/12-agent-coordination.md (15 min)
+- Try to write a simple test
+- Review one test file in tests/ directory
+
+**Week 3**: Deep Dive
+- Pick two skills from .github/skills/ that interest you
+- Read them thoroughly
+- Write code using those patterns
+- Get code review from team
+
+**Week 4+**: Contribute
+- Understand full COE system
+- Take on small tasks
+- Fix bugs
+- Add new features
+
 ---
 
-**Last Updated**: February 3, 2026  
+**Last Updated**: February 4, 2026  
 **Maintained By**: COE Development Team
 
 I a noob Programmer m still learning and exploring the world of coding. My journey has just begun, and I am excited to dive deeper into programming languages, frameworks, and best practices. I understand that making mistakes is part of the learning process, and I am eager to improve my skills through practice and perseverance.

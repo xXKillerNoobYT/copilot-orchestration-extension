@@ -202,19 +202,9 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
     }
 
     // Get config from central config system (already validated by Zod)
-    const centralConfig = getConfigInstance();
-    const llmConfig = centralConfig.llm;
+    const configInstance = getConfigInstance();
+    const config = configInstance.llm;
 
-    // Map central config to LLMConfig interface
-    const config: LLMConfig = {
-        endpoint: llmConfig.endpoint,
-        model: llmConfig.model,
-        timeoutSeconds: llmConfig.timeoutSeconds,
-        maxTokens: llmConfig.maxTokens,
-        startupTimeoutSeconds: llmConfig.startupTimeoutSeconds,
-    };
-
-    // Store validated config
     llmServiceInstance.setConfig(config);
     logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model})`);
 }
