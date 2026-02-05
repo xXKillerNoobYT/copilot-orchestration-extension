@@ -21,6 +21,7 @@
  */
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { getConfigInstance } from './config';
 import * as fs from 'fs';
 
 let outputChannel: vscode.OutputChannel | undefined;

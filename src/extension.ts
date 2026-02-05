@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { initializeLogger, logInfo, logError, logWarn } from './logger';
+import { initializeConfig } from './config';
 import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange, getTicket } from './services/ticketDb';
 import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
 import { initializeLLMService } from './services/llmService';
@@ -155,6 +156,9 @@ async function handleVerifyLastTicket(): Promise<void> {
 export async function activate(context: vscode.ExtensionContext) {
     // Initialize logger first
     initializeLogger(context);
+
+    // Initialize config system (uses logger for warnings)
+    await initializeConfig(context);
 
     logInfo('Copilot Orchestration Extension is activating...');
 

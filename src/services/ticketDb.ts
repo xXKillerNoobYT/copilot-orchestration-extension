@@ -19,6 +19,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { EventEmitter } from 'events';
 import { logInfo, logWarn } from '../logger';
+import { getConfigInstance } from '../config';
 
 // Ticket interface - defines what a ticket looks like
 export interface TicketThreadMessage {
@@ -50,20 +51,9 @@ class TicketDatabase {
 
     async initialize(context: vscode.ExtensionContext): Promise<void> {
         // Step 1: Read dbPath from config (or use default)
-        const configPath = path.join(context.extensionPath, '.coe', 'config.json');
-        let dbPathFromConfig = './.coe/tickets.db'; // default
-
-        try {
-            if (fs.existsSync(configPath)) {
-                const configContent = fs.readFileSync(configPath, 'utf-8');
-                const config = JSON.parse(configContent);
-                if (config.tickets?.dbPath) {
-                    dbPathFromConfig = config.tickets.dbPath;
-                }
-            }
-        } catch (err) {
-            logWarn(`Failed to read config for dbPath: ${err}`);
-        }
+        // Now using central config system
+        const config = getConfigInstance();
+        const dbPathFromConfig = config.tickets.dbPath;
 
         // Step 2: Resolve absolute path (relative to extension root)
         this.dbPath = path.resolve(context.extensionPath, dbPathFromConfig);

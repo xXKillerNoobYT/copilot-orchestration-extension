@@ -32,6 +32,7 @@ import { agentStatusTracker } from '../ui/agentStatusTracker';
 import { llmStatusBar } from '../ui/llmStatusBar';
 import { updateStatusBar } from '../extension';
 import AnswerAgent from '../agents/answerAgent';
+import { getConfigInstance } from '../config';
 
 /**
  * System prompt for the Answer agent
@@ -133,38 +134,9 @@ export class OrchestratorService {
         this.context = context;
 
         // Step 1: Read taskTimeoutSeconds from config
-        const configPath = path.join(context.extensionPath, '.coe', 'config.json');
-
-        try {
-            if (fs.existsSync(configPath)) {
-                const configContent = fs.readFileSync(configPath, 'utf-8');
-                const config = JSON.parse(configContent);
-
-                // Try orchestrator.taskTimeoutSeconds first
-                if (config.orchestrator?.taskTimeoutSeconds !== undefined) {
-                    const timeout = config.orchestrator.taskTimeoutSeconds;
-                    // Validate that timeout is a positive number
-                    if (typeof timeout === 'number' && timeout > 0) {
-                        this.taskTimeoutSeconds = timeout;
-                    } else {
-                        logWarn(`Invalid taskTimeoutSeconds: ${timeout}. Must be > 0. Using default 30s`);
-                    }
-                }
-                // Fallback to llm.timeoutSeconds
-                else if (config.llm?.timeoutSeconds !== undefined) {
-                    const timeout = config.llm.timeoutSeconds;
-                    if (typeof timeout === 'number' && timeout > 0) {
-                        this.taskTimeoutSeconds = timeout;
-                    } else {
-                        logWarn(`Invalid llm.timeoutSeconds: ${timeout}. Must be > 0. Using default 30s`);
-                    }
-                }
-                // Otherwise keep default 30
-            }
-        } catch (err) {
-            // Silent fail - use default 30s
-            logWarn(`Failed to read orchestrator config: ${err}`);
-        }
+        // Now using central config system
+        const config = getConfigInstance();
+        this.taskTimeoutSeconds = config.orchestrator.taskTimeoutSeconds;
 
         // Step 2: Load initial tasks from TicketDb
         await this.loadTasksFromTickets();

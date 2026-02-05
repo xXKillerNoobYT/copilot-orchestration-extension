@@ -206,7 +206,27 @@ _(Track your improvement over time)_
     - `watcherDebounceMs` (default: 500)
     - `llmRequestTimeoutSeconds` (default: 120)
     - `auditLog.enabled` (default: true)
-
+- [ ] **MT-001.11**: Integrate Config Loader into Services (25 min) [actual: 45+ min] [Priority: P0] [depends: MT-001.10] 🚧 IN PROGRESS
+  - **Status**: 60% Complete - Imports added, config read code replacement needs manual fixes
+  - **Files Modified**: 
+    - ✅ `src/extension.ts` - initializeConfig() call added in activate()
+    - ✅ `src/services/llmService.ts` - getConfigInstance import added (config read replacement pending)
+    - ✅ `src/services/orchestrator.ts` - getConfigInstance import added (config read replacement pending)
+    - ✅ `src/services/ticketDb.ts` - getConfigInstance import added (config read replacement pending)
+    - ✅ `src/logger.ts` - getConfigInstance import added
+  - **Completed**:
+    - ✅ extension.ts activation calls initializeConfig() before other services
+    - ✅ All config system imports available in services
+    - ✅ npm run compile succeeds with zero TypeScript errors
+  - **Pending Work**:
+    - ❌ Replace config file reading blocks in orchestrator.ts (lines 135-168)
+    - ❌ Replace config file reading blocks in llmService.ts (lines 206-230)  
+    - ❌ Replace config file reading blocks in ticketDb.ts (lines 52-65)
+    - ❌ Fix test initialization order for config dependency (tests fail because getConfigInstance() called before initializeConfig())
+  - **Issue**: Pattern replacement using regex didn't match due to escaping/formatting differences in source files
+  - **Next Steps**: Manually replace the old config reading code with `getConfigInstance()` calls, then fix test initialization order
+  - **Quality**: No TypeScript errors, compilation succeeds, but tests pending
+  - **Dependencies**: MT-001.10 ✅
 
 
 

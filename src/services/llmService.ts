@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logInfo, logWarn, logError } from '../logger';
+import { getConfigInstance } from '../config';
 import { createTicket } from './ticketDb';
 import { llmStatusBar } from '../ui/llmStatusBar';
 
