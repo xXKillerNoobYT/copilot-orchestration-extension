@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { ConversationWebviewPanel } from '../src/ui/conversationWebview';
 import { logInfo, logWarn, logError } from '../src/logger';
-import { getConversationHistory } from '../src/agents/answerAgent';
+import { answerQuestion, getConversationHistory } from '../src/agents/answerAgent';
 
 jest.mock('vscode', () => ({
     ...jest.requireActual('vscode'),
@@ -24,6 +24,7 @@ jest.mock('../src/logger', () => ({
 
 jest.mock('../src/agents/answerAgent', () => ({
     ...jest.requireActual('../src/agents/answerAgent'),
+    answerQuestion: jest.fn(),
     getConversationHistory: jest.fn(),
 }));
 
@@ -31,6 +32,7 @@ jest.mock('../src/agents/answerAgent', () => ({
 describe('ConversationWebviewPanel', () => {
     let mockContext: vscode.ExtensionContext;
     let mockPanel: vscode.WebviewPanel;
+    let messageCallback: ((message: any) => void) | null;
 
     beforeEach(() => {
         mockContext = {
@@ -39,6 +41,7 @@ describe('ConversationWebviewPanel', () => {
                 get: jest.fn(),
             },
         } as unknown as vscode.ExtensionContext;
+        messageCallback = null;
 
         mockPanel = {
             reveal: jest.fn(),
@@ -53,6 +56,7 @@ describe('ConversationWebviewPanel', () => {
                 html: '',
                 postMessage: jest.fn(),
                 onDidReceiveMessage: jest.fn((callback) => {
+                    messageCallback = callback;
                     return { dispose: jest.fn() };
                 }),
                 asWebviewUri: jest.fn((uri) => uri),
@@ -242,6 +246,58 @@ describe('ConversationWebviewPanel', () => {
 
             expect(panelsMap.size).toBe(1);
             expect(panelsMap.get('panel1')).toBe(panel1);
+        });
+    });
+
+    /** @aiContributed-2026-02-03 */
+    describe('message handling', () => {
+        it('Test 1: should warn on unknown message types', async () => {
+            (vscode.window.createWebviewPanel as jest.Mock).mockReturnValue(mockPanel);
+            (ConversationWebviewPanel as unknown as { panels: Map<string, ConversationWebviewPanel> }).panels = new Map();
+
+            await ConversationWebviewPanel.createOrShow('chat-unknown', mockContext);
+
+            await messageCallback?.({ type: 'unknown' });
+
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('Unknown message type')
+            );
+        });
+
+        it('Test 2: should ignore empty user messages', async () => {
+            (vscode.window.createWebviewPanel as jest.Mock).mockReturnValue(mockPanel);
+            (ConversationWebviewPanel as unknown as { panels: Map<string, ConversationWebviewPanel> }).panels = new Map();
+
+            await ConversationWebviewPanel.createOrShow('chat-empty', mockContext);
+
+            await messageCallback?.({ type: 'sendMessage', text: '   ' });
+
+            expect(answerQuestion).not.toHaveBeenCalled();
+        });
+
+        it('Test 3: should stream responses for user messages', async () => {
+            (vscode.window.createWebviewPanel as jest.Mock).mockReturnValue(mockPanel);
+            (ConversationWebviewPanel as unknown as { panels: Map<string, ConversationWebviewPanel> }).panels = new Map();
+            (answerQuestion as jest.Mock).mockImplementation(async (_text, _chatId, options) => {
+                options?.onStream?.('chunk');
+            });
+
+            await ConversationWebviewPanel.createOrShow('chat-stream', mockContext);
+
+            await messageCallback?.({ type: 'sendMessage', text: 'Hello' });
+
+            expect(mockPanel.webview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'userMessage' })
+            );
+            expect(mockPanel.webview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'streamStart' })
+            );
+            expect(mockPanel.webview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'streamChunk', text: 'chunk' })
+            );
+            expect(mockPanel.webview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'streamEnd' })
+            );
         });
     });
 

@@ -1732,6 +1732,48 @@ describe('Answer Agent Persistence', () => {
         );
     });
 
+    it('Test 1: should persist Answer Agent history on deactivate', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockAnswerAgent = require('../src/agents/answerAgent');
+        const mockLogger = require('../src/logger');
+
+        mockAnswerAgent.persistAnswerAgentHistory.mockReturnValue({
+            'TICKET-300': JSON.stringify({
+                chatId: 'TICKET-300',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                lastActivityAt: '2026-02-02T00:00:00.000Z',
+                messages: []
+            })
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-300',
+                title: 'Test',
+                status: 'open',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        mockTicketDb.updateTicket.mockResolvedValue({
+            id: 'TICKET-300',
+            title: 'Test',
+            status: 'open',
+            createdAt: '2026-02-01T00:00:00.000Z',
+            updatedAt: '2026-02-01T00:00:00.000Z'
+        });
+
+        await expect(deactivate()).resolves.not.toThrow();
+
+        expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-300', {
+            conversationHistory: expect.any(String)
+        });
+        expect(mockLogger.logInfo).toHaveBeenCalledWith(
+            expect.stringContaining('Saved 1 conversation histories')
+        );
+    });
+
     it('should warn and continue if persistence fails on deactivate', async () => {
         const mockTicketDb = require('../src/services/ticketDb');
         const mockAnswerAgent = require('../src/agents/answerAgent');

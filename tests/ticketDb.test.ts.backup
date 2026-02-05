@@ -658,13 +658,6 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockDBForMigration })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigMig, resetConfigForTests: resetConfigMig } = require('../src/config');
-            resetConfigMig();
-            await initConfigMig(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
@@ -723,19 +716,11 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockDBForOldTicket })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigOld, resetConfigForTests: resetConfigOld } = require('../src/config');
-            resetConfigOld();
-            await initConfigOld(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
             // Act: Get the old ticket
-            const { initializeTicketDb: initOld, getTicket: getOld, resetTicketDbForTests: resetOld } = require('../src/services/ticketDb');
-            resetOld();
+            const { initializeTicketDb: initOld, getTicket: getOld } = require('../src/services/ticketDb');
             await initOld(mockContext);
             const ticket = await getOld('OLD-001');
 
@@ -760,14 +745,8 @@ describe('TicketDb', () => {
             mockContext = new ExtensionContext('/mock/extension/path');
 
             // Initialize config before any service initialization
-            jest.resetModules();
-
-            const { initializeConfig: initConfigIntegration, resetConfigForTests: resetConfigIntegration } = require('../src/config');
-            resetConfigIntegration();
-            await initConfigIntegration(mockContext);
-
-            const { resetTicketDbForTests: resetIntegrationDb } = require('../src/services/ticketDb');
-            resetIntegrationDb();
+            resetConfigForTests();
+            await initializeConfig(mockContext);
 
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
@@ -936,18 +915,10 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockErrDB })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigErr, resetConfigForTests: resetConfigErr } = require('../src/config');
-            resetConfigErr();
-            await initConfigErr(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: initErr, createTicket: createErr, resetTicketDbForTests: resetErr2 } = require('../src/services/ticketDb');
-            resetErr2();
+            const { initializeTicketDb: initErr, createTicket: createErr } = require('../src/services/ticketDb');
             await initErr(mockContext);
 
             // Act & Assert: createTicket should throw/reject due to DB error
@@ -962,18 +933,10 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockErrDB })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigErr2, resetConfigForTests: resetConfigErr2 } = require('../src/config');
-            resetConfigErr2();
-            await initConfigErr2(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: initErr2, listTickets: listErr, resetTicketDbForTests: resetErr3 } = require('../src/services/ticketDb');
-            resetErr3();
+            const { initializeTicketDb: initErr2, listTickets: listErr } = require('../src/services/ticketDb');
             await initErr2(mockContext);
 
             // Act & Assert: listTickets should throw/reject due to DB error
@@ -987,18 +950,10 @@ describe('TicketDb', () => {
                 verbose: () => ({ Database: MockErrDB })
             }));
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigErr3, resetConfigForTests: resetConfigErr3 } = require('../src/config');
-            resetConfigErr3();
-            await initConfigErr3(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
-            const { initializeTicketDb: initErr3, getTicket: getErr, resetTicketDbForTests: resetErr4 } = require('../src/services/ticketDb');
-            resetErr4();
+            const { initializeTicketDb: initErr3, getTicket: getErr } = require('../src/services/ticketDb');
             await initErr3(mockContext);
 
             // Act & Assert: getTicket should throw/reject due to DB error
@@ -1019,19 +974,11 @@ describe('TicketDb', () => {
                 throw new Error('sqlite3 not available');
             });
 
-            jest.resetModules();
-
-            // Re-initialize config after resetModules
-            const { initializeConfig: initConfigDouble, resetConfigForTests: resetConfigDouble } = require('../src/config');
-            resetConfigDouble();
-            await initConfigDouble(mockContext);
-
             mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(JSON.stringify({ tickets: { dbPath: './.coe/tickets.db' } }));
 
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const { initializeTicketDb: initDouble, resetTicketDbForTests: resetErr5 } = require('../src/services/ticketDb');
-            resetErr5();
+            const { initializeTicketDb: initDouble } = require('../src/services/ticketDb');
 
             // Act: Initialize twice
             await initDouble(mockContext);
