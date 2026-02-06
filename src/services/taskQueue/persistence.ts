@@ -141,7 +141,7 @@ export class TaskQueuePersistence {
         config: TaskQueueConfig
     ): Promise<void> {
         const snapshot = this.createSnapshot(tasks, runningTasks, config);
-        
+
         try {
             await this.writeSnapshot(snapshot);
             this.lastSaveAt = new Date();
@@ -166,7 +166,7 @@ export class TaskQueuePersistence {
         try {
             const content = await fs.promises.readFile(this.options.filePath, 'utf-8');
             const snapshot: QueueSnapshot = JSON.parse(content);
-            
+
             // Validate version
             if (snapshot.version > CURRENT_VERSION) {
                 logWarn(`[Persistence] Snapshot version ${snapshot.version} is newer than supported ${CURRENT_VERSION}`);
@@ -228,7 +228,7 @@ export class TaskQueuePersistence {
      */
     private async writeSnapshot(snapshot: QueueSnapshot): Promise<void> {
         const content = JSON.stringify(snapshot, null, 2);
-        
+
         // Ensure directory exists
         const dir = path.dirname(this.options.filePath);
         await fs.promises.mkdir(dir, { recursive: true });
@@ -237,12 +237,12 @@ export class TaskQueuePersistence {
             // Write to temp file then rename
             const tempPath = `${this.options.filePath}.tmp`;
             await fs.promises.writeFile(tempPath, content, 'utf-8');
-            
+
             // Create backup of existing file
             if (fs.existsSync(this.options.filePath)) {
                 await this.rotateBackups();
             }
-            
+
             await fs.promises.rename(tempPath, this.options.filePath);
         } else {
             await fs.promises.writeFile(this.options.filePath, content, 'utf-8');

@@ -3,8 +3,8 @@
  * @description Comprehensive tests for task visualization (MT-016.9, MT-016.10)
  */
 
-import { 
-    DependencyGraph, 
+import {
+    DependencyGraph,
     createDependencyGraph,
     Task
 } from '../../../src/services/taskQueue';
@@ -36,7 +36,7 @@ describe('visualization', () => {
     describe('generateMermaidDiagram', () => {
         it('Test 1: should generate valid Mermaid syntax', () => {
             const diagram = generateMermaidDiagram(graph);
-            
+
             expect(diagram).toContain('graph TD');
             expect(diagram).toContain('A');
             expect(diagram).toContain('B');
@@ -45,7 +45,7 @@ describe('visualization', () => {
 
         it('Test 2: should show dependency arrows', () => {
             const diagram = generateMermaidDiagram(graph);
-            
+
             // B depends on A, so A --> B (arrow from dependency to dependent)
             expect(diagram).toMatch(/A.*-->.*B/);
             expect(diagram).toMatch(/B.*-->.*C/);
@@ -58,7 +58,7 @@ describe('visualization', () => {
             ]);
 
             const diagram = generateMermaidDiagram(graph, metadata, { showPriority: true });
-            
+
             expect(diagram).toContain('Task Alpha');
             expect(diagram).toContain('Task Beta');
         });
@@ -69,23 +69,23 @@ describe('visualization', () => {
             ]);
 
             const diagram = generateMermaidDiagram(graph, metadata, { showStatus: true });
-            
+
             expect(diagram).toContain('classDef');
         });
 
         it('Test 5: should handle empty graph', () => {
             const emptyGraph = createDependencyGraph();
             const diagram = generateMermaidDiagram(emptyGraph);
-            
+
             expect(diagram).toContain('graph TD');
         });
 
         it('Test 6: should support dark theme', () => {
-            const diagram = generateMermaidDiagram(graph, undefined, { 
-                showStatus: true, 
-                theme: 'dark' 
+            const diagram = generateMermaidDiagram(graph, undefined, {
+                showStatus: true,
+                theme: 'dark'
             });
-            
+
             expect(diagram).toContain('classDef');
         });
     });
@@ -93,7 +93,7 @@ describe('visualization', () => {
     describe('generateDependencyMap', () => {
         it('Test 7: should generate markdown document', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('# Dependency Map');
             expect(map).toContain('## Summary');
             expect(map).toContain('## Task Graph');
@@ -101,7 +101,7 @@ describe('visualization', () => {
 
         it('Test 8: should include summary statistics', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('Total Tasks');
             expect(map).toContain('Completed');
             expect(map).toContain('In Progress');
@@ -109,7 +109,7 @@ describe('visualization', () => {
 
         it('Test 9: should include Mermaid diagram', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('```mermaid');
             expect(map).toContain('graph TD');
             expect(map).toContain('```');
@@ -117,19 +117,19 @@ describe('visualization', () => {
 
         it('Test 10: should include critical path section', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('Critical Path');
         });
 
         it('Test 11: should include parallelization levels', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('Parallelization Levels');
         });
 
         it('Test 12: should include task details table', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('## Task Details');
             expect(map).toContain('| ID | Title |');
             expect(map).toContain('Task A');
@@ -139,7 +139,7 @@ describe('visualization', () => {
 
         it('Test 13: should include dependency details', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('## Dependency Details');
             expect(map).toContain('Depends on');
             expect(map).toContain('Required by');
@@ -147,7 +147,7 @@ describe('visualization', () => {
 
         it('Test 14: should show status emojis', () => {
             const map = generateDependencyMap(tasks, graph);
-            
+
             expect(map).toContain('✅'); // completed
             expect(map).toContain('🔄'); // running
         });
@@ -157,7 +157,7 @@ describe('visualization', () => {
         it('Test 15: should generate mermaid.live URL', () => {
             const diagram = 'graph TD\nA --> B';
             const url = getMermaidSvgUrl(diagram);
-            
+
             expect(url).toContain('mermaid.live');
             expect(url).toContain('base64');
         });

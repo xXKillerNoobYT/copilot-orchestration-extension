@@ -85,7 +85,7 @@ describe('scanCodeBase', () => {
             it('should return scan result', async () => {
                 mockFs.readdirSync.mockReturnValue([
                     createMockDirent('index.ts', false)
-                ] );
+                ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -100,10 +100,10 @@ describe('scanCodeBase', () => {
                     .mockReturnValueOnce([
                         createMockDirent('src', true),
                         createMockDirent('index.ts', false)
-                    ] )
+                    ])
                     .mockReturnValueOnce([
                         createMockDirent('app.ts', false)
-                    ] );
+                    ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -115,7 +115,7 @@ describe('scanCodeBase', () => {
                 mockFs.readdirSync.mockReturnValue([
                     createMockDirent('node_modules', true),
                     createMockDirent('index.ts', false)
-                ] );
+                ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -140,10 +140,10 @@ describe('scanCodeBase', () => {
 
                 mockFs.readdirSync.mockReturnValue([
                     createMockDirent('src', true)
-                ] )
+                ])
                     .mockReturnValueOnce([
                         createMockDirent('index.ts', false)
-                    ] );
+                    ]);
 
                 const scanner = new CodebaseScanner({
                     rootDir: testRoot,
@@ -158,7 +158,7 @@ describe('scanCodeBase', () => {
             it('should identify extra files', async () => {
                 mockFs.readdirSync.mockReturnValue([
                     createMockDirent('extra.ts', false)
-                ] );
+                ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -172,7 +172,7 @@ describe('scanCodeBase', () => {
                 mockFs.readdirSync.mockReturnValue([
                     createMockDirent('file1.ts', false),
                     createMockDirent('file2.ts', false)
-                ] );
+                ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -186,7 +186,7 @@ describe('scanCodeBase', () => {
                     createMockDirent('file1.ts', false),
                     createMockDirent('file2.ts', false),
                     createMockDirent('file3.ts', false)
-                ] );
+                ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -203,7 +203,7 @@ describe('scanCodeBase', () => {
                     ]
                 });
                 mockFs.readFileSync.mockReturnValue(mockPRD);
-                mockFs.readdirSync.mockReturnValue([] );
+                mockFs.readdirSync.mockReturnValue([]);
 
                 const scanner = new CodebaseScanner({
                     rootDir: testRoot,
@@ -215,7 +215,7 @@ describe('scanCodeBase', () => {
             });
 
             it('should show success for aligned codebase', async () => {
-                mockFs.readdirSync.mockReturnValue([] );
+                mockFs.readdirSync.mockReturnValue([]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -229,7 +229,7 @@ describe('scanCodeBase', () => {
             it('should include .ts files', async () => {
                 mockFs.readdirSync.mockReturnValue([
                     createMockDirent('app.ts', false)
-                ] );
+                ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -240,7 +240,7 @@ describe('scanCodeBase', () => {
             it('should exclude .d.ts files by default', async () => {
                 mockFs.readdirSync.mockReturnValue([
                     createMockDirent('types.d.ts', false)
-                ] );
+                ]);
 
                 const scanner = new CodebaseScanner({ rootDir: testRoot });
                 const result = await scanner.scan();
@@ -263,13 +263,13 @@ describe('scanCodeBase', () => {
                 mockFs.readFileSync.mockImplementation(() => {
                     throw new Error('Read error');
                 });
-                mockFs.readdirSync.mockReturnValue([] );
+                mockFs.readdirSync.mockReturnValue([]);
 
                 const scanner = new CodebaseScanner({
                     rootDir: testRoot,
                     prdPath: '/bad/path.json'
                 });
-                
+
                 // Should not throw
                 const result = await scanner.scan();
                 expect(result).toBeDefined();
@@ -281,7 +281,7 @@ describe('scanCodeBase', () => {
         beforeEach(() => {
             mockFs.readdirSync.mockReturnValue([
                 createMockDirent('index.ts', false)
-            ] );
+            ]);
         });
 
         describe('Test 8: output formats', () => {
@@ -366,7 +366,7 @@ describe('scanCodeBase', () => {
         it('should include summary table', async () => {
             mockFs.readdirSync.mockReturnValue([
                 createMockDirent('file.ts', false)
-            ] );
+            ]);
 
             const result = await handleScanCodeBase({ format: 'markdown' }, testRoot);
 
@@ -406,7 +406,7 @@ describe('scanCodeBase', () => {
 
             mockFs.readdirSync.mockReturnValue([
                 createMockDirent('large.ts', false)
-            ] );
+            ]);
 
             const scanner = new CodebaseScanner({ rootDir: testRoot });
             const result = await scanner.scan();
@@ -418,7 +418,7 @@ describe('scanCodeBase', () => {
         it('should extract file type', async () => {
             mockFs.readdirSync.mockReturnValue([
                 createMockDirent('app.ts', false)
-            ] );
+            ]);
 
             const scanner = new CodebaseScanner({ rootDir: testRoot });
             const result = await scanner.scan();

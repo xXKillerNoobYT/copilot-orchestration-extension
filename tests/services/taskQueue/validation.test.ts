@@ -3,9 +3,9 @@
  * @description Comprehensive tests for task dependency validation (MT-016.5)
  */
 
-import { 
-    DependencyGraph, 
-    createDependencyGraph 
+import {
+    DependencyGraph,
+    createDependencyGraph
 } from '../../../src/services/taskQueue/dependencyGraph';
 import {
     validateDependsOn,

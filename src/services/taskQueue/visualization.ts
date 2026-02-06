@@ -71,12 +71,12 @@ export function generateMermaidDiagram(
 ): string {
     const lines: string[] = [];
     const nodes = graph.getNodes();
-    
+
     // Start diagram
     lines.push('graph TD');
-    
+
     // Get critical path for highlighting
-    const criticalPath = options.highlightCriticalPath 
+    const criticalPath = options.highlightCriticalPath
         ? new Set(getCriticalPath(graph))
         : new Set<string>();
 
@@ -85,7 +85,7 @@ export function generateMermaidDiagram(
         const meta = taskMetadata?.get(nodeId);
         const nodeLabel = formatNodeLabel(nodeId, meta, options);
         const nodeStyle = getNodeStyle(nodeId, meta, criticalPath, options);
-        
+
         lines.push(`    ${sanitizeId(nodeId)}[${nodeLabel}]${nodeStyle}`);
     }
 
@@ -93,8 +93,8 @@ export function generateMermaidDiagram(
     for (const nodeId of nodes) {
         const deps = graph.getDependencies(nodeId);
         for (const depId of deps) {
-            const edgeStyle = criticalPath.has(nodeId) && criticalPath.has(depId) 
-                ? '==>' 
+            const edgeStyle = criticalPath.has(nodeId) && criticalPath.has(depId)
+                ? '==>'
                 : '-->';
             lines.push(`    ${sanitizeId(depId)} ${edgeStyle} ${sanitizeId(nodeId)}`);
         }
@@ -120,15 +120,15 @@ function formatNodeLabel(
     options?: VisualizationOptions
 ): string {
     const parts: string[] = [];
-    
+
     // Title or ID
     parts.push(meta?.title ?? nodeId);
-    
+
     // Priority badge
     if (options?.showPriority && meta?.priority) {
         parts[0] = `P${meta.priority}: ${parts[0]}`;
     }
-    
+
     // Estimate
     if (options?.showEstimates && meta?.estimatedMinutes) {
         parts.push(`${meta.estimatedMinutes}m`);
@@ -149,15 +149,15 @@ function getNodeStyle(
     options?: VisualizationOptions
 ): string {
     const classes: string[] = [];
-    
+
     if (criticalPath?.has(nodeId)) {
         classes.push('critical');
     }
-    
+
     if (options?.showStatus && meta?.status) {
         classes.push(meta.status);
     }
-    
+
     if (options?.showPriority && meta?.priority) {
         classes.push(`p${meta.priority}`);
     }
@@ -284,13 +284,13 @@ export function generateDependencyMap(
     lines.push('');
     lines.push('| ID | Title | Priority | Status | Dependencies | Est. Time |');
     lines.push('|----|-------|----------|--------|--------------|-----------|');
-    
+
     for (const task of tasks) {
-        const deps = task.dependencies.length > 0 
-            ? task.dependencies.join(', ') 
+        const deps = task.dependencies.length > 0
+            ? task.dependencies.join(', ')
             : '-';
-        const time = task.estimatedMinutes 
-            ? `${task.estimatedMinutes}m` 
+        const time = task.estimatedMinutes
+            ? `${task.estimatedMinutes}m`
             : '-';
         lines.push(`| ${task.id} | ${task.title} | P${task.priority} | ${task.status} | ${deps} | ${time} |`);
     }
@@ -299,7 +299,7 @@ export function generateDependencyMap(
     // Dependencies detail
     lines.push('## Dependency Details');
     lines.push('');
-    
+
     for (const task of tasks) {
         if (task.dependencies.length === 0 && graph.getDependents(task.id).length === 0) {
             continue; // Skip orphan tasks
@@ -307,7 +307,7 @@ export function generateDependencyMap(
 
         lines.push(`### ${task.id}: ${task.title}`);
         lines.push('');
-        
+
         if (task.dependencies.length > 0) {
             lines.push('**Depends on:**');
             for (const depId of task.dependencies) {
@@ -316,7 +316,7 @@ export function generateDependencyMap(
             }
             lines.push('');
         }
-        
+
         const dependents = graph.getDependents(task.id);
         if (dependents.length > 0) {
             lines.push('**Required by:**');
@@ -362,9 +362,9 @@ export async function exportDiagramToFile(
 ): Promise<void> {
     const fs = await import('fs');
     const path = await import('path');
-    
+
     let content: string;
-    
+
     switch (format) {
         case 'mmd':
             content = diagram;
@@ -380,7 +380,7 @@ export async function exportDiagramToFile(
 
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
     await fs.promises.writeFile(filePath, content, 'utf-8');
-    
+
     logInfo(`[Visualization] Exported diagram to ${filePath}`);
 }
 

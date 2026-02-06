@@ -142,7 +142,7 @@ export class PRDGenerator extends EventEmitter {
      */
     async generate(): Promise<GenerationResult> {
         const masterPlanPath = path.join(this.workspaceRoot, this.config.masterPlanPath);
-        
+
         try {
             // Read master plan
             if (!fs.existsSync(masterPlanPath)) {
@@ -153,23 +153,23 @@ export class PRDGenerator extends EventEmitter {
             }
 
             const masterPlanContent = fs.readFileSync(masterPlanPath, 'utf-8');
-            
+
             // Extract structured data
             const prd = this.extractPRD(masterPlanContent);
-            
+
             // Generate outputs
             const jsonPath = path.join(this.workspaceRoot, this.config.outputJsonPath);
             const mdPath = path.join(this.workspaceRoot, this.config.outputMdPath);
 
             // Write JSON
             fs.writeFileSync(jsonPath, JSON.stringify(prd, null, 2), 'utf-8');
-            
+
             // Write Markdown
             const markdown = this.generateMarkdown(prd);
             fs.writeFileSync(mdPath, markdown, 'utf-8');
 
             logInfo(`[PRDGenerator] Generated PRD: ${prd.features.length} features, ${prd.milestones.length} milestones`);
-            
+
             this.emit('prd-generated', { prd, jsonPath, mdPath });
 
             return {
@@ -196,7 +196,7 @@ export class PRDGenerator extends EventEmitter {
         const features = this.extractFeatures(content);
         const milestones = this.extractMilestones(content, features);
         const projectInfo = this.extractProjectInfo(content);
-        
+
         const completedCount = features.filter(f => f.status === 'complete').length;
         const inProgressCount = features.filter(f => f.status === 'in_progress').length;
         const plannedCount = features.filter(f => f.status === 'planned').length;
@@ -214,8 +214,8 @@ export class PRDGenerator extends EventEmitter {
                 completedFeatures: completedCount,
                 inProgressFeatures: inProgressCount,
                 plannedFeatures: plannedCount,
-                overallProgress: features.length > 0 
-                    ? Math.round((completedCount / features.length) * 100) 
+                overallProgress: features.length > 0
+                    ? Math.round((completedCount / features.length) * 100)
                     : 0
             }
         };
@@ -226,24 +226,24 @@ export class PRDGenerator extends EventEmitter {
      */
     private extractFeatures(content: string): ExtractedFeature[] {
         const features: ExtractedFeature[] = [];
-        
+
         // Match MT-XXX task patterns
         const taskPattern = /(?:^|\n)-\s*\[([x\s])\]\s*\*\*([A-Z]+-\d+(?:\.\d+)?)\*\*:\s*([^\n]+)/gm;
         let match;
-        
+
         while ((match = taskPattern.exec(content)) !== null) {
             const isComplete = match[1].toLowerCase() === 'x';
             const id = match[2];
             const description = match[3].trim();
-            
+
             // Extract priority from description
             const priorityMatch = description.match(/\[Priority:\s*(P[0-3])\]/i);
             const priority = (priorityMatch ? priorityMatch[1] : 'P2') as 'P0' | 'P1' | 'P2' | 'P3';
-            
+
             // Extract time estimate
             const timeMatch = description.match(/\((\d+)\s*min\)/);
             const estimatedTime = timeMatch ? `${timeMatch[1]} min` : undefined;
-            
+
             // Extract dependencies
             const depsMatch = description.match(/\[depends:\s*([^\]]+)\]/i);
             let dependencies: string[] = [];
@@ -254,7 +254,7 @@ export class PRDGenerator extends EventEmitter {
                     dependencies = depsText.split(',').map(d => d.trim()).filter(d => d.length > 0);
                 }
             }
-            
+
             // Clean description
             const cleanDesc = description
                 .replace(/\[Priority:\s*P[0-3]\]/gi, '')
@@ -284,14 +284,14 @@ export class PRDGenerator extends EventEmitter {
      */
     private extractAcceptanceCriteria(content: string, featureId: string): string[] {
         const criteria: string[] = [];
-        
+
         // Look for criteria section after the feature
         const featurePattern = new RegExp(
             `\\*\\*${featureId.replace('.', '\\.')}\\*\\*[^]*?(?=\\*\\*[A-Z]+-\\d+|$)`,
             'i'
         );
         const featureSection = content.match(featurePattern);
-        
+
         if (featureSection) {
             // Extract bullet points as criteria
             const bulletPattern = /^\s*-\s*\*\*([^*]+)\*\*:\s*(.+)$/gm;
@@ -312,33 +312,33 @@ export class PRDGenerator extends EventEmitter {
      */
     private extractMilestones(content: string, features: ExtractedFeature[]): ExtractedMilestone[] {
         const milestones: ExtractedMilestone[] = [];
-        
+
         // Match stage headers
         const stagePattern = /##\s*STAGE\s*(\d+):\s*([^\n-]+)/gi;
         let match;
-        
+
         while ((match = stagePattern.exec(content)) !== null) {
             const stageNum = parseInt(match[1], 10);
             const stageName = match[2].trim();
-            
+
             // Find features belonging to this stage by looking at MT-0XX patterns
             const stageFeatures = features.filter(f => {
                 const mtNum = parseInt(f.id.replace(/[A-Z]+-0?/, '').split('.')[0], 10);
-                return Math.floor(mtNum / 5) + 1 === stageNum || 
-                       (stageNum === 1 && mtNum <= 5) ||
-                       (stageNum === 2 && mtNum >= 6 && mtNum <= 10);
+                return Math.floor(mtNum / 5) + 1 === stageNum ||
+                    (stageNum === 1 && mtNum <= 5) ||
+                    (stageNum === 2 && mtNum >= 6 && mtNum <= 10);
             });
 
             const completedInStage = stageFeatures.filter(f => f.status === 'complete').length;
-            
+
             milestones.push({
                 id: `stage-${stageNum}`,
                 name: stageName,
                 stage: stageNum,
                 featureIds: stageFeatures.map(f => f.id),
                 status: completedInStage === stageFeatures.length ? 'complete' :
-                        completedInStage > 0 ? 'in_progress' : 'pending',
-                progress: stageFeatures.length > 0 
+                    completedInStage > 0 ? 'in_progress' : 'pending',
+                progress: stageFeatures.length > 0
                     ? Math.round((completedInStage / stageFeatures.length) * 100)
                     : 0
             });
@@ -354,7 +354,7 @@ export class PRDGenerator extends EventEmitter {
         // Look for title
         const titleMatch = content.match(/^#\s+(.+)$/m);
         const name = titleMatch ? titleMatch[1].trim() : 'COE Project';
-        
+
         // Look for description (first paragraph after title)
         const descMatch = content.match(/^#[^\n]+\n+([^#\n][^\n]+)/m);
         const description = descMatch ? descMatch[1].trim() : 'No description available';
@@ -396,7 +396,7 @@ export class PRDGenerator extends EventEmitter {
 
         for (const milestone of prd.milestones) {
             const statusIcon = milestone.status === 'complete' ? '✅' :
-                              milestone.status === 'in_progress' ? '🔄' : '⏳';
+                milestone.status === 'in_progress' ? '🔄' : '⏳';
             lines.push(`### ${statusIcon} Stage ${milestone.stage}: ${milestone.name}`);
             lines.push(`Progress: ${milestone.progress}% (${milestone.featureIds.length} features)`);
             lines.push('');
@@ -409,10 +409,10 @@ export class PRDGenerator extends EventEmitter {
             const priorityFeatures = prd.features.filter(f => f.priority === priority);
             if (priorityFeatures.length > 0) {
                 lines.push(`### ${priority} - ${this.getPriorityLabel(priority)}`, '');
-                
+
                 for (const feature of priorityFeatures) {
                     const statusIcon = feature.status === 'complete' ? '✅' :
-                                      feature.status === 'in_progress' ? '🔄' : '⬜';
+                        feature.status === 'in_progress' ? '🔄' : '⬜';
                     lines.push(`- ${statusIcon} **${feature.id}**: ${feature.description}`);
                     if (feature.dependencies.length > 0) {
                         lines.push(`  - Dependencies: ${feature.dependencies.join(', ')}`);

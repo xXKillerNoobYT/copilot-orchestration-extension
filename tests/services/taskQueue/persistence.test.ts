@@ -63,7 +63,7 @@ describe('persistence', () => {
             expect(mockedFs.promises.writeFile).toHaveBeenCalled();
             const writeCall = (mockedFs.promises.writeFile as jest.Mock).mock.calls[0];
             expect(writeCall[0]).toBe(mockPath);
-            
+
             const written = JSON.parse(writeCall[1]);
             expect(written.tasks).toHaveLength(1);
             expect(written.tasks[0].id).toBe('task-1');
@@ -261,22 +261,22 @@ describe('persistence', () => {
     describe('autoSave', () => {
         it('Test 13: should start and stop auto-save timer', () => {
             jest.useFakeTimers();
-            
+
             const autoSavePersistence = new TaskQueuePersistence({
                 filePath: mockPath,
                 autoSaveInterval: 1000
             });
-            
+
             const callback = jest.fn();
             autoSavePersistence.startAutoSave(callback);
-            
+
             jest.advanceTimersByTime(3000);
             expect(callback).toHaveBeenCalledTimes(3);
-            
+
             autoSavePersistence.stopAutoSave();
             jest.advanceTimersByTime(2000);
             expect(callback).toHaveBeenCalledTimes(3); // No more calls after stop
-            
+
             jest.useRealTimers();
         });
 

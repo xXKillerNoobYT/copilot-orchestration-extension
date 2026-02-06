@@ -3,9 +3,9 @@
  * @description Comprehensive tests for circular dependency detection (MT-016.3)
  */
 
-import { 
-    DependencyGraph, 
-    createDependencyGraph 
+import {
+    DependencyGraph,
+    createDependencyGraph
 } from '../../../src/services/taskQueue/dependencyGraph';
 import {
     analyzeCircularDependencies,

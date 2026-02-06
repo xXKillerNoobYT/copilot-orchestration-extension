@@ -3,9 +3,9 @@
  * @description Comprehensive tests for task blocking (MT-016.4)
  */
 
-import { 
-    DependencyGraph, 
-    createDependencyGraph 
+import {
+    DependencyGraph,
+    createDependencyGraph
 } from '../../../src/services/taskQueue/dependencyGraph';
 import {
     BlockingManager,

@@ -239,7 +239,7 @@ export function validateNewDependency(
     // Temporarily add the edge and check
     const testGraph = cloneGraph(graph);
     testGraph.addDependency(taskId, newDependencyId);
-    
+
     if (hasCircularDependencies(testGraph)) {
         errors.push({
             taskId,
@@ -275,17 +275,17 @@ export function isValidTaskId(id: string): boolean {
  */
 function buildGraphFromTasks(tasks: TaskDefinition[]): DependencyGraph {
     const graph = new DependencyGraph();
-    
+
     for (const task of tasks) {
         graph.addNode(task.id);
     }
-    
+
     for (const task of tasks) {
         for (const depId of task.dependencies ?? []) {
             graph.addDependency(task.id, depId);
         }
     }
-    
+
     return graph;
 }
 
@@ -295,7 +295,7 @@ function buildGraphFromTasks(tasks: TaskDefinition[]): DependencyGraph {
 function findOrphanTasks(tasks: TaskDefinition[]): string[] {
     const hasIncoming = new Set<string>();
     const hasOutgoing = new Set<string>();
-    
+
     for (const task of tasks) {
         if (task.dependencies && task.dependencies.length > 0) {
             hasOutgoing.add(task.id);
@@ -304,7 +304,7 @@ function findOrphanTasks(tasks: TaskDefinition[]): string[] {
             }
         }
     }
-    
+
     return tasks
         .map(t => t.id)
         .filter(id => !hasIncoming.has(id) && !hasOutgoing.has(id));
@@ -314,12 +314,12 @@ function findOrphanTasks(tasks: TaskDefinition[]): string[] {
  * Check for overly long dependency chains.
  */
 function checkLongChains(
-    graph: DependencyGraph, 
+    graph: DependencyGraph,
     tasks: TaskDefinition[],
     maxChainLength: number = 10
 ): ValidationWarning[] {
     const warnings: ValidationWarning[] = [];
-    
+
     for (const task of tasks) {
         const chainLength = getMaxChainLength(task.id, graph, new Set());
         if (chainLength > maxChainLength) {
@@ -330,7 +330,7 @@ function checkLongChains(
             });
         }
     }
-    
+
     return warnings;
 }
 
@@ -338,22 +338,22 @@ function checkLongChains(
  * Get the maximum dependency chain length for a task.
  */
 function getMaxChainLength(
-    taskId: string, 
-    graph: DependencyGraph, 
+    taskId: string,
+    graph: DependencyGraph,
     visited: Set<string>
 ): number {
     if (visited.has(taskId)) return 0;
     visited.add(taskId);
-    
+
     const deps = graph.getDependencies(taskId);
     if (deps.length === 0) return 1;
-    
+
     let maxDepth = 0;
     for (const depId of deps) {
         const depth = getMaxChainLength(depId, graph, visited);
         maxDepth = Math.max(maxDepth, depth);
     }
-    
+
     return 1 + maxDepth;
 }
 
@@ -362,17 +362,17 @@ function getMaxChainLength(
  */
 function cloneGraph(graph: DependencyGraph): DependencyGraph {
     const clone = new DependencyGraph();
-    
+
     for (const nodeId of graph.getNodes()) {
         clone.addNode(nodeId);
     }
-    
+
     for (const nodeId of graph.getNodes()) {
         for (const depId of graph.getDependencies(nodeId)) {
             clone.addDependency(nodeId, depId);
         }
     }
-    
+
     return clone;
 }
 
@@ -381,16 +381,16 @@ function cloneGraph(graph: DependencyGraph): DependencyGraph {
  */
 export function formatValidationErrors(result: ValidationResult): string {
     const lines: string[] = [];
-    
+
     if (result.valid) {
         return '✅ All validations passed';
     }
-    
+
     lines.push(`❌ Validation failed with ${result.errors.length} error(s):`);
     for (const error of result.errors) {
         lines.push(`  • ${error.message}`);
     }
-    
+
     if (result.warnings.length > 0) {
         lines.push('');
         lines.push(`⚠️ ${result.warnings.length} warning(s):`);
@@ -398,6 +398,6 @@ export function formatValidationErrors(result: ValidationResult): string {
             lines.push(`  • ${warning.message}`);
         }
     }
-    
+
     return lines.join('\n');
 }

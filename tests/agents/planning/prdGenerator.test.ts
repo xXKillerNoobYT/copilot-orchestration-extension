@@ -2,11 +2,11 @@
  * Tests for PRD Generator (MT-018)
  */
 
-import { 
-    PRDGenerator, 
-    generatePRD, 
-    initializePRDGenerator, 
-    getPRDGeneratorInstance, 
+import {
+    PRDGenerator,
+    generatePRD,
+    initializePRDGenerator,
+    getPRDGeneratorInstance,
     resetPRDGeneratorForTests,
     PRDGeneratorConfig,
     GeneratedPRD
@@ -40,7 +40,7 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 
 describe('prdGenerator', () => {
     const testWorkspace = '/test/workspace';
-    
+
     const mockMasterPlan = `
 # COE - Copilot Orchestration Extension
 
@@ -74,11 +74,11 @@ Tasks for ticket system.
     beforeEach(() => {
         jest.clearAllMocks();
         resetPRDGeneratorForTests();
-        
+
         // Setup fs mocks
         mockFs.existsSync.mockReturnValue(true);
         mockFs.readFileSync.mockReturnValue(mockMasterPlan);
-        mockFs.writeFileSync.mockImplementation(() => {});
+        mockFs.writeFileSync.mockImplementation(() => { });
     });
 
     afterEach(() => {
@@ -118,7 +118,7 @@ Tasks for ticket system.
                 const result = await generator.generate();
 
                 expect(result.prd?.features.length).toBe(4);
-                
+
                 const feature1 = result.prd?.features.find(f => f.id === 'MT-001.1');
                 expect(feature1).toBeDefined();
                 expect(feature1?.status).toBe('complete');
@@ -186,13 +186,13 @@ Tasks for ticket system.
             it('should return error when master plan not found', async () => {
                 // Just set false for this specific check  
                 mockFs.existsSync.mockReturnValue(false);
-                
+
                 const generator = new PRDGenerator(testWorkspace);
                 const result = await generator.generate();
 
                 expect(result.success).toBe(false);
                 expect(result.error).toContain('not found');
-                
+
                 // Restore mock for next tests
                 mockFs.existsSync.mockReturnValue(true);
             });
@@ -204,12 +204,12 @@ Tasks for ticket system.
                 // Completely reset the mocks for this test
                 mockFs.existsSync.mockReset();
                 mockFs.readFileSync.mockReset();
-                
+
                 mockFs.existsSync.mockReturnValue(true);
                 mockFs.readFileSync.mockImplementation(() => {
                     throw new Error('Read error');
                 });
-                
+
                 const generator = new PRDGenerator(testWorkspace);
                 const handler = jest.fn();
                 generator.on('prd-error', handler);

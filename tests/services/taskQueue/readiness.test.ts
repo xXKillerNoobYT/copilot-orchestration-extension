@@ -3,9 +3,9 @@
  * @description Comprehensive tests for task readiness calculation (MT-016.7)
  */
 
-import { 
-    DependencyGraph, 
-    createDependencyGraph 
+import {
+    DependencyGraph,
+    createDependencyGraph
 } from '../../../src/services/taskQueue/dependencyGraph';
 import {
     ReadinessCalculator,
@@ -141,7 +141,7 @@ describe('readiness', () => {
             graph.addNode('A');
             const calculator = new ReadinessCalculator(graph);
             calculator.onTaskCompleted('A');
-            
+
             calculator.reset();
             expect(calculator.calculateReadiness('A').state).toBe('ready');
         });
@@ -155,7 +155,7 @@ describe('readiness', () => {
             const calculator = new ReadinessCalculator(graph);
 
             calculator.initializeFromState(['A'], [], ['B']);
-            
+
             expect(calculator.calculateReadiness('A').state).toBe('completed');
             expect(calculator.calculateReadiness('B').state).toBe('running');
             expect(calculator.calculateReadiness('C').state).toBe('waiting');
@@ -189,7 +189,7 @@ describe('readiness', () => {
 
             const completed = new Set<string>();
             const ready = getReadyTasks(graph, completed);
-            
+
             expect(ready).toContain('A');
             expect(ready).toContain('B');
             expect(ready).not.toContain('C');
@@ -203,14 +203,14 @@ describe('readiness', () => {
 
             const completed = new Set(['A', 'B']);
             const progress = calculateOverallProgress(graph, completed);
-            
+
             expect(progress).toBe(50); // 2/4 = 50%
         });
 
         it('Test 16: calculateOverallProgress should return 100 for empty graph', () => {
             const completed = new Set<string>();
             const progress = calculateOverallProgress(graph, completed);
-            
+
             expect(progress).toBe(100);
         });
     });

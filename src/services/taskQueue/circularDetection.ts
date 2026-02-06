@@ -64,11 +64,11 @@ export interface CircularAnalysisResult {
 export function analyzeCircularDependencies(graph: DependencyGraph): CircularAnalysisResult {
     const rawCycles = detectCycles(graph);
     const affectedTasksSet = new Set<string>();
-    
+
     const cycles: CircularDependencyInfo[] = rawCycles.map(cycle => {
         // Add all tasks in cycle to affected set
         cycle.forEach(taskId => affectedTasksSet.add(taskId));
-        
+
         return formatCycleInfo(cycle);
     });
 
@@ -124,7 +124,7 @@ export function detectCircularDependencies(graph: DependencyGraph): string[][] {
  */
 function formatCycleInfo(cycle: string[]): CircularDependencyInfo {
     const cycleStr = cycle.join(' → ');
-    
+
     return {
         cycle,
         description: `Circular dependency: ${cycleStr}`,
@@ -143,21 +143,21 @@ function suggestResolution(cycle: string[]): string {
     if (cycle.length === 0) {
         return 'No cycle to resolve';
     }
-    
+
     if (cycle.length === 2) {
         // Self-loop: A → A
         return `Task "${cycle[0]}" depends on itself. Remove the self-dependency.`;
     }
-    
+
     if (cycle.length === 3) {
         // Simple cycle: A → B → A
         return `Consider removing the dependency from "${cycle[1]}" to "${cycle[0]}" OR from "${cycle[0]}" to "${cycle[1]}"`;
     }
-    
+
     // Complex cycle: find the weakest link (suggest removing the last edge)
     const lastTask = cycle[cycle.length - 2];
     const firstTask = cycle[0];
-    
+
     return `Consider:
 1. Remove dependency from "${lastTask}" to "${firstTask}"
 2. Or restructure tasks to eliminate the cycle
@@ -177,10 +177,10 @@ function suggestResolution(cycle: string[]): string {
  */
 export function findMinimumCycleBreakers(graph: DependencyGraph): Array<[string, string]> {
     const edgesToRemove: Array<[string, string]> = [];
-    
+
     // Work with a copy of the graph
     const tempGraph = cloneGraph(graph);
-    
+
     let cycles = detectCycles(tempGraph);
     while (cycles.length > 0) {
         // Pick the first cycle and remove its last edge
@@ -188,18 +188,18 @@ export function findMinimumCycleBreakers(graph: DependencyGraph): Array<[string,
         if (cycle.length >= 2) {
             const fromTask = cycle[cycle.length - 2];
             const toTask = cycle[cycle.length - 1] === cycle[0] ? cycle[0] : cycle[cycle.length - 1];
-            
+
             edgesToRemove.push([fromTask, toTask]);
             tempGraph.removeDependency(fromTask, toTask);
         }
-        
+
         cycles = detectCycles(tempGraph);
     }
-    
+
     if (edgesToRemove.length > 0) {
         logWarn(`[CircularDetection] Suggest removing ${edgesToRemove.length} dependencies to break cycles`);
     }
-    
+
     return edgesToRemove;
 }
 
@@ -215,33 +215,33 @@ export function findMinimumCycleBreakers(graph: DependencyGraph): Array<[string,
  * @returns True if adding this dependency would create a cycle
  */
 export function wouldCreateCycle(
-    graph: DependencyGraph, 
-    taskId: string, 
+    graph: DependencyGraph,
+    taskId: string,
     dependencyId: string
 ): boolean {
     // Check if dependencyId already depends (directly or transitively) on taskId
     // If so, adding taskId → dependencyId would create a cycle
-    
+
     const visited = new Set<string>();
     const stack = [dependencyId];
-    
+
     while (stack.length > 0) {
         const current = stack.pop()!;
-        
+
         if (current === taskId) {
             return true; // Found a path back to taskId
         }
-        
+
         if (visited.has(current)) continue;
         visited.add(current);
-        
+
         // Add all dependencies of current to stack
         const deps = graph.getDependencies(current);
         for (const dep of deps) {
             stack.push(dep);
         }
     }
-    
+
     return false;
 }
 
@@ -254,17 +254,17 @@ export function wouldCreateCycle(
  */
 function cloneGraph(graph: DependencyGraph): DependencyGraph {
     const clone = new DependencyGraph();
-    
+
     for (const nodeId of graph.getNodes()) {
         clone.addNode(nodeId);
     }
-    
+
     for (const nodeId of graph.getNodes()) {
         for (const depId of graph.getDependencies(nodeId)) {
             clone.addDependency(nodeId, depId);
         }
     }
-    
+
     return clone;
 }
 
@@ -275,21 +275,21 @@ export function formatCycleReport(result: CircularAnalysisResult): string {
     if (!result.hasCycles) {
         return 'No circular dependencies detected. All tasks can be scheduled.';
     }
-    
+
     const lines: string[] = [
         `⚠️ Found ${result.cycleCount} circular dependency cycle(s)`,
         '',
         'Cycles detected:',
     ];
-    
+
     result.cycles.forEach((info, idx) => {
         lines.push(`  ${idx + 1}. ${info.description}`);
         lines.push(`     Suggestion: ${info.suggestion}`);
     });
-    
+
     lines.push('');
     lines.push(`Affected tasks (${result.affectedTasks.length}): ${result.affectedTasks.join(', ')}`);
     lines.push(`Safe tasks (${result.safeTasks.length}): ${result.safeTasks.join(', ')}`);
-    
+
     return lines.join('\n');
 }

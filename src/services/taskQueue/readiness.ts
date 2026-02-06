@@ -18,7 +18,7 @@ import { logInfo, logWarn } from '../../logger';
 // Types
 // ============================================================================
 
-export type ReadinessState = 
+export type ReadinessState =
     | 'ready'        // All dependencies met, can start
     | 'waiting'      // Has incomplete dependencies
     | 'blocked'      // Blocked by failed/blocked dependencies
@@ -76,7 +76,7 @@ export class ReadinessCalculator {
     constructor(
         private graph: DependencyGraph,
         private blockingManager?: BlockingManager
-    ) {}
+    ) { }
 
     /**
      * Calculate readiness for a single task.
@@ -86,7 +86,7 @@ export class ReadinessCalculator {
      */
     calculateReadiness(taskId: string): ReadinessInfo {
         const dependencies = this.graph.getDependencies(taskId);
-        
+
         const completedDeps: string[] = [];
         const waitingOn: string[] = [];
         const blockedBy: string[] = [];
@@ -104,8 +104,8 @@ export class ReadinessCalculator {
         }
 
         // Calculate progress
-        const progress = dependencies.length === 0 
-            ? 100 
+        const progress = dependencies.length === 0
+            ? 100
             : Math.round((completedDeps.length / dependencies.length) * 100);
 
         // Determine state
@@ -288,11 +288,11 @@ export class ReadinessCalculator {
      */
     estimateReadyTime(taskId: string, avgTaskDuration: number = 30 * 60 * 1000): Date | undefined {
         const info = this.calculateReadiness(taskId);
-        
+
         if (info.state === 'ready' || info.state === 'completed') {
             return new Date();
         }
-        
+
         if (info.state === 'blocked' || info.state === 'failed') {
             return undefined;
         }
@@ -300,7 +300,7 @@ export class ReadinessCalculator {
         // Count remaining dependencies
         const remaining = info.waitingOn.length;
         const estimatedMs = remaining * avgTaskDuration;
-        
+
         return new Date(Date.now() + estimatedMs);
     }
 

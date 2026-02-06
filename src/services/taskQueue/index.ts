@@ -18,10 +18,10 @@ export * from './dependencyGraph';
 export * from './topologicalSort';
 export * from './priorityQueue';
 // Selective exports from circularDetection (avoid conflict with topologicalSort)
-export { 
-    analyzeCircularDependencies, 
-    findMinimumCycleBreakers, 
-    wouldCreateCycle, 
+export {
+    analyzeCircularDependencies,
+    findMinimumCycleBreakers,
+    wouldCreateCycle,
     formatCycleReport,
     CircularDependencyInfo,
     CircularAnalysisResult

@@ -18,7 +18,7 @@ import { logInfo, logWarn, logError } from '../../logger';
 // Types
 // ============================================================================
 
-export type BlockReason = 
+export type BlockReason =
     | 'dependency-failed'
     | 'dependency-blocked'
     | 'dependency-missing'
@@ -87,8 +87,8 @@ export class BlockingManager {
      * @returns Result of the cascade operation
      */
     blockTask(
-        taskId: string, 
-        graph: DependencyGraph, 
+        taskId: string,
+        graph: DependencyGraph,
         reason: BlockReason = 'dependency-failed'
     ): BlockingCascadeResult {
         const result: BlockingCascadeResult = {
@@ -206,7 +206,7 @@ export class BlockingManager {
 
         // Check if the blocking condition is resolved
         const info = this.blockedTasks.get(taskId)!;
-        
+
         if (info.reason === 'manual-hold') {
             // Manual holds must be explicitly removed
             result.stillBlocked.push(taskId);

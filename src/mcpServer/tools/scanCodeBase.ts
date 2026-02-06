@@ -170,7 +170,7 @@ export class CodebaseScanner {
      */
     async scan(): Promise<ScanResult> {
         logInfo(`[ScanCodeBase] Starting scan of ${this.config.rootDir}`);
-        
+
         // Load expected files from PRD if available
         if (this.config.prdPath) {
             await this.loadExpectedFiles();
@@ -178,7 +178,7 @@ export class CodebaseScanner {
 
         // Scan actual files
         const scannedFiles = await this.scanDirectory(this.config.rootDir, 0);
-        
+
         // Categorize files
         const aligned: ScannedFile[] = [];
         const mismatched: ScannedFile[] = [];
@@ -217,7 +217,7 @@ export class CodebaseScanner {
 
         // Calculate alignment score
         const total = aligned.length + mismatched.length + missing.length;
-        const alignmentScore = total > 0 
+        const alignmentScore = total > 0
             ? Math.round((aligned.length / total) * 100)
             : 100;
 
@@ -245,7 +245,7 @@ export class CodebaseScanner {
         };
 
         logInfo(`[ScanCodeBase] Scan complete: ${aligned.length} aligned, ${mismatched.length} mismatched, ${missing.length} missing`);
-        
+
         return result;
     }
 
@@ -333,7 +333,7 @@ export class CodebaseScanner {
             .replace(/\*/g, '[^/]*')
             .replace(/<<<DOUBLESTAR>>>/g, '.*')
             .replace(/\?/g, '.');
-        
+
         const regex = new RegExp(`^${regexPattern}$`, 'i');
         return regex.test(filePath) || regex.test(filePath.replace(/\\/g, '/'));
     }
@@ -348,7 +348,7 @@ export class CodebaseScanner {
 
         try {
             const content = fs.readFileSync(this.config.prdPath, 'utf-8');
-            
+
             // Try parsing as JSON first
             if (this.config.prdPath.endsWith('.json')) {
                 const prd = JSON.parse(content);
@@ -410,13 +410,13 @@ export class CodebaseScanner {
     /**
      * Check alignment of a scanned file
      */
-    private checkAlignment(file: ScannedFile): { 
+    private checkAlignment(file: ScannedFile): {
         status: AlignmentStatus;
         requirements: string[];
         notes: string[];
     } {
         const expected = this.expectedFiles.get(file.path);
-        
+
         if (!expected) {
             // File exists but not in requirements
             return {
@@ -494,9 +494,9 @@ export async function handleScanCodeBase(
     workspaceRoot: string
 ): Promise<string> {
     const config: Partial<ScanConfig> = {
-        rootDir: params.directory 
-            ? path.isAbsolute(params.directory) 
-                ? params.directory 
+        rootDir: params.directory
+            ? path.isAbsolute(params.directory)
+                ? params.directory
                 : path.join(workspaceRoot, params.directory)
             : workspaceRoot,
         checkContents: params.checkContents ?? false,
