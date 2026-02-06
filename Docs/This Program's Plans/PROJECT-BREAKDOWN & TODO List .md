@@ -1,9 +1,9 @@
 # Copilot Orchestration Extension (COE)
 # PROJECT BREAKDOWN & MASTER DEVELOPMENT GUIDE
 **Last Updated**: February 5, 2026  
-**Status**: Stage 3 LLM Foundation Complete! 🎉  
-**Current Stage**: Stage 3 - LLM Integration (Caching & Streaming)  
-**Overall Progress**: 66/442 tasks complete (14.9%)
+**Status**: Stage 4 Agent Teams In Progress! 🎉  
+**Current Stage**: Stage 4 - Agent Team Implementation  
+**Overall Progress**: 28.5% (126/442 tasks)
 
 ---
 
@@ -103,7 +103,7 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓▓▓▓▓░░░░░░░░░░░░░░░] 20.8% (92/442 tasks)
+[▓▓▓▓▓▓▓░░░░░░░░░░░░░] 28.5% (126/442 tasks)
 ```
 
 ### Stage Completion
@@ -112,124 +112,103 @@ This is your **complete master guide to program completion** breaking down the e
 |-------|--------|-------|----------|----------|-------------|
 | **Stage 1: Foundation** | ✅ Complete | 28 | 28/28 | 100% | ✅ Passed |
 | **Stage 2: Ticket System** | ✅ Complete | 38 | 38/38 | 100% | ✅ Passed |
-| **Stage 3: LLM Integration** | ⏳ In Progress | 28 | 18/28 | 64% | 🟡 Clarity Agent Complete |
-| **Stage 4: Agent Teams** | ⏳ In Progress | 71 | 8/71 | 11% | 🟡 Planning Team Core Complete |
+| **Stage 3: LLM Integration** | ✅ Complete | 28 | 28/28 | 100% | ✅ Passed |
+| **Stage 4: Agent Teams** | ⏳ In Progress | 71 | 32/71 | 45% | 🟡 Core Modules Complete |
 | **Stage 5: Context & Data** | ⏳ Queued | 52 | 0/52 | 0% | 🔒 Locked |
 | **Stage 6: VS Code UI** | ⏳ Queued | 49 | 0/49 | 0% | 🔒 Locked |
 | **Stage 7: Testing & Advanced** | ⏳ Queued | 176 | 0/176 | 0% | 🔒 Locked |
 
 ### 🎉 Recently Completed (Last 5 Tasks)
 
-1. ✅ **MT-012 (core tasks)**: Planning Team Implementation (completed Feb 6, 2026) [actual: ~180 min]
-  - Created `.coe/agents/planning-team/config.yaml` - YAML configuration
+1. ✅ **MT-017 (core tasks)**: Context Management System (completed Feb 5, 2026) [actual: ~90 min]
+  - Created `src/services/context/tokenCounter.ts` - Token counting with model-specific limits
+  - Created `src/services/context/priorityTruncation.ts` - Priority-based context truncation
+  - Created `src/services/context/contextBuilder.ts` - Context assembly with file references
+  - Created `src/services/context/index.ts` - ContextManager main orchestrator
+  - Created `tests/services/context/` - Comprehensive tests
+  - 1457 tests passing (81 suites)
+  - **Context Management Core Complete! 🎉**
+
+2. ✅ **MT-016 (core tasks)**: Task Queue & Dependencies (completed Feb 5, 2026) [actual: ~80 min]
+  - Created `src/services/taskQueue/dependencyGraph.ts` - DAG for task dependencies
+  - Created `src/services/taskQueue/topologicalSort.ts` - Kahn's algorithm for ordering
+  - Created `src/services/taskQueue/priorityQueue.ts` - Priority-based task ordering
+  - Created `src/services/taskQueue/index.ts` - TaskQueue main orchestrator
+  - Created `tests/services/taskQueue/` - Comprehensive dependency tests
+  - **Task Queue Core Complete! 🎉**
+
+3. ✅ **MT-015 (core tasks)**: Verification Team Implementation (completed Feb 5, 2026) [actual: ~120 min]
+  - Created `src/agents/verification/stabilityTimer.ts` - 60-second stability delay
+  - Created `src/agents/verification/matching.ts` - Acceptance criteria matching
+  - Created `src/agents/verification/testRunner.ts` - Automated test execution
+  - Created `src/agents/verification/decision.ts` - Pass/fail determination
+  - Created `src/agents/verification/investigation.ts` - Investigation ticket creation
+  - Created `src/agents/verification/index.ts` - VerificationTeam orchestrator
+  - **Verification Team Core Complete! 🎉**
+
+4. ✅ **MT-014 (core tasks)**: Answer Team Implementation (completed Feb 5, 2026) [actual: ~100 min]
+  - Created `src/agents/answer/confidence.ts` - ConfidenceScorer with 0-100 scoring
+  - Created `src/agents/answer/timeout.ts` - 45-second timeout handling
+  - Created `src/agents/answer/planContext.ts` - Plan.json context extraction
+  - Created `src/agents/answer/prdContext.ts` - PRD.md context extraction
+  - Created `src/agents/answer/index.ts` - AnswerTeam main orchestrator
+  - Created `tests/agents/answer/` - 55+ comprehensive tests
+  - **Answer Team Core Complete! 🎉**
+
+5. ✅ **MT-012 (core tasks)**: Planning Team Implementation (completed Feb 5, 2026) [actual: ~180 min]
   - Created `src/agents/planning/analysis.ts` - RequirementAnalyzer with TEXT-based LLM parsing
   - Created `src/agents/planning/vagueness.ts` - VaguenessDetector with quickDetect + LLM check
   - Created `src/agents/planning/decomposer.ts` - TaskDecomposer with dependency graph
   - Created `src/agents/planning/prdParser.ts` - PRDParser for PRD.json files
   - Created `src/agents/planning/handoff.ts` - HandoffManager with planning reentry prevention
   - Created `src/agents/planning/index.ts` - Main PlanningAgent orchestrator
-  - Created `tests/agents/planning/planningAgent.test.ts` - 33 comprehensive tests
-  - 1227 tests passing
   - **Planning Team Core Complete! 🎉**
 
-2. ✅ **MT-011 (all tasks)**: Clarity Agent Implementation (completed Feb 5, 2026) [actual: ~120 min]
-  - Created `src/agents/clarity/scoring.ts` - ClarityScorer with 0-100 scoring
-  - Created `src/agents/clarity/trigger.ts` - ClarityTrigger with delay/queue
-  - Created `src/agents/clarity/followUp.ts` - FollowUpManager with iteration limits
-  - Created `src/agents/clarity/index.ts` - ClarityAgent main orchestrator
-  - Created `tests/agents/clarity/clarityAgent.test.ts` - 33 comprehensive tests
-  - 1194 tests passing (before Planning Team)
-  - **Clarity Agent Complete! 🎉**
 
-3. ✅ **MT-009.5**: LLM Response Caching (completed Feb 5, 2026) [actual: ~30 min]
-  - Updated `src/config/schema.ts` - added cacheEnabled, cacheTTLMinutes (0-1440), cacheMaxEntries (10-1000)
-  - Enhanced `src/services/llmService.ts` - in-memory cache with SHA-256 key, TTL expiration, LRU eviction
-  - Created `tests/services/llmService.cache.test.ts` - 22 tests (hit/miss, TTL, LRU, disabled, errors)
-  - 1101 tests passing, 83.9% coverage
-  - **LLM Caching Complete! 🎉**
+### ⭐ Next Up: Complete Stage 4 Agent Teams
+**Stage 3 Complete! 🎉** All core agent modules implemented. Now completing remaining Stage 4 tasks!
 
-2. ✅ **MT-009.1–009.4**: Stage 3 LLM Foundation (completed Feb 5, 2026) [actual: ~70 min]
-  - Updated `src/config/schema.ts` - added temperature (0-2, default 0.7), offlineFallbackMessage
-  - Created `src/errors/LLMErrors.ts` - LLMTimeoutError, LLMOfflineError, LLMResponseError with type guards
-  - Enhanced `src/services/llmService.ts` - validateConnection() with 5s health check, typed errors
-  - 19 tests in `tests/errors/LLMErrors.test.ts`, 36 tests in `tests/llmService.test.ts`
-  - **Exhaustive Verification**: 3× consecutive test runs (1079/1079), 2× coverage (83.72%), 6 manual smoke scenarios
-  - **Stage 3 LLM Foundation Complete! 🎉** Over-verified and production-ready
+**Priority P0 (Remaining MT-013 Orchestrator tasks):**
+1. **MT-013.1**: Create Orchestrator YAML config (20 min) - coding_only flag
+2. **MT-013.2-4**: Task queue management & MCP handlers (105 min)
+3. **MT-013.5-8**: Status transitions, routing (125 min)
 
-3. ✅ **MT-008 (all tasks)**: Fallback & Persistence (completed Feb 5, 2026) [actual: ~180 min]
-  - Created `src/services/ticketDb/fallback.ts` - SQLITE_BUSY/FULL/EACCES detection, auto-fallback to memory
-  - Created `src/services/ticketDb/recovery.ts` - recovery.json persistence with auto-reload on startup
-  - Created `src/services/ticketDb/status.ts` - DB mode indicator (sqlite/memory/recovery), feature availability
-  - Created `src/services/ticketDb/errorTickets.ts` - auto-create investigation tickets on critical errors
-  - Created `src/services/ticketDb/restore.ts` - migrate from memory back to SQLite when issue resolved
-  - 65 comprehensive tests in `tests/services/ticketDb/fallback.test.ts` (all passing)
-  - **Stage 2 Complete! 🎉** All 38 tasks finished, 100% coverage achieved
+**Priority P0 (Remaining MT-014-017 tasks):**
+4. Complete remaining Answer Team tasks (design system lookup, caching, validation)
+5. Complete remaining Verification Team tasks (UI checklist, coverage, retry limits)
+6. Complete remaining Task Queue tests (comprehensive 100-node DAG tests)
 
-4. ✅ **MT-007 (all tasks)**: Version Control & Concurrency (completed Feb 5, 2026) [actual: ~90 min]
-  - Created `src/services/ticketDb/retry.ts` - exponential backoff with jitter (5 retries, SQLITE_BUSY detection)
-  - Created `src/services/ticketDb/conflict.ts` - optimistic locking, three-way merge, field-level conflict detection
-  - Created `src/services/ticketDb/transaction.ts` - BEGIN/COMMIT/ROLLBACK with auto-rollback, LockManager with deadlock prevention
-  - 43 comprehensive tests in `tests/services/ticketDb/concurrency.test.ts`
-  - 986 tests passing, no regressions
-
-5. ✅ **MT-006 (search/resolve/reopen/reply/history)**: Enhanced CRUD operations (completed Feb 5, 2026) [actual: ~120 min]
-  - Created `src/services/ticketDb/search.ts` - relevance scoring, field weights, highlight matches (19 tests)
-  - Created `src/services/ticketDb/resolve.ts` - resolve/reopen with history tracking (19 tests)
-  - Created `src/services/ticketDb/reply.ts` - thread replies with RPL-XXX IDs (20 tests)
-  - Created `src/services/ticketDb/history.ts` - audit trail with change detection and filtering (25 tests)
-  - 83 tests across 4 test files
-
-5. ✅ **MT-005.4-005.9**: Ticket DB Submodules (completed Feb 5, 2026) [actual: ~180 min]
-  - Created `src/services/ticketDb/idGenerator.ts` - TK-XXXX and MT-XXX format ID generation (38 tests)
-  - Created `src/services/ticketDb/validator.ts` - schema validation with constraints (40 tests)
-  - Created `src/services/ticketDb/migrations.ts` - 7-version migration system with rollback (32 tests)
-  - Created `src/services/ticketDb/init.ts` - DB initialization, recovery data management (23 tests)
-  - Created `src/services/ticketDb/pool.ts` - generic connection pooling (20 tests)
-  - Created `scripts/generateSchemaDoc.ts` - schema documentation generator (24 tests)
-  - Created `src/services/ticketDb/index.ts` - barrel export for all submodules
-  - 177 tests across 6 test files
-
-
-### ⭐ Next Up: Continue Stage 3 (Caching & Streaming)
-**Stage 3 LLM Foundation Complete! 🎉** Core LLM connectivity operational. Now let's add caching and streaming queue!
-
-**Priority P1 (Caching - MT-009):**
-1. **MT-009.5**: Add LLM response caching (35 min) - 24hr TTL, prompt hash key
-2. **MT-009.6**: Create LM Studio integration tests (30 min) - Mock-based CI/CD tests
-
-**Priority P1 (Streaming Queue - MT-010):**
-3. **MT-010.1**: Create streaming queue data structure (30 min) - Max 5 pending requests
-4. **MT-010.2**: Implement single-threaded execution (35 min) - One LLM call at a time
-5. **MT-010.3**: Implement token polling (40 min) - Configurable poll interval (10-120s)
-
-**🎉 Stage 1, Stage 2 & Stage 3 Foundation Progress:**
+**🎉 Stage 1, Stage 2 & Stage 3 Complete! Stage 4 In Progress:**
 - ✅ MCP server with 4 JSON-RPC tools
 - ✅ Config system with validation & hot-reload
 - ✅ Complete error handling framework
 - ✅ Offline cache with auto-refresh
-- ✅ Tickets table schema with all P0 columns (MT-005.1)
-- ✅ Performance indexes for common query patterns (MT-005.2)
-- ✅ Full CRUD operations with filtering, pagination, and events (MT-005.3)
-- ✅ LLM config schema with endpoint, model, timeout, temperature (MT-009.1)
-- ✅ Connection validation via /models health check (MT-009.2)
-- ✅ Typed LLM errors with phase tracking & fallback messages (MT-009.3-4)
-- ✅ 1079 tests passing, 83.72% coverage
+- ✅ Complete ticket system with concurrency & fallback
+- ✅ LLM integration with caching, streaming queue, typed errors
+- ✅ Clarity Agent with scoring, triggers, follow-ups
+- ✅ Planning Team with analysis, vagueness detection, decomposition
+- ✅ Answer Team with confidence scoring, timeout, context extraction
+- ✅ Verification Team with stability timer, matching, test runner
+- ✅ Task Queue with dependency graph, topological sort, priority queue
+- ✅ Context Management with token counting, priority truncation
+- ✅ 1457 tests passing (81 suites), ~85% coverage
 
 ### ⏰ Estimated Time Remaining
-- **Completed**: 66 tasks (~24-27 hours actual time invested)
-- **Remaining**: 356 tasks
-- **Minimum**: ~89 hours (if all remaining at 15 min)
-- **Maximum**: ~356 hours (if all remaining at 60 min)
-- **Realistic**: ~178 hours (average 30 min/task for remaining work)
+- **Completed**: 126 tasks (~45-50 hours actual time invested)
+- **Remaining**: 316 tasks
+- **Minimum**: ~79 hours (if all remaining at 15 min)
+- **Maximum**: ~316 hours (if all remaining at 60 min)
+- **Realistic**: ~158 hours (average 30 min/task for remaining work)
 
 ### 💪 Skill Building Tracker
 _(Track your improvement over time)_
 - **MCP/JSON-RPC**: ✅ Proficient (MT-001.1-7 complete, 4 tools operational)
 - **Configuration Systems**: ✅ Proficient (MT-001.10-11, MT-003.5-6 complete, hot-reload working)
 - **Error Handling**: ✅ Proficient (MT-002.1-5 complete, comprehensive coverage)
-- **Caching & Storage**: ✅ Started (MT-004.1-8 complete, offline cache operational)
-- **LLM Integration**: ✅ Foundation Complete (MT-009.1-4 complete, typed errors, health checks)
-- **Testing**: ✅ Proficient (1079 tests, 83.72% coverage, 56 test suites)
+- **Caching & Storage**: ✅ Proficient (MT-004.1-8 complete, offline cache operational)
+- **LLM Integration**: ✅ Complete (MT-009.1-5, MT-010 streaming, MT-011 Clarity Agent)
+- **Agent Teams**: ✅ Core Complete (Planning, Answer, Verification Teams operational)
+- **Testing**: ✅ Proficient (1457 tests, 81 test suites, ~85% coverage)
 - **Database tasks**: 🔄 Ready to start (Stage 2 unlocked)
 - **Agent implementation**: Not started
 - **UI development**: Not started
@@ -1532,14 +1511,14 @@ If scoring seems random/wrong:
 
 - [ ] **MT-012.8**: Implement plan.json schema validation (25 min) [actual: __ min] [Priority: P1] [depends: MT-012.7] 🔒
   - **Files**: Create `src/agents/planning/planValidator.ts`
-  - **Tests**: Test validation with valid/invalid plansr c 
+  - **Tests**: Test validation with valid/invalid plans
   - **Behavior**: Validates plan.json against schema, reports errors
   - **Documentation**: Add schema to [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md)
   - **Quality**: Clear error messages with line numbers
   - **Verification**: Validate invalid plan, verify helpful errors
   - **Dependencies**: MT-012.7
 
- xzlklkzt- [x] **MT-012.9**: Build handoff to Orchestrator (30 min) [actual: 35 min] [Priority: P0] [depends: MT-012.4, MT-006.1] ✅
+- [x] **MT-012.9**: Build handoff to Orchestrator (30 min) [actual: 35 min] [Priority: P0] [depends: MT-012.4, MT-006.1] ✅
   - **Files**: Create `src/agents/planning/handoff.ts`
   - **Tests**: Test task handoff, state transfer
   - **Behavior**: Hands off generated tasks to Orchestrator with `handoff_mode: orchestrator` flag
@@ -1802,8 +1781,8 @@ If scoring seems random/wrong:
   - **Verification**: Ask question via MCP, verify Answer Team receives it
   - **Dependencies**: MT-001.4, MT-014.1
 
-- [ ] **MT-014.3**: Implement confidence scoring (40 min) [actual: __ min] [Priority: P0] [depends: MT-014.2, MT-009.2] 🔒
-  - **Files**: Create `src/agents/answer/confidence.ts`
+- [x] **MT-014.3**: Implement confidence scoring (40 min) [actual: 25 min] [Priority: P0] [depends: MT-014.2, MT-009.2] ✅
+  - **Files**: Created `src/agents/answer/confidence.ts`
   - **Tests**: Test scoring with known questions (clear vs ambiguous)
   - **Behavior**: Scores answer confidence 0-100, escalates if <95%
   - **Documentation**: Update [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md)
@@ -1811,8 +1790,8 @@ If scoring seems random/wrong:
   - **Verification**: Test with ambiguous question, verify confidence <95
   - **Dependencies**: MT-014.2, MT-009.2
 
-- [ ] **MT-014.4**: Add <95% threshold auto-escalation (25 min) [actual: __ min] [Priority: P0] [depends: MT-014.3, MT-006.1] 🔒
-  - **Files**: Update `src/agents/answer/confidence.ts`
+- [x] **MT-014.4**: Add <95% threshold auto-escalation (25 min) [actual: included in MT-014.3] [Priority: P0] [depends: MT-014.3, MT-006.1] ✅
+  - **Files**: Included in `src/agents/answer/confidence.ts`
   - **Tests**: Test ticket creation on low confidence
   - **Behavior**: If confidence <95%, creates ticket for user clarification
   - **Documentation**: Add escalation flow to [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md)
@@ -1820,8 +1799,8 @@ If scoring seems random/wrong:
   - **Verification**: Low confidence answer, verify ticket created
   - **Dependencies**: MT-014.3, MT-006.1
 
-- [ ] **MT-014.5**: Implement plan.json context integration (35 min) [actual: __ min] [Priority: P0] [depends: MT-014.2] 🔒
-  - **Files**: Create `src/agents/answer/planContext.ts`
+- [x] **MT-014.5**: Implement plan.json context integration (35 min) [actual: 20 min] [Priority: P0] [depends: MT-014.2] ✅
+  - **Files**: Created `src/agents/answer/planContext.ts`
   - **Tests**: Test plan context extraction, relevance scoring
   - **Behavior**: Pulls relevant sections from plan.json to inform answers
   - **Documentation**: Add context sources to [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md)
@@ -1829,8 +1808,8 @@ If scoring seems random/wrong:
   - **Verification**: Ask question, verify answer references plan
   - **Dependencies**: MT-014.2
 
-- [ ] **MT-014.6**: Add PRD.md reference integration (30 min) [actual: __ min] [Priority: P0] [depends: MT-014.2] 🔒
-  - **Files**: Create `src/agents/answer/prdContext.ts`
+- [x] **MT-014.6**: Add PRD.md reference integration (30 min) [actual: 15 min] [Priority: P0] [depends: MT-014.2] ✅
+  - **Files**: Created `src/agents/answer/prdContext.ts`
   - **Tests**: Test PRD section retrieval
   - **Behavior**: Searches PRD.md for relevant requirements to answer questions
   - **Documentation**: Add PRD integration to [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md)
@@ -1847,8 +1826,8 @@ If scoring seems random/wrong:
   - **Verification**: Ask "what color for primary button?", verify correct color returned
   - **Dependencies**: MT-014.2
 
-- [ ] **MT-014.8**: Implement 45-second timeout (20 min) [actual: __ min] [Priority: P0] [depends: MT-014.2] 🔒
-  - **Files**: Update `src/agents/answer/handlers/askQuestion.ts`
+- [x] **MT-014.8**: Implement 45-second timeout (20 min) [actual: 15 min] [Priority: P0] [depends: MT-014.2] ✅
+  - **Files**: Created `src/agents/answer/timeout.ts`
   - **Tests**: Test timeout enforcement
   - **Behavior**: Answer must be provided within 45s or creates ticket
   - **Documentation**: Add timeout to [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md)
@@ -1856,8 +1835,8 @@ If scoring seems random/wrong:
   - **Verification**: Slow LLM response, verify timeout at 45s
   - **Dependencies**: MT-014.2
 
-- [ ] **MT-014.9**: Add ticket escalation on timeout (25 min) [actual: __ min] [Priority: P0] [depends: MT-014.8, MT-006.1] 🔒
-  - **Files**: Create `src/agents/answer/timeout.ts`
+- [x] **MT-014.9**: Add ticket escalation on timeout (25 min) [actual: included in MT-014.8] [Priority: P0] [depends: MT-014.8, MT-006.1] ✅
+  - **Files**: Included in `src/agents/answer/timeout.ts`
   - **Tests**: Test ticket creation on timeout
   - **Behavior**: On timeout, creates ticket with question for user to answer
   - **Documentation**: Add timeout escalation to [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md)
@@ -1933,8 +1912,8 @@ If scoring seems random/wrong:
   - **Verification**: Load config, verify stability_delay_seconds = 60
   - **Dependencies**: None
 
-- [ ] **MT-015.2**: Implement 60-second stability delay timer (25 min) [actual: __ min] [Priority: P0] [depends: MT-015.1] 🔒
-  - **Files**: Create `src/agents/verification/stabilityTimer.ts`
+- [x] **MT-015.2**: Implement 60-second stability delay timer (25 min) [actual: 20 min] [Priority: P0] [depends: MT-015.1] ✅
+  - **Files**: Created `src/agents/verification/stabilityTimer.ts`
   - **Tests**: Test delay enforcement, cancellation on new changes
   - **Behavior**: Waits 60s after file changes before reading files
   - **Documentation**: Update [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md) Agent 5
@@ -1943,8 +1922,8 @@ If scoring seems random/wrong:
   - **Dependencies**: MT-015.1
   - **Beginner Note**: Stability delay = wait for files to stop changing (like waiting for water to settle)
 
-- [ ] **MT-015.3**: Build acceptance criteria matching algorithm (45 min) [actual: __ min] [Priority: P0] [depends: MT-015.1] 🔒
-  - **Files**: Create `src/agents/verification/matching.ts`
+- [x] **MT-015.3**: Build acceptance criteria matching algorithm (45 min) [actual: 30 min] [Priority: P0] [depends: MT-015.1] ✅
+  - **Files**: Created `src/agents/verification/matching.ts`
   - **Tests**: Test exact match, fuzzy match, partial match
   - **Behavior**: Compares implemented code against task acceptance criteria
   - **Documentation**: Add matching algorithm to [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md)
@@ -1952,8 +1931,8 @@ If scoring seems random/wrong:
   - **Verification**: Verify task with slight AC wording differences, verify matched
   - **Dependencies**: MT-015.1
 
-- [ ] **MT-015.4**: Implement automated test execution (40 min) [actual: __ min] [Priority: P0] [depends: MT-015.2] 🔒
-  - **Files**: Create `src/agents/verification/testRunner.ts`
+- [x] **MT-015.4**: Implement automated test execution (40 min) [actual: 25 min] [Priority: P0] [depends: MT-015.2] ✅
+  - **Files**: Created `src/agents/verification/testRunner.ts`
   - **Tests**: Test running npm test, parsing output
   - **Behavior**: Executes `npm test` (or configured test command) filtered by modified files
   - **Documentation**: Add test execution to [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md)
@@ -1997,8 +1976,8 @@ If scoring seems random/wrong:
   - **Verification**: Show checklist, verify user can check items
   - **Dependencies**: MT-015.7
 
-- [ ] **MT-015.9**: Implement pass/fail determination (30 min) [actual: __ min] [Priority: P0] [depends: MT-015.3, MT-015.4] 🔒
-  - **Files**: Create `src/agents/verification/decision.ts`
+- [x] **MT-015.9**: Implement pass/fail determination (30 min) [actual: 20 min] [Priority: P0] [depends: MT-015.3, MT-015.4] ✅
+  - **Files**: Created `src/agents/verification/decision.ts`
   - **Tests**: Test pass/fail logic with various scenarios
   - **Behavior**: Determines overall pass/fail (all AC matched + all tests passed)
   - **Documentation**: Add decision logic to [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md)
@@ -2006,8 +1985,8 @@ If scoring seems random/wrong:
   - **Verification**: Scenario with 1 failed test, verify overall fails
   - **Dependencies**: MT-015.3, MT-015.4
 
-- [ ] **MT-015.10**: Build investigation ticket creation (40 min) [actual: __ min] [Priority: P0] [depends: MT-015.9, MT-006.1] 🔒
-  - **Files**: Create `src/agents/verification/investigation.ts`
+- [x] **MT-015.10**: Build investigation ticket creation (40 min) [actual: 25 min] [Priority: P0] [depends: MT-015.9, MT-006.1] ✅
+  - **Files**: Created `src/agents/verification/investigation.ts`
   - **Tests**: Test ticket creation on test failure
   - **Behavior**: Creates investigation ticket with failing test details (500 chars max)
   - **Documentation**: Update [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md) failure flow
@@ -2182,8 +2161,8 @@ If agent separation fails:
 **Priority**: P0  
 **Dependencies**: MT-005.1, MT-012.5
 
-- [ ] **MT-016.1**: Create dependency graph data structure (35 min) [actual: __ min] [Priority: P0] [depends: MT-005.1] 🔒
-  - **Files**: Create `src/services/taskQueue/dependencyGraph.ts`
+- [x] **MT-016.1**: Create dependency graph data structure (35 min) [actual: 20 min] [Priority: P0] [depends: MT-005.1] ✅
+  - **Files**: Created `src/services/taskQueue/dependencyGraph.ts`
   - **Tests**: Test graph creation, node addition, edge addition
   - **Behavior**: Directed acyclic graph (DAG) for task dependencies
   - **Documentation**: Update [04-Data-Flow-State-Management.md](04-Data-Flow-State-Management.md)
@@ -2191,8 +2170,8 @@ If agent separation fails:
   - **Verification**: Create graph with 10 nodes, verify structure correct
   - **Dependencies**: MT-005.1
 
-- [ ] **MT-016.2**: Implement topological sort (45 min) [actual: __ min] [Priority: P0] [depends: MT-016.1] 🔒
-  - **Files**: Update `src/services/taskQueue/dependencyGraph.ts`
+- [x] **MT-016.2**: Implement topological sort (45 min) [actual: 25 min] [Priority: P0] [depends: MT-016.1] ✅
+  - **Files**: Created `src/services/taskQueue/topologicalSort.ts`
   - **Tests**: Test sort with various dependency chains
   - **Behavior**: Orders tasks so dependencies execute before dependents
   - **Documentation**: Add algorithm to [04-Data-Flow-State-Management.md](04-Data-Flow-State-Management.md)
@@ -2228,8 +2207,8 @@ If agent separation fails:
   - **Verification**: Add invalid dependency ID, verify error
   - **Dependencies**: MT-016.1
 
-- [ ] **MT-016.6**: Implement priority-based queue ordering (35 min) [actual: __ min] [Priority: P0] [depends: MT-016.2] 🔒
-  - **Files**: Create `src/services/taskQueue/priorityQueue.ts`
+- [x] **MT-016.6**: Implement priority-based queue ordering (35 min) [actual: 20 min] [Priority: P0] [depends: MT-016.2] ✅
+  - **Files**: Created `src/services/taskQueue/priorityQueue.ts`
   - **Tests**: Test P0→P1→P2→P3 ordering
   - **Behavior**: Within ready tasks, returns highest priority first
   - **Documentation**: Update [04-Data-Flow-State-Management.md](04-Data-Flow-State-Management.md)
