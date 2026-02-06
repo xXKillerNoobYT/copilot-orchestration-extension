@@ -57,6 +57,7 @@ export const window = {
   showInformationMessage: jest.fn(),
   showWarningMessage: jest.fn(),
   showErrorMessage: jest.fn(),
+  showInputBox: jest.fn().mockResolvedValue('http://127.0.0.1:1234/v1'), // Default mock returns default endpoint
   registerTreeDataProvider: jest.fn(),
   showTextDocument: jest.fn().mockResolvedValue(undefined),
 };

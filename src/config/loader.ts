@@ -20,32 +20,58 @@ async function readConfigFile(
   // Use workspace folder (where user's project is) NOT extension install path
   // The .coe/config.json file lives in the user's project root
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  
+
   if (!workspaceFolder) {
     logWarn('No workspace folder found. Using default configuration.');
     return {};
   }
-  
+
   const coeDir = path.join(workspaceFolder, '.coe');
   const configPath = path.join(coeDir, 'config.json');
 
   // Check if .coe directory exists, prompt to create if not
   if (!fs.existsSync(coeDir)) {
     const createDir = await vscode.window.showInformationMessage(
-      `COE extension: No ".coe" directory found. Create it with default config?`,
+      `COE extension: No ".coe" directory found. Create it with config?`,
       { modal: false },
       'Yes, create .coe',
       'No, use defaults'
     );
-    
+
     if (createDir === 'Yes, create .coe') {
       try {
+        // Ask for LLM endpoint - this makes new workspace setup much easier
+        const llmEndpoint = await vscode.window.showInputBox({
+          title: 'LLM Server Endpoint',
+          prompt: 'Enter your LLM server URL (e.g., LM Studio). Press Enter to accept default.',
+          value: 'http://127.0.0.1:1234/v1',
+          placeHolder: 'http://127.0.0.1:1234/v1 or http://192.168.x.x:1234/v1',
+          ignoreFocusOut: true,
+          validateInput: (value) => {
+            if (!value) {
+              return 'Endpoint cannot be empty';
+            }
+            try {
+              new URL(value);
+              return null; // Valid
+            } catch {
+              return 'Please enter a valid URL (e.g., http://127.0.0.1:1234/v1)';
+            }
+          }
+        });
+
+        // If user cancelled the input box, fall back to defaults
+        if (llmEndpoint === undefined) {
+          logInfo('User cancelled LLM endpoint input. Using default configuration.');
+          return {};
+        }
+
         fs.mkdirSync(coeDir, { recursive: true });
-        
-        // Create a starter config.json with helpful comments (as separate README)
+
+        // Create a starter config.json with the user's endpoint
         const starterConfig = {
           llm: {
-            endpoint: 'http://127.0.0.1:1234/v1',
+            endpoint: llmEndpoint,
             model: 'ministral-3-14b-reasoning',
             timeoutSeconds: 60,
             maxTokens: 2048
@@ -57,15 +83,15 @@ async function readConfigFile(
             dbPath: '.coe/tickets.db'
           }
         };
-        
+
         fs.writeFileSync(configPath, JSON.stringify(starterConfig, null, 2), 'utf-8');
         logInfo(`Created .coe directory and config.json at ${coeDir}`);
-        
-        // Show info about editing the config
+
+        // Confirm to user
         vscode.window.showInformationMessage(
-          `Created .coe/config.json. Edit it to configure your LLM endpoint (e.g., for LM Studio at 192.168.x.x:1234).`
+          `Created .coe/config.json with LLM endpoint: ${llmEndpoint}`
         );
-        
+
         return starterConfig;
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
@@ -146,16 +172,16 @@ function validateAndTransform(
           : defaultConfig.tickets,
       githubIssues:
         rawConfig.githubIssues &&
-        typeof rawConfig.githubIssues === 'object'
+          typeof rawConfig.githubIssues === 'object'
           ? { ...defaultConfig.githubIssues, ...rawConfig.githubIssues }
           : defaultConfig.githubIssues,
       lmStudioPolling:
         rawConfig.lmStudioPolling &&
-        typeof rawConfig.lmStudioPolling === 'object'
+          typeof rawConfig.lmStudioPolling === 'object'
           ? {
-              ...defaultConfig.lmStudioPolling,
-              ...rawConfig.lmStudioPolling,
-            }
+            ...defaultConfig.lmStudioPolling,
+            ...rawConfig.lmStudioPolling,
+          }
           : defaultConfig.lmStudioPolling,
       watcher:
         rawConfig.watcher && typeof rawConfig.watcher === 'object'
