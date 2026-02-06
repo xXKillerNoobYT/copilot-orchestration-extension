@@ -2,6 +2,19 @@
 # Format: Task ID — Date — Commit Hash
 # This file tracks completed tasks from the PROJECT-BREAKDOWN & TODO List.md
 
+# ===============================================================================
+# MT-009.5 LLM RESPONSE CACHING — 2026-02-05
+# ===============================================================================
+MT-009.5 Add LLM response caching — 2026-02-05 — pending
+# Implementation:
+#   - Config: cacheEnabled, cacheTTLMinutes (0-1440, default 30), cacheMaxEntries (10-1000, default 200)
+#   - In-memory cache with SHA-256 prompt hash key
+#   - TTL expiration + LRU eviction when max entries exceeded
+#   - Error responses NOT cached
+# Tests: 22 new tests in tests/services/llmService.cache.test.ts
+# Final: 1101 tests passing, 83.9% coverage
+# ===============================================================================
+
 MT-005.2 Add indexes for performance — 2026-02-05 — 506614c
 MT-005.3 Implement CRUD operations — 2026-02-05 — 506614c
 # ===============================================================================

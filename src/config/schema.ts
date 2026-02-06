@@ -51,6 +51,10 @@ const LLMConfigSchema = z
     offlineFallbackMessage: z
       .string()
       .default('LLM offline – ticket created for manual review'),
+    // Cache configuration
+    cacheEnabled: z.boolean().default(true),
+    cacheTTLMinutes: z.number().min(0).max(1440).default(30),
+    cacheMaxEntries: z.number().min(10).max(1000).default(200),
   })
   .default({});
 
@@ -214,6 +218,9 @@ export const DEFAULT_CONFIG: Config = {
     startupTimeoutSeconds: 300,
     temperature: 0.7,
     offlineFallbackMessage: 'LLM offline – ticket created for manual review',
+    cacheEnabled: true,
+    cacheTTLMinutes: 30,
+    cacheMaxEntries: 200,
   },
   orchestrator: { taskTimeoutSeconds: 30 },
   tickets: { dbPath: './.coe/tickets.db' },

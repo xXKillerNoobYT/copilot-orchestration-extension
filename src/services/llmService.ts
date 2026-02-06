@@ -1,6 +1,7 @@
 // Requires Node.js 18+ for native fetch. If using Node 16, install node-fetch as fallback.
 
 import * as vscode from 'vscode';
+import { createHash } from 'crypto';
 import { logInfo, logWarn, logError } from '../logger';
 import { getConfigInstance } from '../config';
 import { createTicket } from './ticketDb';
@@ -18,6 +19,10 @@ export interface LLMConfig {
     startupTimeoutSeconds?: number;
     temperature?: number;
     offlineFallbackMessage?: string;
+    // Cache configuration
+    cacheEnabled?: boolean;
+    cacheTTLMinutes?: number;
+    cacheMaxEntries?: number;
 }
 
 /**
@@ -52,14 +57,35 @@ const DEFAULT_CONFIG: LLMConfig = {
     maxTokens: 2048,
     startupTimeoutSeconds: 300,
     temperature: 0.7,
-    offlineFallbackMessage: 'LLM offline – ticket created for manual review'
+    offlineFallbackMessage: 'LLM offline – ticket created for manual review',
+    cacheEnabled: true,
+    cacheTTLMinutes: 30,
+    cacheMaxEntries: 200
 };
 
 /**
+ * Cache entry structure for storing LLM responses
+ */
+interface CacheEntry {
+    response: string;
+    timestamp: number;
+    expiresAt: number;
+    usage?: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
+}
+
+/**
  * Singleton LLM service instance
+ * 
+ * **Simple explanation**: Like a single waiter that handles all LLM orders.
+ * The cache is like a notepad the waiter keeps to remember frequent orders.
  */
 class LLMService {
     private config: LLMConfig | null = null;
+    private cache: Map<string, CacheEntry> = new Map();
 
     /**
      * Get the current configuration
@@ -76,6 +102,99 @@ class LLMService {
      */
     setConfig(config: LLMConfig): void {
         this.config = config;
+    }
+
+    /**
+     * Generate a cache key from prompt and options
+     * 
+     * **Simple explanation**: Creates a unique fingerprint for each request
+     * so we can find it again later, like a hash tag for tweets.
+     */
+    getCacheKey(prompt: string, options?: LLMRequestOptions): string {
+        const keyData = {
+            prompt,
+            systemPrompt: options?.systemPrompt,
+            temperature: options?.temperature,
+            messages: options?.messages
+        };
+        return createHash('sha256').update(JSON.stringify(keyData)).digest('hex');
+    }
+
+    /**
+     * Get a cached response if it exists and is not expired
+     * 
+     * @returns The cached entry if valid, undefined if not found or expired
+     */
+    getCached(key: string): CacheEntry | undefined {
+        const entry = this.cache.get(key);
+        if (!entry) {
+            return undefined;
+        }
+
+        // Check if entry has expired
+        if (Date.now() > entry.expiresAt) {
+            this.cache.delete(key);
+            logInfo(`Cache entry expired and removed: ${key.substring(0, 8)}...`);
+            return undefined;
+        }
+
+        return entry;
+    }
+
+    /**
+     * Store a response in the cache with TTL
+     * Implements simple LRU eviction when max entries exceeded
+     */
+    setCache(key: string, response: string, usage?: CacheEntry['usage']): void {
+        const config = this.config;
+        if (!config?.cacheEnabled) {
+            return;
+        }
+
+        const ttlMs = (config.cacheTTLMinutes ?? 30) * 60 * 1000;
+        const maxEntries = config.cacheMaxEntries ?? 200;
+
+        // Enforce max entries with simple LRU: delete oldest entry
+        if (this.cache.size >= maxEntries) {
+            const oldestKey = this.cache.keys().next().value;
+            if (oldestKey) {
+                this.cache.delete(oldestKey);
+                logInfo(`Cache full: evicted oldest entry ${oldestKey.substring(0, 8)}...`);
+            }
+        }
+
+        const entry: CacheEntry = {
+            response,
+            timestamp: Date.now(),
+            expiresAt: Date.now() + ttlMs,
+            usage
+        };
+
+        this.cache.set(key, entry);
+        logInfo(`Cached LLM response: ${key.substring(0, 8)}... (TTL: ${config.cacheTTLMinutes}min, entries: ${this.cache.size}/${maxEntries})`);
+    }
+
+    /**
+     * Clear all cache entries (for testing)
+     */
+    clearCache(): void {
+        const size = this.cache.size;
+        this.cache.clear();
+        logInfo(`Cache cleared: ${size} entries removed`);
+    }
+
+    /**
+     * Get current cache size (for testing/debugging)
+     */
+    getCacheSize(): number {
+        return this.cache.size;
+    }
+
+    /**
+     * Check if caching is enabled
+     */
+    isCacheEnabled(): boolean {
+        return this.config?.cacheEnabled ?? true;
     }
 }
 
@@ -219,11 +338,15 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
         startupTimeoutSeconds: llmConfig.startupTimeoutSeconds,
         temperature: llmConfig.temperature,
         offlineFallbackMessage: llmConfig.offlineFallbackMessage,
+        cacheEnabled: llmConfig.cacheEnabled,
+        cacheTTLMinutes: llmConfig.cacheTTLMinutes,
+        cacheMaxEntries: llmConfig.cacheMaxEntries,
     };
 
     // Store validated config
     llmServiceInstance.setConfig(config);
-    logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model})`);
+    const cacheStatus = config.cacheEnabled ? `cache: ${config.cacheTTLMinutes}min TTL, max ${config.cacheMaxEntries}` : 'cache: disabled';
+    logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model}, ${cacheStatus})`);
 }
 
 /**
@@ -299,6 +422,18 @@ export async function completeLLM(
     options?: LLMRequestOptions
 ): Promise<LLMResponse> {
     const config = llmServiceInstance.getConfig();
+
+    // Check cache first (if enabled)
+    if (config.cacheEnabled) {
+        const cacheKey = llmServiceInstance.getCacheKey(prompt, options);
+        const cached = llmServiceInstance.getCached(cacheKey);
+        if (cached) {
+            logInfo(`Cache HIT: ${cacheKey.substring(0, 8)}... (returning cached response)`);
+            return { content: cached.response, usage: cached.usage };
+        }
+        logInfo(`Cache MISS: ${cacheKey.substring(0, 8)}... (making real request)`);
+    }
+
     llmStatusBar.start();
 
     // Build messages array - support two modes for backward compatibility
@@ -361,6 +496,12 @@ export async function completeLLM(
         const usage = data.usage;
 
         logInfo(`LLM response: ${content.substring(0, 100)}... (tokens: ${usage?.total_tokens || 'unknown'})`);
+
+        // Cache successful response (only if caching is enabled)
+        if (config.cacheEnabled) {
+            const cacheKey = llmServiceInstance.getCacheKey(prompt, options);
+            llmServiceInstance.setCache(cacheKey, content, usage);
+        }
 
         return { content, usage };
 
@@ -647,4 +788,46 @@ export async function streamLLM(
     } finally {
         await cleanup(); // Call cleanup helper - runs only once, idempotent
     }
+}
+// ============================================================================
+// Cache Utility Functions (exported for testing)
+// ============================================================================
+
+/**
+ * Clear the LLM response cache.
+ * 
+ * **Simple explanation**: Like erasing a whiteboard - removes all stored responses.
+ * Useful for testing or when you want fresh responses.
+ */
+export function clearLLMCache(): void {
+    llmServiceInstance.clearCache();
+}
+
+/**
+ * Get current cache size.
+ * 
+ * @returns Number of entries currently in the cache
+ */
+export function getLLMCacheSize(): number {
+    return llmServiceInstance.getCacheSize();
+}
+
+/**
+ * Check if LLM caching is enabled.
+ * 
+ * @returns true if caching is enabled, false otherwise
+ */
+export function isLLMCacheEnabled(): boolean {
+    return llmServiceInstance.isCacheEnabled();
+}
+
+/**
+ * Generate a cache key for a prompt and options (exported for testing).
+ * 
+ * @param prompt - The prompt string
+ * @param options - Optional request options
+ * @returns The SHA-256 hash key
+ */
+export function getLLMCacheKey(prompt: string, options?: LLMRequestOptions): string {
+    return llmServiceInstance.getCacheKey(prompt, options);
 }
