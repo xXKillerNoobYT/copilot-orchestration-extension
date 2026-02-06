@@ -1,0 +1,58 @@
+# Orchestrator Agent Configuration
+# MT-013: Programming Orchestrator
+# This configuration controls task routing and execution workflow
+
+metadata:
+  name: "Programming Orchestrator"
+  version: "1.0.0"
+  description: "Routes tasks to coding AI and manages execution workflow"
+  
+settings:
+  # coding_only flag - Orchestrator only handles coding workflow
+  coding_only: true
+  
+  # Task queue settings
+  queue:
+    maxSize: 100
+    priorityOrder: ["P0", "P1", "P2", "P3"]
+    
+  # Task status transitions
+  statuses:
+    - pending      # Task waiting to be picked up
+    - ready        # Dependencies resolved, can be started
+    - in-progress  # Task being worked on
+    - verification # Awaiting verification
+    - done         # Task completed
+    - blocked      # Dependencies not met
+    - failed       # Task failed, needs investigation
+    
+  # Timeouts (in seconds)
+  timeouts:
+    taskPickup: 30      # Time before task is considered stuck
+    verification: 300   # Time for verification to complete
+    maxRetries: 3       # Max retry attempts before escalation
+    
+  # Routing configuration
+  routing:
+    codingAI: "github-copilot"
+    verificationTeam: "verification-team"
+    answerTeam: "answer-team"
+    
+  # Error recovery
+  recovery:
+    createTicketOnError: true
+    maxConsecutiveFailures: 3
+    escalationPriority: 1
+
+# Prompts (used for routing decisions)
+prompts:
+  routingClassifier: |
+    Classify this task for routing. Options: coding, verification, clarification.
+    Task: {{task_title}}
+    Description: {{task_description}}
+    Reply with single word.
+    
+  errorSummary: |
+    Summarize this error in 1-2 sentences for the investigation ticket:
+    Error: {{error_message}}
+    Context: {{task_context}}

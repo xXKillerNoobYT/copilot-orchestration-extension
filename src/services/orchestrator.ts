@@ -34,6 +34,31 @@ import { updateStatusBar } from '../extension';
 import AnswerAgent from '../agents/answerAgent';
 import { getConfigInstance } from '../config';
 
+// MT-016: Task Queue with dependency management
+import {
+    TaskQueue,
+    initializeTaskQueue,
+    getTaskQueueInstance,
+    resetTaskQueueForTests as resetTaskQueue,
+    Task as TaskQueueTask
+} from './taskQueue';
+
+// MT-017: Context Manager for LLM context windows  
+import {
+    ContextManager,
+    initializeContextManager,
+    getContextManagerInstance,
+    resetContextManagerForTests as resetContextManager
+} from './context';
+
+// MT-015: Verification Team for quality checks
+import {
+    VerificationTeam,
+    initializeVerificationTeam,
+    getVerificationTeamInstance,
+    resetVerificationTeamForTests as resetVerificationTeam
+} from '../agents/verification';
+
 /**
  * System prompt for the Answer agent
  * Tells the LLM how to behave when answering questions
@@ -124,8 +149,9 @@ export class OrchestratorService {
      * 
      * Steps:
      * 1. Read taskTimeoutSeconds from config (.coe/config.json)
-     * 2. Load initial tasks from TicketDb
-     * 3. Log initialization message
+     * 2. Initialize TaskQueue, ContextManager, and VerificationTeam (MT-013)
+     * 3. Load initial tasks from TicketDb
+     * 4. Log initialization message
      * 
      * @param context VS Code ExtensionContext
      */
@@ -138,7 +164,38 @@ export class OrchestratorService {
         const config = getConfigInstance();
         this.taskTimeoutSeconds = config.orchestrator.taskTimeoutSeconds;
 
-        // Step 2: Load initial tasks from TicketDb
+        // Step 2: Initialize Stage 4 services (MT-013 Enhancement)
+        try {
+            // MT-016: Initialize TaskQueue with dependency support
+            initializeTaskQueue({
+                maxConcurrent: 3, // Default: 3 concurrent tasks
+                defaultPriority: 3
+            });
+            logInfo('[Orchestrator] TaskQueue initialized');
+
+            // MT-017: Initialize ContextManager with token limits
+            initializeContextManager({
+                maxTokens: config.llm.maxTokens ?? 4096,
+                reservedTokens: Math.floor((config.llm.maxTokens ?? 4096) * 0.2), // 20% for response
+                warningThreshold: 0.9
+            });
+            logInfo('[Orchestrator] ContextManager initialized');
+
+            // MT-015: Initialize VerificationTeam for quality checks
+            initializeVerificationTeam({
+                stabilityDelayMs: 60000, // 60 second stability wait
+                testCommand: 'npm test',
+                coverageThreshold: 80,
+                maxRetryCycles: 3
+            });
+            logInfo('[Orchestrator] VerificationTeam initialized');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            // Non-fatal: services may already be initialized from previous call
+            logWarn(`[Orchestrator] Service initialization: ${message}`);
+        }
+
+        // Step 3: Load initial tasks from TicketDb
         await this.loadTasksFromTickets();
 
         // Step 2a: Keep queue in sync with ticket changes
@@ -1052,6 +1109,7 @@ export class OrchestratorService {
      * Reset orchestrator state for tests
      * 
      * Clears the task queue and picked tasks to prevent test pollution.
+     * Also resets the Stage 4 services (TaskQueue, ContextManager, VerificationTeam).
      */
     resetForTests(): void {
         this.taskQueue = [];
@@ -1060,6 +1118,11 @@ export class OrchestratorService {
         this.answerAgent = null;
         this.lastPickedTaskTitle = null;
         this.lastPickedTaskAt = null;
+
+        // MT-013: Reset Stage 4 singletons
+        resetTaskQueue();
+        resetContextManager();
+        resetVerificationTeam();
     }
 }
 

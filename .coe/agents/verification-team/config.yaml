@@ -1,0 +1,78 @@
+# Verification Team Agent Configuration
+# MT-015: Verification Team Implementation
+# Controls automated testing, acceptance criteria matching, and visual verification
+
+metadata:
+  name: "Verification Team"
+  version: "1.0.0"
+  description: "Verifies task completion against acceptance criteria and runs tests"
+  
+settings:
+  # 60-second stability delay before reading files
+  stability_delay_seconds: 60
+  
+  # Test execution settings
+  testing:
+    command: "npm test"
+    testFilePatterns:
+      - "**/*.test.ts"
+      - "**/*.spec.ts"
+    coverageThreshold: 80
+    maxTestDuration: 300  # 5 minutes
+    
+  # Acceptance criteria matching
+  matching:
+    fuzzyMatchThreshold: 0.85
+    requireAllCriteria: true
+    
+  # Visual verification
+  visual:
+    enabled: true
+    devServerCommand: "npm run dev"
+    devServerPort: 3000
+    devServerTimeout: 30
+    uiFilePatterns:
+      - "**/*.html"
+      - "**/*.css"
+      - "**/*.tsx"
+      - "**/*.jsx"
+      - "**/*.vue"
+      
+  # Retry and escalation
+  retry:
+    maxCycles: 3
+    escalateToHumanAfter: 3
+    
+  # Fix task creation
+  fixTasks:
+    enabled: true
+    inheritPriority: true
+    prefixTitle: "Fix: "
+
+# Prompts for verification
+prompts:
+  criteriaMatch: |
+    Check if this code change satisfies the acceptance criterion.
+    
+    Criterion: {{criterion}}
+    Code Changes: {{code_diff}}
+    
+    Reply: MATCH or NO_MATCH, followed by brief explanation.
+    
+  testAnalysis: |
+    Analyze this test failure and suggest a fix.
+    
+    Test name: {{test_name}}
+    Error: {{error_message}}
+    Expected: {{expected}}
+    Actual: {{actual}}
+    
+    Reply with 1-2 sentence fix suggestion.
+
+# Checklist template for visual verification
+visualChecklist:
+  - "Component renders without errors"
+  - "Styles match design specification"
+  - "Interactive elements respond to user input"
+  - "Responsive layout works on mobile/tablet/desktop"
+  - "Accessibility standards met (keyboard navigation, contrast)"

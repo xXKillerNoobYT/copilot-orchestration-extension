@@ -1,0 +1,70 @@
+# Answer Team Agent Configuration
+# MT-014: Answer Team Implementation
+# Handles questions from Coding AI with confidence scoring and context integration
+
+metadata:
+  name: "Answer Team"
+  version: "1.0.0"
+  description: "Answers questions from Coding AI using plan and documentation context"
+  
+settings:
+  # Only accepts calls from Coding AI (not user or other agents)
+  invoke_trigger: "coding_ai_only"
+  
+  # Timeout settings
+  timeout_seconds: 45
+  
+  # Confidence scoring
+  confidence:
+    threshold: 95
+    escalateBelow: true
+    
+  # Context sources to search
+  contextSources:
+    - planJson: "plan.json"
+    - prdMd: "PRD.md"
+    - designSystem: ".coe/design-system/"
+    
+  # Answer caching
+  cache:
+    enabled: true
+    ttlHours: 24
+    similarityThreshold: 0.9
+    
+  # Quality validation
+  validation:
+    rejectVague: true
+    requireCitation: true
+    maxLength: 2000
+
+# Prompts
+prompts:
+  answerQuestion: |
+    Answer this question from the coding AI based on the project context.
+    
+    Question: {{question}}
+    
+    Relevant Plan Context:
+    {{plan_context}}
+    
+    Relevant PRD Context:
+    {{prd_context}}
+    
+    Provide a clear, actionable answer. Include citations to source documents.
+    
+  confidenceScore: |
+    Rate your confidence in this answer on a scale of 0-100.
+    
+    Question: {{question}}
+    Answer: {{answer}}
+    Available Context: {{context_summary}}
+    
+    Reply with just the number (0-100).
+    
+  clarificationTicket: |
+    Create a clarification request for the user.
+    
+    Original Question: {{question}}
+    Why clarification needed: {{reason}}
+    
+    Write a concise question for the user (max 200 chars).

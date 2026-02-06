@@ -1532,14 +1532,14 @@ If scoring seems random/wrong:
 
 - [ ] **MT-012.8**: Implement plan.json schema validation (25 min) [actual: __ min] [Priority: P1] [depends: MT-012.7] 🔒
   - **Files**: Create `src/agents/planning/planValidator.ts`
-  - **Tests**: Test validation with valid/invalid plans
+  - **Tests**: Test validation with valid/invalid plansr c 
   - **Behavior**: Validates plan.json against schema, reports errors
   - **Documentation**: Add schema to [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md)
   - **Quality**: Clear error messages with line numbers
   - **Verification**: Validate invalid plan, verify helpful errors
   - **Dependencies**: MT-012.7
 
-- [x] **MT-012.9**: Build handoff to Orchestrator (30 min) [actual: 35 min] [Priority: P0] [depends: MT-012.4, MT-006.1] ✅
+ xzlklkzt- [x] **MT-012.9**: Build handoff to Orchestrator (30 min) [actual: 35 min] [Priority: P0] [depends: MT-012.4, MT-006.1] ✅
   - **Files**: Create `src/agents/planning/handoff.ts`
   - **Tests**: Test task handoff, state transfer
   - **Behavior**: Hands off generated tasks to Orchestrator with `handoff_mode: orchestrator` flag
