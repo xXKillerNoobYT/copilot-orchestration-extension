@@ -624,7 +624,11 @@ PATTERNS: none`,
         });
 
         it('Test 27: should plan from requirement', async () => {
+            // Reset mock before setting up
+            mockCompleteLLM.mockReset();
+
             // Mock analyzer response (text format)
+            // Note: vagueness uses quickDetect for short text, no LLM call needed
             mockCompleteLLM
                 .mockResolvedValueOnce({
                     content: `FEATURES:
@@ -642,16 +646,7 @@ UNCLEAR:
 CLARITY_SCORE: 85`,
                     usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
                 })
-                // Mock vagueness response (text format)
-                .mockResolvedValueOnce({
-                    content: `VAGUE: none found
-SCORE: 90
-CATEGORY: N/A
-QUESTION: N/A
-SUGGESTION: N/A`,
-                    usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 }
-                })
-                // Mock decomposer response (text format)
+                // Mock decomposer response (text format) - NO vagueness mock needed!
                 .mockResolvedValueOnce({
                     content: `TASK: Implement feature
 DESCRIPTION: Implement the test feature
