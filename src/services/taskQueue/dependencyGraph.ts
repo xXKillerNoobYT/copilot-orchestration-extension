@@ -205,6 +205,13 @@ export class DependencyGraph {
     }
 
     /**
+     * Check if a node exists in the graph
+     */
+    hasNode(taskId: string): boolean {
+        return this.nodes.has(taskId);
+    }
+
+    /**
      * Check if the graph is empty
      */
     isEmpty(): boolean {

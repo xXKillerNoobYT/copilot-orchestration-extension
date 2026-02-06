@@ -17,6 +17,20 @@ import { logInfo, logError, logWarn } from '../../logger';
 export * from './dependencyGraph';
 export * from './topologicalSort';
 export * from './priorityQueue';
+// Selective exports from circularDetection (avoid conflict with topologicalSort)
+export { 
+    analyzeCircularDependencies, 
+    findMinimumCycleBreakers, 
+    wouldCreateCycle, 
+    formatCycleReport,
+    CircularDependencyInfo,
+    CircularAnalysisResult
+} from './circularDetection';
+export * from './blocking';
+export * from './validation';
+export * from './readiness';
+export * from './persistence';
+export * from './visualization';
 
 import { DependencyGraph, createDependencyGraph } from './dependencyGraph';
 import { topologicalSort, detectCircularDependencies } from './topologicalSort';
