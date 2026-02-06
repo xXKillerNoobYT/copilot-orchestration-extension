@@ -65,42 +65,40 @@ Update `.coe/config.json` in the project root:
 
 **Why the high timeouts?** Local LLMs on network machines can be slow. 900s (15 min) for operations and 300s (5 min) for startup prevents premature timeouts.
 
-## 3. Structured Output (Recommended)
+## 3. Structured Output (CRITICAL for Simple Models)
 
-Structured output forces the LLM to respond in a predictable JSON format, which is critical for small models that may otherwise produce inconsistent responses.
+Structured output forces the LLM to respond in a predictable JSON format, which is **essential** for small models that may otherwise produce inconsistent responses.
 
-### How It Works
+### ⚠️ IMPORTANT: LM Studio Uses ONE Schema for ALL Agents
 
-COE sends a `response_format` parameter with API requests:
+**LM Studio configures structured output at the SERVER level**, not per-request. This means:
+- ✅ **ONE universal schema** for all agents (Planning, Answer, Verification, Clarity, Custom, etc.)
+- ❌ **NOT** different schemas per agent type
+- 🔧 Configure once in LM Studio Server settings, applies to all requests
 
-```json
-{
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
-      "name": "agent_response",
-      "strict": "true",
-      "schema": { ... }
-    }
-  }
-}
-```
+### Universal Agent Response Schema
 
-### Agent Response Schemas
-
-**Copy-paste these into LM Studio's Structured Output field if configuring manually.**
-
-#### Planning Agent Response
+**Copy-paste this EXACT schema into LM Studio's Structured Output configuration:**
 
 ```json
 {
   "type": "object",
   "properties": {
+    "response_type": {
+      "type": "string",
+      "enum": ["planning", "answer", "verification", "clarity", "research", "custom", "error"],
+      "description": "Which agent is responding"
+    },
     "status": {
       "type": "string",
-      "enum": ["success", "needs_clarification", "error"]
+      "enum": ["success", "needs_clarification", "error", "PASS", "FAIL", "PARTIAL"],
+      "description": "Overall status of the response"
     },
-    "plan": {
+    "message": {
+      "type": "string",
+      "description": "Primary response text (answer, explanation, summary, etc.)"
+    },
+    "planning_data": {
       "type": "object",
       "properties": {
         "summary": { "type": "string" },
@@ -114,78 +112,230 @@ COE sends a `response_format` parameter with API requests:
               "details": { "type": "string" },
               "estimated_minutes": { "type": "integer" }
             },
-            "required": ["step_number", "action", "details"]
+            "required": ["step_number", "action"]
           }
-        }
-      },
-      "required": ["summary", "steps"]
-    },
-    "clarification_needed": { "type": "string" },
-    "error_message": { "type": "string" }
-  },
-  "required": ["status"]
-}
-```
-
-#### Verification Agent Response
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": ["PASS", "FAIL", "PARTIAL"]
-    },
-    "explanation": { "type": "string" },
-    "checks": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "criterion": { "type": "string" },
-          "passed": { "type": "boolean" },
-          "note": { "type": "string" }
         },
-        "required": ["criterion", "passed"]
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
       }
     },
-    "suggestions": {
-      "type": "array",
-      "items": { "type": "string" }
+    "verification_data": {
+      "type": "object",
+      "properties": {
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "criterion": { "type": "string" },
+              "passed": { "type": "boolean" },
+              "note": { "type": "string" }
+            },
+            "required": ["criterion", "passed"]
+          }
+        },
+        "suggestions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "clarity_data": {
+      "type": "object",
+      "properties": {
+        "completeness_score": { 
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "clarity_score": { 
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "accuracy_score": { 
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "total_score": { 
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "follow_up_questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "research_data": {
+      "type": "object",
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "topic": { "type": "string" },
+              "description": { "type": "string" },
+              "source_file": { "type": "string" },
+              "relevance": {
+                "type": "string",
+                "enum": ["high", "medium", "low"]
+              }
+            },
+            "required": ["topic", "description"]
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "answer_data": {
+      "type": "object",
+      "properties": {
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "follow_up_needed": { "type": "boolean" }
+      }
+    },
+    "custom_fields": {
+      "type": "object",
+      "description": "Flexible object for custom agent responses"
+    },
+    "error_details": {
+      "type": "object",
+      "properties": {
+        "error_code": { "type": "string" },
+        "error_message": { "type": "string" },
+        "suggested_action": { "type": "string" }
+      }
     }
   },
-  "required": ["status", "explanation"]
+  "required": ["response_type", "status", "message"]
 }
 ```
 
-#### Answer Agent Response
+### How Agents Use This Schema
 
+Each agent uses only the fields it needs:
+
+**Planning Agent** (`response_type: "planning"`):
 ```json
 {
-  "type": "object",
-  "properties": {
-    "answer": { "type": "string" },
-    "confidence": {
-      "type": "string",
-      "enum": ["high", "medium", "low"]
-    },
-    "sources": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "follow_up_needed": { "type": "boolean" }
-  },
-  "required": ["answer", "confidence"]
+  "response_type": "planning",
+  "status": "success",
+  "message": "Created 5-step implementation plan",
+  "planning_data": {
+    "summary": "Implement user authentication",
+    "steps": [
+      {
+        "step_number": 1,
+        "action": "Create User model",
+        "details": "Define schema with email, password_hash, created_at",
+        "estimated_minutes": 15
+      }
+    ]
+  }
 }
 ```
+
+**Answer Agent** (`response_type: "answer"`):
+```json
+{
+  "response_type": "answer",
+  "status": "success",
+  "message": "Authentication uses JWT tokens stored in httpOnly cookies...",
+  "answer_data": {
+    "confidence": "high",
+    "sources": ["src/auth/jwt.ts", "docs/security.md"],
+    "follow_up_needed": false
+  }
+}
+```
+
+**Verification Agent** (`response_type: "verification"`):
+```json
+{
+  "response_type": "verification",
+  "status": "PASS",
+  "message": "All 3 criteria passed",
+  "verification_data": {
+    "checks": [
+      { "criterion": "File exists", "passed": true, "note": "Found at src/config/schema.ts" },
+      { "criterion": "Exports ConfigSchema", "passed": true, "note": "Zod schema exported" },
+      { "criterion": "Includes llm.endpoint", "passed": true }
+    ],
+    "suggestions": []
+  }
+}
+```
+
+**Clarity Agent** (`response_type: "clarity"`):
+```json
+{
+  "response_type": "clarity",
+  "status": "needs_clarification",
+  "message": "Reply needs more detail (score: 72/100)",
+  "clarity_data": {
+    "completeness_score": 80,
+    "clarity_score": 70,
+    "accuracy_score": 65,
+    "total_score": 72,
+    "follow_up_questions": [
+      "Which specific CSS file did you update?",
+      "What was the old color value?"
+    ]
+  }
+}
+```
+
+**Custom Agent** (`response_type: "custom"`):
+```json
+{
+  "response_type": "custom",
+  "status": "success",
+  "message": "Security review complete",
+  "custom_fields": {
+    "vulnerabilities_found": 3,
+    "severity": "medium",
+    "files_reviewed": ["auth.ts", "api.ts"]
+  }
+}
+```
+
+### Configuring in LM Studio
+
+1. Open **LM Studio** → **Server** tab
+2. Click **⚙️ Server Settings**
+3. Under **"Structured Output"** or **"JSON Schema"** section:
+   - Enable structured output
+   - Paste the Universal Agent Response Schema above
+   - Name: `universal_agent_response`
+   - Set as default for all requests
+4. Click **Save** or **Apply**
+5. Restart the server if needed
 
 ### Important Notes on Structured Output
 
-- **Models < 7B parameters** may struggle with structured output. Test first.
-- For GGUF models, LM Studio uses `llama.cpp` grammar-based sampling.
-- For MLX models, it uses the Outlines library.
-- No special LM Studio UI configuration needed - it works through the API.
+- ✅ **One schema for all**: COE agents share this universal schema
+- ✅ **Models < 7B parameters** may struggle with structured output. Test with 14B+ models first.
+- ✅ **Works through API**: No need to configure per-request, LM Studio applies server-wide
+- ✅ **For GGUF models**: LM Studio uses `llama.cpp` grammar-based sampling
+- ✅ **For MLX models**: Uses the Outlines library
+- ⚠️ **Optional fields**: Agents only populate fields they need (e.g., Planning Agent leaves `verification_data` empty)
+- ⚠️ **Simple models**: Keep prompts focused on ONE response type at a time
 
 ## 4. Tips for Small Models
 

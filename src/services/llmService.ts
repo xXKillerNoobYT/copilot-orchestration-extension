@@ -5,6 +5,7 @@ import { logInfo, logWarn, logError } from '../logger';
 import { getConfigInstance } from '../config';
 import { createTicket } from './ticketDb';
 import { llmStatusBar } from '../ui/llmStatusBar';
+import { LLMTimeoutError, LLMOfflineError, LLMResponseError } from '../errors/LLMErrors';
 
 /**
  * Configuration for LLM service
@@ -15,6 +16,8 @@ export interface LLMConfig {
     timeoutSeconds: number;
     maxTokens: number;
     startupTimeoutSeconds?: number;
+    temperature?: number;
+    offlineFallbackMessage?: string;
 }
 
 /**
@@ -45,9 +48,11 @@ export interface LLMResponse {
 const DEFAULT_CONFIG: LLMConfig = {
     endpoint: 'http://127.0.0.1:1234/v1',
     model: 'ministral-3-14b-reasoning',
-    timeoutSeconds: 900,
+    timeoutSeconds: 60,
     maxTokens: 2048,
-    startupTimeoutSeconds: 300
+    startupTimeoutSeconds: 300,
+    temperature: 0.7,
+    offlineFallbackMessage: 'LLM offline – ticket created for manual review'
 };
 
 /**
@@ -212,11 +217,67 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
         timeoutSeconds: llmConfig.timeoutSeconds,
         maxTokens: llmConfig.maxTokens,
         startupTimeoutSeconds: llmConfig.startupTimeoutSeconds,
+        temperature: llmConfig.temperature,
+        offlineFallbackMessage: llmConfig.offlineFallbackMessage,
     };
 
     // Store validated config
     llmServiceInstance.setConfig(config);
     logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model})`);
+}
+
+/**
+ * Validate connection to LLM endpoint.
+ *
+ * Performs a lightweight health check to verify the LLM service is reachable.
+ * Uses the /models endpoint which is standard for OpenAI-compatible APIs.
+ *
+ * **Simple explanation**: Like pinging a server to see if anyone's home before
+ * sending a long request.
+ *
+ * @returns Promise<boolean> - true if connection successful, false otherwise
+ */
+export async function validateConnection(): Promise<{ success: boolean; error?: string }> {
+    const config = llmServiceInstance.getConfig();
+    const timeoutMs = 5000; // 5 second timeout for health check
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(`${config.endpoint}/models`, {
+            method: 'GET',
+            signal: controller.signal,
+        });
+
+        if (response.ok) {
+            logInfo('LLM connection validated successfully');
+            return { success: true };
+        } else {
+            const errorMsg = `LLM health check failed: HTTP ${response.status}`;
+            logWarn(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+
+        if (err.name === 'AbortError') {
+            const errorMsg = 'LLM connection timeout (health check)';
+            logWarn(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+
+        if ((err as any).code === 'ECONNREFUSED') {
+            const errorMsg = `LLM endpoint unreachable: ${config.endpoint}`;
+            logWarn(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+
+        logWarn(`LLM connection check failed: ${err.message}`);
+        return { success: false, error: err.message };
+    } finally {
+        clearTimeout(timeoutId);
+    }
 }
 
 /**
@@ -266,7 +327,7 @@ export async function completeLLM(
         messages,
         max_tokens: config.maxTokens,
         stream: false, // Non-streaming mode - wait for full response
-        temperature: options?.temperature ?? 0.7
+        temperature: options?.temperature ?? config.temperature ?? 0.7
     };
 
     logInfo(`LLM request: ${prompt.substring(0, 100)}...`);
@@ -290,7 +351,8 @@ export async function completeLLM(
 
         // Check if the response status is OK (200-299)
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorBody = await response.text().catch(() => undefined);
+            throw new LLMResponseError(response.status, response.statusText, errorBody);
         }
 
         // Parse the JSON response
@@ -321,9 +383,15 @@ export async function completeLLM(
 
         // Provide specific error messages based on error type
         if (error.name === 'AbortError') {
-            throw new Error(`LLM request timed out after ${config.timeoutSeconds} seconds`);
+            throw new LLMTimeoutError('request', config.timeoutSeconds * 1000, { model: config.model });
         } else if (error.code === 'ECONNREFUSED') {
-            throw new Error('LLM endpoint unreachable. Check if LM Studio is running.');
+            throw new LLMOfflineError(
+                config.endpoint,
+                config.offlineFallbackMessage || 'LLM offline – ticket created for manual review',
+                error
+            );
+        } else if (error instanceof LLMResponseError) {
+            throw error; // Already a typed error
         } else {
             throw error;
         }
@@ -380,7 +448,7 @@ export async function streamLLM(
         messages: trimmedMessages,
         max_tokens: config.maxTokens,
         stream: true, // Streaming mode - chunks arrive as they're generated
-        temperature: options?.temperature ?? 0.7
+        temperature: options?.temperature ?? config.temperature ?? 0.7
     };
 
     logInfo(`LLM streaming started: ${prompt.substring(0, 50)}...`);
@@ -559,10 +627,20 @@ export async function streamLLM(
 
         // Provide specific error messages based on error type
         if (error.name === 'AbortError') {
-            const reason = abortReason || 'unknown';
-            throw new Error(`LLM streaming ${reason} timeout after ${timeElapsed}ms`);
+            // Map the abort reason to appropriate error phase
+            let phase: 'startup' | 'streaming' | 'inactivity' = 'streaming';
+            if (abortReason === 'startup') {
+                phase = 'startup';
+            } else if (abortReason === 'inactivity') {
+                phase = 'inactivity';
+            }
+            throw new LLMTimeoutError(phase, timeElapsed, { model: config.model });
         } else if (error.code === 'ECONNREFUSED') {
-            throw new Error('LLM endpoint unreachable. Check if LM Studio is running.');
+            throw new LLMOfflineError(
+                config.endpoint,
+                config.offlineFallbackMessage || 'LLM offline – ticket created for manual review',
+                error
+            );
         } else {
             throw error;
         }

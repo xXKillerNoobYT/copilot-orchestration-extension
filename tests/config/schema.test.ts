@@ -46,7 +46,7 @@ describe('Config Schema Tests', () => {
       const result = ConfigSchema.parse({});
 
       expect(result).toEqual(DEFAULT_CONFIG);
-      expect(result.llm.timeoutSeconds).toBe(120);
+      expect(result.llm.timeoutSeconds).toBe(60);
       expect(result.lmStudioPolling.tokenPollIntervalSeconds).toBe(30);
       expect(result.auditLog.enabled).toBe(true);
     });

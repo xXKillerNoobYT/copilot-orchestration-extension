@@ -44,9 +44,13 @@ const LLMConfigSchema = z
       .url()
       .default('http://127.0.0.1:1234/v1'),
     model: z.string().default('ministral-3-14b-reasoning'),
-    timeoutSeconds: z.number().int().positive().default(120),
-    maxTokens: z.number().int().positive().default(2048),
+    timeoutSeconds: z.number().int().min(10).max(300).default(60),
+    maxTokens: z.number().int().min(512).default(2048),
     startupTimeoutSeconds: z.number().int().positive().default(300),
+    temperature: z.number().min(0).max(2).default(0.7),
+    offlineFallbackMessage: z
+      .string()
+      .default('LLM offline – ticket created for manual review'),
   })
   .default({});
 
@@ -205,9 +209,11 @@ export const DEFAULT_CONFIG: Config = {
   llm: {
     endpoint: 'http://127.0.0.1:1234/v1',
     model: 'ministral-3-14b-reasoning',
-    timeoutSeconds: 120,
+    timeoutSeconds: 60,
     maxTokens: 2048,
     startupTimeoutSeconds: 300,
+    temperature: 0.7,
+    offlineFallbackMessage: 'LLM offline – ticket created for manual review',
   },
   orchestrator: { taskTimeoutSeconds: 30 },
   tickets: { dbPath: './.coe/tickets.db' },

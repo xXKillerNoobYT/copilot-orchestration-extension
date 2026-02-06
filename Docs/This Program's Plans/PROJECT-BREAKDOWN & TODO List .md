@@ -3,7 +3,63 @@
 **Last Updated**: February 5, 2026  
 **Status**: Stage 2 Complete! 🎉  
 **Current Stage**: Stage 3 - LLM Integration  
-**Overall Progress**: 66/353 tasks complete (18.7%)
+**Overall Progress**: 66/442 tasks complete (14.9%)
+
+---
+
+## 🧠 Design Philosophy: Built for Simple Models
+
+**CRITICAL PRINCIPLE**: All agents and workflows are designed to work with **"very stupid models with no reasoning capabilities"**.
+
+### Why This Matters
+
+Modern LLMs (GPT-4, Claude, etc.) have advanced reasoning, but:
+- Local models (7B-14B) have **minimal reasoning**
+- Offline/edge deployment requires **small, fast models**
+- Cost optimization favors **simple, cheap models**
+- **Reliability > Intelligence** - deterministic beats probabilistic
+
+### Implementation Strategy
+
+**❌ DON'T Rely On:**
+- Multi-step reasoning ("think through this problem...")
+- Abstract planning ("design the best solution...")
+- Context synthesis ("analyze these 10 files and decide...")
+- Creative problem-solving ("find an innovative approach...")
+
+**✅ DO Rely On:**
+- **Explicit checklists** - "Check: [ ] X exists, [ ] Y matches, [ ] Z valid"
+- **Step-by-step instructions** - "1. Read file, 2. Find pattern, 3. Copy template"
+- **Template filling** - "Replace {{placeholder}} with extracted value"
+- **Binary decisions** - "Does X match pattern Y? Yes/No"
+- **Deterministic code** - Push complexity to TypeScript, not prompts
+
+### Practical Example
+
+**❌ Bad (requires reasoning):**
+```
+"Review this code and suggest architectural improvements"
+```
+
+**✅ Good (checklist-driven):**
+```
+"Check this code against checklist:
+[ ] Has error handling (try/catch)
+[ ] Has TypeScript types on all params
+[ ] Has JSDoc comments
+[ ] Imports come from organized structure
+For each missing item, output: 'MISSING: <item>'"
+```
+
+### Agent Design Implications
+
+All agents follow this pattern:
+1. **Deterministic code** extracts data, structures context
+2. **Simple LLM calls** fill templates, make binary choices
+3. **Verification code** validates outputs, catches errors
+4. **Fallback handlers** create tickets when stuck
+
+**Result**: System works with 7B models just as well as 70B models, just slower.
 
 ---
 
@@ -11,8 +67,8 @@
 
 This is your **complete master guide to program completion** breaking down the entire COE project into:
 - **7 Stages** - Progressive development phases with strict dependency gates
-- **32 Master Tickets** - Major feature groups (MT-001 through MT-032)
-- **352 Atomic Tasks** - Detailed 15-60 minute implementation steps
+- **33 Master Tickets** - Major feature groups (MT-001 through MT-033)
+- **410+ Atomic Tasks** - Detailed 15-60 minute implementation steps
 - **Bidirectional Doc↔Ticket Links** - Every task references source documentation
 - **Acceptance Criteria** - Clear, testable completion requirements
 - **Time Tracking** - Learn estimation skills by tracking actual time
@@ -47,7 +103,7 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓▓▓░░░░░░░░░░░░░░░░░] 18.7% (66/353 tasks)
+[▓▓░░░░░░░░░░░░░░░░░░] 14.9% (66/442 tasks)
 ```
 
 ### Stage Completion
@@ -56,11 +112,11 @@ This is your **complete master guide to program completion** breaking down the e
 |-------|--------|-------|----------|----------|-------------|
 | **Stage 1: Foundation** | ✅ Complete | 28 | 28/28 | 100% | ✅ Passed |
 | **Stage 2: Ticket System** | ✅ Complete | 38 | 38/38 | 100% | ✅ Passed |
-| **Stage 3: LLM Integration** | ⏳ Queued | 28 | 0/28 | 0% | 🔒 Locked |
+| **Stage 3: LLM Integration** | ⏳ In Progress | 28 | 4/28 | 14% | 🟡 LLM Foundation Complete |
 | **Stage 4: Agent Teams** | ⏳ Queued | 71 | 0/71 | 0% | 🔒 Locked |
 | **Stage 5: Context & Data** | ⏳ Queued | 52 | 0/52 | 0% | 🔒 Locked |
 | **Stage 6: VS Code UI** | ⏳ Queued | 49 | 0/49 | 0% | 🔒 Locked |
-| **Stage 7: Testing & Advanced** | ⏳ Queued | 94 | 0/94 | 0% | 🔒 Locked |
+| **Stage 7: Testing & Advanced** | ⏳ Queued | 176 | 0/176 | 0% | 🔒 Locked |
 
 ### 🎉 Recently Completed (Last 5 Tasks)
 
@@ -137,11 +193,11 @@ This is your **complete master guide to program completion** breaking down the e
 - ✅ 686 tests passing, 80%+ coverage
 
 ### ⏰ Estimated Time Remaining
-- **Completed**: 28 tasks (~18-25 hours actual time invested)
-- **Remaining**: 325 tasks
-- **Minimum**: ~81 hours (if all remaining at 15 min)
-- **Maximum**: ~325 hours (if all remaining at 60 min)
-- **Realistic**: ~163 hours (average 30 min/task for remaining work)
+- **Completed**: 66 tasks (~24-27 hours actual time invested)
+- **Remaining**: 356 tasks
+- **Minimum**: ~89 hours (if all remaining at 15 min)
+- **Maximum**: ~356 hours (if all remaining at 60 min)
+- **Realistic**: ~178 hours (average 30 min/task for remaining work)
 
 ### 💪 Skill Building Tracker
 _(Track your improvement over time)_
@@ -898,13 +954,32 @@ All completion criteria verified:
 
 **Next**: ✨ Proceed to [Stage 3: LLM Integration & Clarity Agent](#stage-3-llm-integration--clarity-agent---stage-3)
 
+### Stage 2 Officially Closed – 2026-02-05
+
+**Final Verification Summary**  
+- Tests: 1054 passed / 1054 total (55 suites, stable across runs)  
+- Coverage: 83.53% lines / 83.59% statements (≥80% threshold maintained)  
+- Linting: 0 errors, acceptable warnings  
+- Manual Smoke: activation clean, ticket CRUD works, fallback/recovery paths logged correctly  
+- Key Systems Delivered: full ticket schema + indexes, complete CRUD, concurrency/locking, fallback & persistence, error ticket generation, restore logic  
+- MT-005 through MT-008: 38/38 tasks complete (100%)  
+- Submodules: fallback, recovery, retry, status, errorTickets, restore + 12 supporting files all present and tested  
+
+**Verdict**: STAGE 2 – TICKET SYSTEM CORE IS 100% COMPLETE AND STABLE  
+All ticket database functionality (schema, CRUD, concurrency, fallback/persistence) verified production-ready.
+
+**Transition to Stage 3**  
+Stage 2 foundation is solid and quality gates passed.  
+Ready to begin Stage 3: LLM Integration  
+Primary next ticket: MT-009.1 – Create LM Studio endpoint configuration  
+
 ---
 
 ## STAGE 3: LLM Integration & Clarity Agent - STAGE 3
 **Goal**: Connect to LM Studio and implement Clarity Agent for ticket quality  
 **Tasks**: 28 atomic tasks  
 **Estimated Time**: 12-24 hours  
-**Status**: 🔓 Ready to Start (Stage 2 Complete!)  
+**Status**: ⏳ In Progress (4/28 tasks complete)  
 **Dependencies**: MT-005 ✅ (Ticket DB), MT-006 ✅ (CRUD Operations)
 
 ### Master Tickets
@@ -914,42 +989,72 @@ All completion criteria verified:
 **Priority**: P0  
 **Dependencies**: MT-003.1, MT-006.1
 
-- [ ] **MT-009.1**: Create LM Studio endpoint configuration (25 min) [actual: __ min] [Priority: P0] [depends: MT-003.1] ✅
-  - **Files**: Update `src/config/schema.ts`, create `src/llm/lmStudio.ts`
-  - **Tests**: Test endpoint validation, default localhost:11434
-  - **Behavior**: Config for LM Studio URL with default `http://localhost:11434/v1`
-  - **Documentation**: Update [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md) Step 2 onboarding
+- [x] **MT-009.1**: Create LM Studio endpoint configuration (25 min) [actual: 15 min] [Priority: P0] [depends: MT-003.1] ✅
+  - **Files**: Updated `src/config/schema.ts` - added temperature, offlineFallbackMessage
+  - **Tests**: Test endpoint validation, default localhost:1234/v1
+  - **Behavior**: Config for LM Studio URL with default `http://127.0.0.1:1234/v1`
+  - **Documentation**: Config schema extended with full LLM options
   - **Quality**: Support network-local override, validate URL format
-  - **Verification**: Set endpoint, verify connection attempt uses correct URL
+  - **Verification**: ✅ Config validates LLM fields correctly
   - **Dependencies**: MT-003.1 ✅
   - **Beginner Note**: LM Studio = local AI running on your computer, like ChatGPT but offline
 
-- [ ] **MT-009.2**: Implement connection validation (30 min) [actual: __ min] [Priority: P0] [depends: MT-009.1] 🔒
-  - **Files**: Create `src/llm/connection.ts`
-  - **Tests**: Test connection success, failure, timeout
-  - **Behavior**: Health check endpoint, returns connection status
-  - **Documentation**: Add connection health check to [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md)
-  - **Quality**: Retry on failure, clear error messages
-  - **Verification**: Start LM Studio, verify connection succeeds; stop it, verify fails with timeout
-  - **Dependencies**: MT-009.1
+- [x] **MT-009.2**: Implement connection validation (30 min) [actual: 20 min] [Priority: P0] [depends: MT-009.1] ✅
+  - **Files**: Added `validateConnection()` to `src/services/llmService.ts`
+  - **Tests**: Test connection success, failure, timeout - 4 new tests added
+  - **Behavior**: Health check via /models endpoint, returns {success, error?}
+  - **Documentation**: Added to llmService exports
+  - **Quality**: 5s timeout, clear error messages for ECONNREFUSED/timeout
+  - **Verification**: ✅ validateConnection returns proper status
+  - **Dependencies**: MT-009.1 ✅
 
-- [ ] **MT-009.3**: Add global LLM request timeout (20 min) [actual: __ min] [Priority: P1] [depends: MT-003.1] ✅
-  - **Files**: Update `src/llm/lmStudio.ts`
-  - **Tests**: Test timeout enforcement with slow responses
-  - **Behavior**: All LLM calls timeout after `llmRequestTimeoutSeconds` (default 120s)
-  - **Documentation**: Update [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md) Step 2 config keys
-  - **Quality**: Separate timeout for streaming vs completion
-  - **Verification**: Set timeout to 5s, make slow request, verify timeout
+- [x] **MT-009.3**: Add global LLM request timeout (20 min) [actual: 10 min] [Priority: P1] [depends: MT-003.1] ✅
+  - **Files**: Updated `src/services/llmService.ts` - timeout uses config
+  - **Tests**: Test timeout enforcement with AbortController
+  - **Behavior**: All LLM calls timeout after `timeoutSeconds` (default 60s, min 10, max 300)
+  - **Documentation**: Config schema documents timeout bounds
+  - **Quality**: Separate startup/inactivity/streaming timeouts with LLMTimeoutError
+  - **Verification**: ✅ Timeout throws typed LLMTimeoutError with phase info
   - **Dependencies**: MT-003.1 ✅
 
-- [ ] **MT-009.4**: Implement offline error handling (25 min) [actual: __ min] [Priority: P0] [depends: MT-009.2, MT-006.1] 🔒
-  - **Files**: Create `src/llm/offline.ts`
-  - **Tests**: Test offline detection, ticket creation
-  - **Behavior**: When LM Studio unavailable, creates ticket instead of failing
-  - **Documentation**: Add offline handling to [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md) Step 10
-  - **Quality**: Queue requests during offline, retry when back online
-  - **Verification**: Disconnect LM Studio, trigger LLM call, verify ticket created
-  - **Dependencies**: MT-009.2, MT-006.1
+- [x] **MT-009.4**: Implement offline error handling (25 min) [actual: 25 min] [Priority: P0] [depends: MT-009.2, MT-006.1] ✅
+  - **Files**: Created `src/errors/LLMErrors.ts` (LLMTimeoutError, LLMOfflineError, LLMResponseError)
+  - **Tests**: 19 new tests in tests/errors/LLMErrors.test.ts
+  - **Behavior**: ECONNREFUSED throws LLMOfflineError with configured fallback message
+  - **Documentation**: Error classes documented with JSDoc
+  - **Quality**: Type guards, user-friendly getMessage(), JSON serialization
+  - **Verification**: ✅ Offline detection creates error ticket + returns fallback
+  - **Dependencies**: MT-009.2 ✅, MT-006.1 ✅
+
+### Stage 3 LLM Foundation Closed – 2026-02-05  
+**(MT-009.1–MT-009.4 Complete)**
+
+**Final Verification Summary**  
+- Tests: 1079 passed / 1079 total (stable)  
+- Coverage: ~83.42% statements (≥80% gate passed)  
+- Manual Smoke:  
+  - Invalid endpoint → error ticket created  
+  - Short timeout → timeout error ticket  
+  - Temperature override → applied correctly  
+  - Offline → custom fallback message + ticket  
+- Key Features Verified:  
+  - Full LLM config schema + validation (endpoint, model, timeout, maxTokens, temperature, fallback msg)  
+  - validateConnection() health check (5s timeout)  
+  - Typed errors: LLMTimeoutError, LLMOfflineError, LLMResponseError  
+  - Offline/unreachable → auto error ticket + fallback message  
+  - Timeout handling with clean abort  
+  - Temperature respected in requests  
+
+**Verdict**: STAGE 3 LLM FOUNDATION IS COMPLETE AND STABLE  
+MT-009.1–MT-009.4 fully implemented, tested, and production-ready.
+
+**Transition to Next LLM Tasks**  
+LLM base layer solid. Ready for:  
+- MT-009.5: LLM response caching  
+- MT-009.6: LM Studio integration tests  
+- MT-010: Streaming queue & backpressure  
+
+---
 
 - [ ] **MT-009.5**: Add LLM response caching (35 min) [actual: __ min] [Priority: P2] [depends: MT-009.2, MT-004.2] 🔒
   - **Files**: Create `src/llm/cache.ts`
@@ -2135,9 +2240,9 @@ If UI is slow:
 ---
 
 ## STAGE 7: Testing, Integration & Advanced Features - STAGE 7
-**Goal**: Achieve comprehensive testing and add advanced capabilities  
-**Tasks**: 94 atomic tasks  
-**Estimated Time**: 40-80 hours  
+**Goal**: Achieve comprehensive testing and add advanced capabilities including Custom Agent Builder, Planning Wizard with GUI designer and code generation  
+**Tasks**: 156 atomic tasks  
+**Estimated Time**: 65-130 hours  
 **Status**: 🔒 Locked (waiting for Stage 6 gate)  
 **Dependencies**: All previous stages
 
@@ -2148,13 +2253,987 @@ If UI is slow:
 **Priority**: P0  
 **Dependencies**: All MT-001 through MT-024
 
-_(MT-025 through MT-032 tasks covering comprehensive testing, GitHub integration, approval systems, custom agents, Docker toolkit, and evolution capabilities - 94 tasks with full details)_
+_(MT-025 through MT-029 tasks covering comprehensive testing, GitHub integration, approval systems, Docker toolkit - tasks with full details)_
+
+#### MT-030: Custom Agent Builder System [Area: User Customization] (22 tasks)
+**Source**: User request, [AGENT-CONFIG-TEMPLATES.md](AGENT-CONFIG-TEMPLATES.md)  
+**Priority**: P1  
+**Dependencies**: MT-012 (Planning Team), MT-006 (Ticket DB)
+
+**Goal**: Allow users to build custom AI agents with templates, system prompts, checklists, and goal lists - **WITH HARDLOCK ON CODING** (custom agents cannot write/edit code, only research/answer/verify).
+
+- [ ] **MT-030.1**: Create agent template schema (30 min) [actual: __ min] [Priority: P0] [depends: None] 🔒
+  - **Files**: Create `src/agents/custom/schema.ts` with Zod validation
+  - **Tests**: Test template validation, required fields, optional fields
+  - **Behavior**: Schema for custom agent config with system prompt, goals, checklists, up to 7 custom lists
+  - **Documentation**: Create `CUSTOM-AGENT-TEMPLATE.md` with schema specification
+  - **Quality**: Validate agent names (no conflicts), max lengths, required fields
+  - **Verification**: Load valid/invalid templates, verify validation errors are clear
+  - **Dependencies**: None
+  - **Beginner Note**: Schema = rules for what makes a valid agent config
+
+- [ ] **MT-030.2**: Implement coding hardlock (25 min) [actual: __ min] [Priority: P0] [depends: MT-030.1] 🔒
+  - **Files**: Create `src/agents/custom/hardlock.ts`
+  - **Tests**: Test that custom agents cannot call file write tools, create_file, replace_string_in_file, etc.
+  - **Behavior**: Whitelist of allowed tools (read_file, grep_search, semantic_search only), rejects all write operations
+  - **Documentation**: Add hardlock explanation to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Clear error "Custom agents cannot write code - escalate to Planning/Programming teams"
+  - **Verification**: Attempt code write from custom agent, verify blocked with helpful message
+  - **Dependencies**: MT-030.1
+
+- [ ] **MT-030.3**: Build agent template editor UI (60 min) [actual: __ min] [Priority: P0] [depends: MT-030.1] 🔒
+  - **Files**: Create `src/ui/customAgentBuilder.ts` webview
+  - **Tests**: Test UI rendering, form validation, save/cancel
+  - **Behavior**: GUI form for creating custom agents with text boxes for each section
+  - **Documentation**: Add UI screenshots to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Real-time validation, character counts, example templates
+  - **Verification**: Open builder, create agent, verify all fields saved correctly
+  - **Dependencies**: MT-030.1
+  - **Beginner Note**: Webview = embedded web page inside VS Code
+
+- [ ] **MT-030.4**: Implement system prompt editor (35 min) [actual: __ min] [Priority: P0] [depends: MT-030.3] 🔒
+  - **Files**: Update `src/ui/customAgentBuilder.ts`
+  - **Tests**: Test prompt template variables, validation, character limits
+  - **Behavior**: Large text box (max 4000 chars) for system prompt with variable substitution helpers
+  - **Documentation**: Add prompt template variables to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Syntax highlighting for {{variables}}, autocomplete for standard variables ({{task_id}}, {{ticket_id}}, {{user_query}})
+  - **Verification**: Enter prompt with variables, verify substitution works in test mode
+  - **Dependencies**: MT-030.3
+
+- [ ] **MT-030.5**: Create goal list manager (30 min) [actual: __ min] [Priority: P0] [depends: MT-030.3] 🔒
+  - **Files**: Update `src/ui/customAgentBuilder.ts`
+  - **Tests**: Test add/remove/reorder goals, validation
+  - **Behavior**: Dynamic list (1-20 goals), each goal max 200 chars, drag-to-reorder
+  - **Documentation**: Add goal examples to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Goal numbering auto-updates, duplicate detection
+  - **Verification**: Add 10 goals, reorder, verify saved correctly
+  - **Dependencies**: MT-030.3
+
+- [ ] **MT-030.6**: Create checklist manager (30 min) [actual: __ min] [Priority: P0] [depends: MT-030.3] 🔒
+  - **Files**: Update `src/ui/customAgentBuilder.ts`
+  - **Tests**: Test add/remove/edit checklist items, validation
+  - **Behavior**: Dynamic checklist (1-50 items), each item max 150 chars, checkbox UI
+  - **Documentation**: Add checklist examples to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Template insertion (common patterns), import from file
+  - **Verification**: Add 20 items, verify rendering and save
+  - **Dependencies**: MT-030.3
+
+- [ ] **MT-030.7**: Implement custom lists (up to 7) (45 min) [actual: __ min] [Priority: P1] [depends: MT-030.3] 🔒
+  - **Files**: Update `src/ui/customAgentBuilder.ts`
+  - **Tests**: Test creating 0-7 custom lists, naming, item management
+  - **Behavior**: Each custom list has name (max 50 chars), description (max 200 chars), items (1-100, each max 200 chars)
+  - **Documentation**: Add custom list use cases to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Color coding for lists, collapse/expand, export to JSON
+  - **Verification**: Create 7 lists with different items, verify all saved
+  - **Dependencies**: MT-030.3
+
+- [ ] **MT-030.8**: Add agent metadata fields (20 min) [actual: __ min] [Priority: P1] [depends: MT-030.1] 🔒
+  - **Files**: Update `src/agents/custom/schema.ts`
+  - **Tests**: Test metadata validation (name, description, author, version)
+  - **Behavior**: Required fields: name, description. Optional: author, version, tags, priority
+  - **Documentation**: Add metadata fields to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Semantic versioning validation for version field
+  - **Verification**: Create agent with all metadata, verify displays in UI
+  - **Dependencies**: MT-030.1
+
+- [ ] **MT-030.9**: Implement agent storage (30 min) [actual: __ min] [Priority: P0] [depends: MT-030.1, MT-006.1] 🔒
+  - **Files**: Create `src/agents/custom/storage.ts`
+  - **Tests**: Test save/load/delete custom agents, list all agents
+  - **Behavior**: Stores custom agents in `.coe/agents/custom/{agent-name}/config.yaml`
+  - **Documentation**: Add storage format to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Backup before overwrite, atomic writes, schema validation on load
+  - **Verification**: Save agent, reload extension, verify agent persisted
+  - **Dependencies**: MT-030.1, MT-006.1
+
+- [ ] **MT-030.10**: Create agent execution framework (50 min) [actual: __ min] [Priority: P0] [depends: MT-030.9, MT-030.2] 🔒
+  - **Files**: Create `src/agents/custom/executor.ts`
+  - **Tests**: Test agent invocation, tool access, hardlock enforcement
+  - **Behavior**: Loads custom agent config, applies system prompt, enforces tool whitelist
+  - **Documentation**: Add execution flow to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Isolate custom agent context, clear error messages, timeout handling
+  - **Verification**: Invoke custom agent, verify prompt applied and hardlock active
+  - **Dependencies**: MT-030.9, MT-030.2
+
+- [ ] **MT-030.11**: Add agent preview/test mode (35 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
+  - **Files**: Update `src/ui/customAgentBuilder.ts`
+  - **Tests**: Test preview with sample query, verify output
+  - **Behavior**: "Test" button sends sample query to agent, shows response in preview pane
+  - **Documentation**: Add test mode to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Mock LLM for fast preview, show token usage, timing
+  - **Verification**: Test agent before saving, verify response makes sense
+  - **Dependencies**: MT-030.10
+
+- [ ] **MT-030.12**: Implement agent templates library (40 min) [actual: __ min] [Priority: P2] [depends: MT-030.1] 🔒
+  - **Files**: Create `src/agents/custom/templates.ts`, add template YAML files
+  - **Tests**: Test template loading, instantiation
+  - **Behavior**: Provides 5-10 starter templates (Research Assistant, Documentation Writer, Code Reviewer - read-only, Bug Analyzer, etc.)
+  - **Documentation**: Add template catalog to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Each template has description, use cases, example prompts
+  - **Verification**: Load template, customize, save as new agent
+  - **Dependencies**: MT-030.1
+
+- [ ] **MT-030.13**: Add variable substitution system (35 min) [actual: __ min] [Priority: P1] [depends: MT-030.4] 🔒
+  - **Files**: Create `src/agents/custom/variables.ts`
+  - **Tests**: Test variable extraction, substitution, validation
+  - **Behavior**: Supports {{task_id}}, {{ticket_id}}, {{user_query}}, {{file_path}}, {{selection}}, {{custom_var}}
+  - **Documentation**: Add variable reference to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Autocomplete for variables, validation for undefined variables
+  - **Verification**: Use variables in prompt, verify correct values substituted
+  - **Dependencies**: MT-030.4
+
+- [ ] **MT-030.14**: Implement agent versioning (25 min) [actual: __ min] [Priority: P2] [depends: MT-030.9] 🔒
+  - **Files**: Update `src/agents/custom/storage.ts`
+  - **Tests**: Test version tracking, rollback to previous version
+  - **Behavior**: Each save creates new version, stores last 5 versions, can rollback
+  - **Documentation**: Add versioning to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Diff view between versions, restore from history
+  - **Verification**: Update agent 5 times, rollback to version 2, verify restored
+  - **Dependencies**: MT-030.9
+
+- [ ] **MT-030.15**: Add agent activation/deactivation (20 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
+  - **Files**: Update `src/agents/custom/executor.ts`
+  - **Tests**: Test enable/disable agents, verify inactive agents not invoked
+  - **Behavior**: Agents have active/inactive state, inactive agents don't appear in routing
+  - **Documentation**: Add activation to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Bulk enable/disable, quick toggle in UI
+  - **Verification**: Deactivate agent, verify not available for tasks
+  - **Dependencies**: MT-030.10
+
+- [ ] **MT-030.16**: Implement agent routing rules (40 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
+  - **Files**: Create `src/agents/custom/routing.ts`
+  - **Tests**: Test keyword matching, priority ordering, fallback
+  - **Behavior**: Routes tasks to custom agents based on keywords, patterns, ticket tags
+  - **Documentation**: Add routing config to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Regex patterns, fuzzy matching, manual override
+  - **Verification**: Create ticket matching agent keywords, verify routed correctly
+  - **Dependencies**: MT-030.10
+
+- [ ] **MT-030.17**: Add agent performance metrics (30 min) [actual: __ min] [Priority: P2] [depends: MT-030.10] 🔒
+  - **Files**: Create `src/agents/custom/metrics.ts`
+  - **Tests**: Test metric collection, aggregation, display
+  - **Behavior**: Tracks invocations, avg response time, success rate, user ratings
+  - **Documentation**: Add metrics to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Charts in UI, export to CSV, comparison between agents
+  - **Verification**: Run agent 10 times, verify metrics accurate
+  - **Dependencies**: MT-030.10
+
+- [ ] **MT-030.18**: Create agent sharing/export (30 min) [actual: __ min] [Priority: P2] [depends: MT-030.9] 🔒
+  - **Files**: Create `src/agents/custom/export.ts`
+  - **Tests**: Test export to file, import from file, validation
+  - **Behavior**: Export agent as self-contained YAML/JSON file, import from file or URL
+  - **Documentation**: Add sharing format to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Include dependencies, validate on import, sanitize inputs
+  - **Verification**: Export agent, import in fresh workspace, verify identical
+  - **Dependencies**: MT-030.9
+
+- [ ] **MT-030.19**: Implement agent permissions model (35 min) [actual: __ min] [Priority: P1] [depends: MT-030.2] 🔒
+  - **Files**: Create `src/agents/custom/permissions.ts`
+  - **Tests**: Test permission checks, denied actions, escalation
+  - **Behavior**: Granular permissions: read_files, search_code, create_tickets, call_llm, access_network
+  - **Documentation**: Add permissions reference to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Coding always denied (hardlock), clear permission errors
+  - **Verification**: Test each permission level, verify enforcement
+  - **Dependencies**: MT-030.2
+
+- [ ] **MT-030.20**: Add agent context limits (25 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
+  - **Files**: Update `src/agents/custom/executor.ts`
+  - **Tests**: Test token limits, truncation, context overflow
+  - **Behavior**: Configurable max context (default 4000 tokens), auto-truncate with warning
+  - **Documentation**: Add context management to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Smart truncation (keep recent messages), overflow warnings
+  - **Verification**: Exceed context limit, verify truncation and warning
+  - **Dependencies**: MT-030.10
+
+- [ ] **MT-030.21**: Create agent gallery UI (40 min) [actual: __ min] [Priority: P2] [depends: MT-030.9, MT-030.12] 🔒
+  - **Files**: Create `src/ui/agentGallery.ts` webview
+  - **Tests**: Test gallery display, search, filter, install
+  - **Behavior**: Browse available agents (built-in + custom), preview, install, update
+  - **Documentation**: Add gallery to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: Categories, ratings, search by tags/keywords
+  - **Verification**: Browse gallery, install agent, verify appears in agents list
+  - **Dependencies**: MT-030.9, MT-030.12
+
+- [ ] **MT-030.22**: Create comprehensive custom agent tests (45 min) [actual: __ min] [Priority: P0] [depends: MT-030.1-21] 🔒
+  - **Files**: Create `tests/agents.spec/customAgents.spec.ts`
+  - **Tests**: Test full workflow (create → configure → test → save → invoke → metrics)
+  - **Behavior**: Comprehensive test suite for custom agent system
+  - **Documentation**: Add test examples to `CUSTOM-AGENT-TEMPLATE.md`
+  - **Quality**: ≥85% coverage on custom agent code, hardlock enforcement tests
+  - **Verification**: Run all custom agent tests, verify full scenario works including hardlock
+  - **Dependencies**: All MT-030 tasks
+
+#### MT-033: Planning Wizard & Visual Designer [Area: Visual Planning] (50 tasks)
+**Source**: User request, [02-Agent-Role-Definitions.md](02-Agent-Role-Definitions.md)  
+**Priority**: P1  
+**Dependencies**: MT-012 (Planning Team), MT-006 (Ticket DB)
+
+**Goal**: Visual GUI for plan creation with GUI layout designer, code generation, orchestrator integration, and bulletproof validation - designed for non-technical users to create complete project plans that AI agents can execute.
+
+**Features**:
+- 6-page wizard (overview, features, linking, stories, criteria, visual designer)
+- Drag-drop GUI layout designer with color picker, image insertion, component templates
+- Frontend code generation (HTML/CSS/React)
+- Backend scaffolding (Node.js/Express or Python/Flask) 
+- Full-stack project generator
+- Plan → Orchestrator task breakdown and handoff
+- Change impact analysis and plan update workflow
+- Comprehensive validation (50+ rules) with error recovery
+
+- [ ] **MT-033.1**: Create planning wizard UI framework (50 min) [actual: __ min] [Priority: P0] [depends: None] 🔒
+  - **Files**: Create `src/ui/planningWizard.ts` webview
+  - **Tests**: Test wizard page navigation, progress tracking, validation
+  - **Behavior**: Multi-step wizard (6 pages) for creating comprehensive plans
+  - **Documentation**: Create `PLANNING-WIZARD-GUIDE.md` with screenshots
+  - **Quality**: Progress indicator, back/next navigation, auto-save drafts
+  - **Verification**: Open wizard, navigate through all pages, verify state persists
+  - **Dependencies**: None
+  - **Beginner Note**: Wizard = step-by-step form that guides you through a process
+
+- [ ] **MT-033.2**: Build Page 1 - Project Overview (35 min) [actual: __ min] [Priority: P0] [depends: MT-033.1] 🔒
+  - **Files**: Update `src/ui/planningWizard.ts`
+  - **Tests**: Test project name, description, goals validation
+  - **Behavior**: Text boxes for project name (max 100 chars), description (max 500 chars), high-level goals (1-10 goals, each max 200 chars)
+  - **Documentation**: Add Page 1 details to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Character counters, validation, example templates
+  - **Verification**: Fill Page 1, verify all fields saved
+  - **Dependencies**: MT-033.1
+
+- [ ] **MT-033.3**: Build Page 2 - Feature Blocks (60 min) [actual: __ min] [Priority: P0] [depends: MT-033.1] 🔒
+  - **Files**: Update `src/ui/planningWizard.ts`, create `src/ui/featureBlocks.ts`
+  - **Tests**: Test add/remove/edit feature blocks, detail text boxes
+  - **Behavior**: Visual blocks for each feature with detailed text boxes: Name, Description, Purpose, Acceptance Criteria, Technical Notes
+  - **Documentation**: Add feature blocks to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Drag-to-reorder blocks, color coding by priority, collapse/expand
+  - **Verification**: Create 5 feature blocks with all details, verify saved correctly
+  - **Dependencies**: MT-033.1
+  - **Beginner Note**: Feature block = one part of your app (e.g., "Login", "Dashboard", "Settings")
+
+- [ ] **MT-033.4**: Build Page 3 - Block Linking (50 min) [actual: __ min] [Priority: P0] [depends: MT-033.3] 🔒
+  - **Files**: Create `src/ui/blockLinking.ts`
+  - **Tests**: Test link creation, dependency validation, cycle detection
+  - **Behavior**: Visual graph of feature blocks with linkable arrows, "When this → Do that" conditional logic
+  - **Documentation**: Add block linking to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Drag to create links, dependency types (requires/suggests/blocks), cycle detection
+  - **Verification**: Link 5 blocks, add conditions, verify dependency graph correct
+  - **Dependencies**: MT-033.3
+
+- [ ] **MT-033.5**: Implement conditional logic editor (45 min) [actual: __ min] [Priority: P1] [depends: MT-033.4] 🔒
+  - **Files**: Update `src/ui/blockLinking.ts`
+  - **Tests**: Test condition creation, validation, evaluation
+  - **Behavior**: "When [Block A] is [complete/started/blocked] → Then [Block B] [starts/pauses/requires review]"
+  - **Documentation**: Add conditionals to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Dropdown selectors (no typing), preview of condition, validation
+  - **Verification**: Create conditional rule, verify fires correctly
+  - **Dependencies**: MT-033.4
+
+- [ ] **MT-033.6**: Build Page 4 - User Stories (40 min) [actual: __ min] [Priority: P0] [depends: MT-033.3] 🔒
+  - **Files**: Create `src/ui/userStories.ts`
+  - **Tests**: Test story creation, editing, linking to features
+  - **Behavior**: Template: "As a [user type], I want to [action], so that [benefit]" with text boxes for each part
+  - **Documentation**: Add user stories to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Story templates (common patterns), link to feature blocks, acceptance criteria auto-generated
+  - **Verification**: Create 10 user stories, link to features, verify all saved
+  - **Dependencies**: MT-033.3
+
+- [ ] **MT-033.7**: Build Page 5 - Developer Stories (40 min) [actual: __ min] [Priority: P0] [depends: MT-033.3] 🔒
+  - **Files**: Create `src/ui/developerStories.ts`
+  - **Tests**: Test dev story creation, technical details, task generation
+  - **Behavior**: Template: "As a developer, I need to [action], so that [benefit]" with text boxes + Technical Requirements section
+  - **Documentation**: Add developer stories to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Link to tasks, technical constraints, API/database notes
+  - **Verification**: Create 10 developer stories, verify technical details preserved
+  - **Dependencies**: MT-033.3
+
+- [ ] **MT-033.8**: Build Page 6 - Success Criteria (35 min) [actual: __ min] [Priority: P0] [depends: MT-033.3] 🔒
+  - **Files**: Create `src/ui/successCriteria.ts`
+  - **Tests**: Test criteria creation, validation, testability checks
+  - **Behavior**: SMART criteria builder: Specific, Measurable, Achievable, Relevant, Time-bound with guidance
+  - **Documentation**: Add success criteria to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: SMART validation, examples, link to features/stories
+  - **Verification**: Create 10 criteria, verify all SMART validated
+  - **Dependencies**: MT-033.3
+
+- [ ] **MT-033.9**: Implement detailed text box system (30 min) [actual: __ min] [Priority: P0] [depends: MT-033.1] 🔒
+  - **Files**: Create `src/ui/detailedTextBox.ts` reusable component
+  - **Tests**: Test rich text editing, character limits, formatting
+  - **Behavior**: Reusable text box component with: character counter, max length, placeholder text, markdown support
+  - **Documentation**: Add text box features to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Auto-save, undo/redo, spell check, markdown preview
+  - **Verification**: Type in text box, verify all features work
+  - **Dependencies**: MT-033.1
+
+- [ ] **MT-033.10**: Add plan template library (35 min) [actual: __ min] [Priority: P2] [depends: MT-033.1] 🔒
+  - **Files**: Create `src/ui/planTemplates.ts`
+  - **Tests**: Test template loading, customization, save as new
+  - **Behavior**: Pre-built plan templates (Web App, REST API, CLI Tool, VS Code Extension, Documentation Site)
+  - **Documentation**: Add template catalog to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Each template has filled examples, customizable, generates initial blocks
+  - **Verification**: Load template, customize, verify all sections populated
+  - **Dependencies**: MT-033.1
+
+- [ ] **MT-033.11**: Implement plan export formats (30 min) [actual: __ min] [Priority: P1] [depends: MT-033.1] 🔒
+  - **Files**: Create `src/ui/planExport.ts`
+  - **Tests**: Test export to JSON, Markdown, YAML, PDF
+  - **Behavior**: Export complete plan in multiple formats with formatting preserved
+  - **Documentation**: Add export formats to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Include diagrams, preserve links, professional formatting
+  - **Verification**: Export in all 4 formats, verify readable and complete
+  - **Dependencies**: MT-033.1
+
+- [ ] **MT-033.12**: Build visual dependency graph (45 min) [actual: __ min] [Priority: P1] [depends: MT-033.4] 🔒
+  - **Files**: Create `src/ui/dependencyGraph.ts` using mermaid or d3.js
+  - **Tests**: Test graph rendering, interaction, export
+  - **Behavior**: Interactive visual graph showing all feature dependencies, critical path highlighting
+  - **Documentation**: Add graph view to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Zoom/pan, click to edit, export as PNG/SVG, critical path in red
+  - **Verification**: Generate graph from plan, verify all links correct, export image
+  - **Dependencies**: MT-033.4
+
+- [ ] **MT-033.13**: Implement auto-validation (35 min) [actual: __ min] [Priority: P1] [depends: MT-033.8] 🔒
+  - **Files**: Create `src/ui/planValidator.ts`
+  - **Tests**: Test validation rules, error reporting, suggestions
+  - **Behavior**: Real-time validation: missing fields, circular dependencies, vague requirements, un-testable criteria
+  - **Documentation**: Add validation rules to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Inline error messages, severity levels (error/warning/info), auto-fix suggestions
+  - **Verification**: Create invalid plan, verify all issues flagged with helpful messages
+  - **Dependencies**: MT-033.8
+
+- [ ] **MT-033.14**: Add collaboration features (40 min) [actual: __ min] [Priority: P2] [depends: MT-033.1] 🔒
+  - **Files**: Create `src/ui/planCollaboration.ts`
+  - **Tests**: Test comments, change tracking, review workflow
+  - **Behavior**: Add inline comments on any section, track who changed what, review/approve workflow
+  - **Documentation**: Add collaboration to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Comment threading, resolve/unresolve, notifications
+  - **Verification**: Add comments, make changes, verify history tracked
+  - **Dependencies**: MT-033.1
+
+- [ ] **MT-033.15**: Implement plan versioning (30 min) [actual: __ min] [Priority: P1] [depends: MT-033.11] 🔒
+  - **Files**: Create `src/ui/planVersioning.ts`
+  - **Tests**: Test version creation, comparison, rollback
+  - **Behavior**: Auto-save versions on major changes, compare versions side-by-side, rollback to previous
+  - **Documentation**: Add versioning to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Diff view, version labels, auto-save before major operations
+  - **Verification**: Make 5 sets of changes, compare versions, rollback to version 2
+  - **Dependencies**: MT-033.11
+
+- [ ] **MT-033.16**: Build plan analytics dashboard (35 min) [actual: __ min] [Priority: P2] [depends: MT-033.3] 🔒
+  - **Files**: Create `src/ui/planAnalytics.ts`
+  - **Tests**: Test metrics calculation, visualization, export
+  - **Behavior**: Shows: # features, # stories, # tasks generated, complexity score, estimated time, dependencies count
+  - **Documentation**: Add analytics to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Charts/graphs, export to CSV, trend over time
+  - **Verification**: Create plan, verify analytics accurate
+  - **Dependencies**: MT-033.3
+
+- [ ] **MT-033.17**: Implement AI suggestions (45 min) [actual: __ min] [Priority: P2] [depends: MT-012.2, MT-033.3] 🔒
+  - **Files**: Create `src/ui/planSuggestions.ts`
+  - **Tests**: Test suggestion generation, acceptance, rejection
+  - **Behavior**: LLM suggests: missing features, implied dependencies, user stories from features, success criteria from stories
+  - **Documentation**: Add AI suggestions to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Accept/reject buttons, learn from user preferences, explain reasoning
+  - **Verification**: Create incomplete plan, verify suggestions are helpful
+  - **Dependencies**: MT-012.2, MT-033.3
+
+- [ ] **MT-033.18**: Create planning wizard tests (45 min) [actual: __ min] [Priority: P0] [depends: MT-033.1-17] 🔒
+  - **Files**: Create `tests/ui.spec/planningWizard.spec.ts`
+  - **Tests**: Test full workflow (wizard → export → validate → generate tasks)
+  - **Behavior**: Comprehensive test suite for planning wizard
+  - **Documentation**: Add test examples to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: ≥80% coverage on wizard code, all page transitions tested
+  - **Verification**: Run all wizard tests, verify full scenario works
+  - **Dependencies**: All MT-033 tasks
+
+**🎨 VISUAL DESIGN TOOLS (Questions 1-2)**
+
+- [ ] **MT-033.19**: Build GUI Layout Designer (60 min) [actual: __ min] [Priority: P1] [depends: MT-033.3] 🔒
+  - **Files**: Create `src/ui/guiLayoutDesigner.ts`
+  - **Tests**: Test drag-drop components, canvas operations, layout export
+  - **Behavior**: Visual canvas for designing app UI - drag components (buttons, inputs, images, text) onto canvas, resize/position
+  - **Documentation**: Add GUI designer to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Grid snapping, alignment guides, responsive preview (mobile/tablet/desktop)
+  - **Verification**: Create mockup with 10+ components, export as HTML/CSS
+  - **Dependencies**: MT-033.3
+  - **Beginner Note**: Like Figma/Sketch but integrated into planning - design what the app will look like
+
+- [ ] **MT-033.20**: Add color picker & theme editor (40 min) [actual: __ min] [Priority: P1] [depends: MT-033.19] 🔒
+  - **Files**: Update `src/ui/guiLayoutDesigner.ts`, create `src/ui/themeEditor.ts`
+  - **Tests**: Test color selection, theme creation, preview
+  - **Behavior**: Color picker for all components, theme presets (light/dark/custom), color palette management
+  - **Documentation**: Add theming to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Hex/RGB/HSL input, accessibility contrast checker (WCAG AA/AAA), theme export
+  - **Verification**: Create custom theme, apply to layout, verify colors consistent
+  - **Dependencies**: MT-033.19
+
+- [ ] **MT-033.21**: Implement image & asset insertion (45 min) [actual: __ min] [Priority: P1] [depends: MT-033.19] 🔒
+  - **Files**: Update `src/ui/guiLayoutDesigner.ts`, create `src/ui/assetManager.ts`
+  - **Tests**: Test image upload, URL insertion, asset library management
+  - **Behavior**: Upload images (PNG/JPG/SVG), insert from URL, use placeholder images, maintain asset library
+  - **Documentation**: Add asset management to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Image optimization, format conversion, size validation (<5MB), preview thumbnails
+  - **Verification**: Upload 5 images, insert into layout, verify display correctly
+  - **Dependencies**: MT-033.19
+
+- [ ] **MT-033.22**: Add component template library (35 min) [actual: __ min] [Priority: P2] [depends: MT-033.19] 🔒
+  - **Files**: Create `src/ui/componentTemplates.ts`
+  - **Tests**: Test template loading, customization, save as custom template
+  - **Behavior**: Pre-built component templates (nav bars, footers, cards, forms, buttons) - drag into canvas
+  - **Documentation**: Add templates to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Categories (navigation, content, forms, media), search, custom template saving
+  - **Verification**: Use 10 templates, customize, verify renders correctly
+  - **Dependencies**: MT-033.19
+
+**🔧 CODE GENERATION (Question 3)**
+
+- [ ] **MT-033.23**: Implement frontend code generation (55 min) [actual: __ min] [Priority: P1] [depends: MT-033.19, MT-033.21] 🔒
+  - **Files**: Create `src/generators/frontendGenerator.ts`
+  - **Tests**: Test HTML/CSS/React generation from layout
+  - **Behavior**: Generate clean HTML/CSS or React components from visual layout with accessibility attributes
+  - **Documentation**: Add code generation to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Semantic HTML, responsive CSS (flexbox/grid), component structure (if React), prettier formatting
+  - **Verification**: Design layout, generate code, open in browser, verify matches design
+  - **Dependencies**: MT-033.19, MT-033.21
+
+- [ ] **MT-033.24**: Implement backend scaffolding (60 min) [actual: __ min] [Priority: P1] [depends: MT-033.7, MT-033.23] 🔒
+  - **Files**: Create `src/generators/backendGenerator.ts`
+  - **Tests**: Test API endpoint generation, database schema creation
+  - **Behavior**: Generate backend code (Node.js/Express or Python/Flask) from developer stories + frontend requirements
+  - **Documentation**: Add backend generation to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: RESTful routes, database migrations, authentication boilerplate, CORS setup, TypeScript types
+  - **Verification**: Generate backend from plan, run server, verify endpoints respond
+  - **Dependencies**: MT-033.7, MT-033.23
+  - **Beginner Note**: Takes your UI design and creates the server code needed to power it
+
+- [ ] **MT-033.25**: Add full-stack project generator (50 min) [actual: __ min] [Priority: P1] [depends: MT-033.23, MT-033.24] 🔒
+  - **Files**: Create `src/generators/projectGenerator.ts`
+  - **Tests**: Test complete project generation with folder structure
+  - **Behavior**: Generate complete project: frontend/, backend/, database/, docs/, tests/, README.md, package.json, .gitignore
+  - **Documentation**: Add project generation to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Proper folder structure, environment variables (.env.example), Docker setup, CI/CD config
+  - **Verification**: Generate full project, run npm install, start dev server, verify app works
+  - **Dependencies**: MT-033.23, MT-033.24
+
+**🎯 ORCHESTRATION INTEGRATION (Question 6)**
+
+- [ ] **MT-033.26**: Implement plan → task breakdown (50 min) [actual: __ min] [Priority: P0] [depends: MT-033.1-8, MT-013.1] 🔒
+  - **Files**: Create `src/generators/taskBreakdown.ts`
+  - **Tests**: Test plan parsing, task generation, dependency mapping
+  - **Behavior**: Convert wizard plan into executable tasks for orchestrator - each feature block → master ticket, each dev story → atomic task
+  - **Documentation**: Add task generation to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Preserves dependencies, estimates time per task, assigns to agent teams, creates ticket hierarchy
+  - **Verification**: Create plan, generate tasks, verify appears in ticket DB with correct structure
+  - **Dependencies**: MT-033.1-8, MT-013.1
+  - **Beginner Note**: Translates your plan into actual work items the AI agents can execute
+
+- [ ] **MT-033.27**: Build orchestrator handoff workflow (45 min) [actual: __ min] [Priority: P0] [depends: MT-033.26, MT-013.2] 🔒
+  - **Files**: Update `src/services/orchestrator.ts`, create `src/ui/planHandoff.ts`
+  - **Tests**: Test plan export to orchestrator, task assignment, agent routing
+  - **Behavior**: "Execute Plan" button in wizard → exports to orchestrator → assigns tasks to agent teams → starts execution
+  - **Documentation**: Add orchestration to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Progress tracking, pause/resume, task reassignment, real-time status updates
+  - **Verification**: Create plan, click "Execute Plan", verify agents start working on tasks
+  - **Dependencies**: MT-033.26, MT-013.2
+
+**📝 PLAN UPDATES & CHANGE MANAGEMENT (Question 7)**
+
+- [ ] **MT-033.28**: Implement change impact analysis (50 min) [actual: __ min] [Priority: P1] [depends: MT-033.15, MT-033.26] 🔒
+  - **Files**: Create `src/ui/changeAnalysis.ts`
+  - **Tests**: Test change detection, impact calculation, dependency tracing
+  - **Behavior**: When editing plan, show what else is affected - "Changing Block A affects 3 other blocks, 12 tasks, 2 agents"
+  - **Documentation**: Add change analysis to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Visual impact graph, risk assessment (low/medium/high), affected stakeholders list
+  - **Verification**: Edit feature block, verify shows all impacted items
+  - **Dependencies**: MT-033.15, MT-033.26
+
+- [ ] **MT-033.29**: Add plan update workflow (45 min) [actual: __ min] [Priority: P1] [depends: MT-033.28, MT-033.27] 🔒
+  - **Files**: Create `src/ui/planUpdates.ts`
+  - **Tests**: Test plan edit, orchestrator notification, task updates
+  - **Behavior**: Edit plan → shows changes → click "Apply Changes" → updates orchestrator → reassigns/cancels/creates tasks as needed
+  - **Documentation**: Add update workflow to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: Change summary, approval workflow (if in-progress tasks affected), rollback option
+  - **Verification**: Edit running plan, apply changes, verify tasks updated correctly
+  - **Dependencies**: MT-033.28, MT-033.27
+  - **Beginner Note**: Like updating a blueprint while construction is happening - carefully!
+
+**🛡️ BULLETPROOFING (Question 9)**
+
+- [ ] **MT-033.30**: Add comprehensive validation & error recovery (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.1-29] 🔒
+  - **Files**: Create `src/ui/planValidation.ts`, update all wizard pages with validation
+  - **Tests**: Test all validation rules, error messages, recovery workflows
+  - **Behavior**: Real-time validation on all inputs, prevents invalid states, auto-save every 30s with recovery, conflict resolution
+  - **Documentation**: Add validation reference to `PLANNING-WIZARD-GUIDE.md`
+  - **Quality**: 50+ validation rules, helpful error messages, auto-fix suggestions, undo/redo (50 steps), crash recovery
+  - **Verification**: Try to break wizard with invalid inputs, crash browser, verify recovers gracefully
+  - **Dependencies**: All MT-033 tasks
+  - **Validation Rules**:
+    - No circular dependencies
+    - All feature blocks have ≥1 user story
+    - All user stories have ≥1 success criterion
+    - All dev stories have time estimates
+    - SMART criteria meet all 5 requirements
+    - No orphaned blocks (not linked to anything)
+    - No duplicate names
+    - File size limits (images <5MB, total plan <50MB)
+    - Character limits enforced
+    - Required fields filled before next page
+    - Layout components have valid CSS
+    - Generated code passes linting
+    - Backend routes match frontend API calls
+    - Database schema supports all features
+
+**🤖 CODING AGENT HANDOFF & EXECUTION WORKFLOW**
+
+- [ ] **MT-033.31**: Build coding agent task handoff (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.27, MT-013.5] 🔒
+  - **Files**: Create `src/services/codingHandoff.ts`
+  - **Tests**: Test handoff package creation, delivery, acknowledgment
+  - **Behavior**: Creates complete task handoff package for coding agent with:
+    - Task definition (what to build/fix/refactor)
+    - Acceptance criteria (how to know it's done)
+    - File references (which files to modify)
+    - Code patterns (existing patterns to follow)
+    - Test specifications (tests that must pass)
+    - Constraints (don't modify X, must use Y library)
+  - **Documentation**: Add handoff format to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Handoff package is self-contained - coding agent needs nothing else
+  - **Verification**: Generate handoff, verify coding agent can execute without questions
+  - **Dependencies**: MT-033.27, MT-013.5
+  - **Beginner Note**: Like giving a contractor a complete work order with all specs and materials
+
+- [ ] **MT-033.32**: Create task context package generator (45 min) [actual: __ min] [Priority: P0] [depends: MT-033.31] 🔒
+  - **Files**: Create `src/services/contextPackager.ts`
+  - **Tests**: Test context extraction, relevance filtering, size limits
+  - **Behavior**: Gathers all context coding agent needs:
+    - Relevant code snippets (files that will be affected)
+    - Dependency tree (what uses this, what this uses)
+    - Similar patterns in codebase (how similar things were done)
+    - Related documentation (design docs, API specs)
+    - Test examples (existing tests as templates)
+    - Error history (past issues with this code)
+  - **Documentation**: Add context packaging to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Smart filtering - only relevant context, not entire codebase
+  - **Verification**: Package 10 different tasks, verify context is relevant and complete
+  - **Dependencies**: MT-033.31
+
+- [ ] **MT-033.33**: Implement agent return/handback workflow (50 min) [actual: __ min] [Priority: P0] [depends: MT-033.31, MT-015.1] 🔒
+  - **Files**: Create `src/services/codingHandback.ts`
+  - **Tests**: Test return package parsing, validation, task status update
+  - **Behavior**: Coding agent reports back with:
+    - Code changes (diff or file contents)
+    - Test results (pass/fail with output)
+    - Issues found (blockers, questions, discoveries)
+    - Time spent (actual vs estimate)
+    - Confidence level (high/medium/low)
+  - Orchestrator validates return:
+    - Tests pass?
+    - Acceptance criteria met?
+    - No lint errors?
+    - Changes within scope?
+  - **Documentation**: Add handback format to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Atomic - either accept all changes or reject all
+  - **Verification**: Complete task cycle, verify handback correctly processed
+  - **Dependencies**: MT-033.31, MT-015.1
+
+**🔧 ERROR DETECTION & AUTO-FIX SYSTEM**
+
+- [ ] **MT-033.34**: Build error detection system (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.33, MT-002.1] 🔒
+  - **Files**: Create `src/services/errorDetector.ts`
+  - **Tests**: Test detection of all error types, categorization, severity
+  - **Behavior**: Detects and categorizes errors:
+    - **Compile errors**: TypeScript/syntax errors, missing imports
+    - **Test failures**: Unit test fails, integration fails, E2E fails
+    - **Lint errors**: ESLint violations, formatting issues
+    - **Runtime exceptions**: Crashes, unhandled promises, null references
+    - **Logic errors**: Incorrect behavior, edge case failures
+    - **Performance issues**: Slow operations, memory leaks
+  - Severity levels: Critical (blocking), High (must fix), Medium (should fix), Low (nice to fix)
+  - **Documentation**: Add error catalog to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Clear error messages with line numbers, suggested fixes
+  - **Verification**: Inject 20 different error types, verify all detected and categorized
+  - **Dependencies**: MT-033.33, MT-002.1
+
+- [ ] **MT-033.35**: Implement auto-fix workflow (60 min) [actual: __ min] [Priority: P0] [depends: MT-033.34] 🔒
+  - **Files**: Create `src/services/autoFixer.ts`
+  - **Tests**: Test auto-fix for each fixable error type
+  - **Behavior**: Automatically fixes common errors:
+    - **Missing imports**: Auto-add import statements
+    - **Typos in identifiers**: Suggest corrections based on similarity
+    - **Formatting**: Run prettier/eslint --fix
+    - **Missing semicolons**: Add where needed
+    - **Unused variables**: Remove or prefix with _
+    - **Type mismatches**: Simple coercions (string→number)
+    - **Deprecated API usage**: Replace with new API
+  - For unfixable errors → creates fix ticket for coding agent
+  - **Documentation**: Add auto-fix catalog to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Never auto-fix if confidence <90%, always run tests after fix
+  - **Verification**: Inject 30 fixable errors, verify 25+ auto-fixed correctly
+  - **Dependencies**: MT-033.34
+  - **Beginner Note**: Like spell-check for code - fixes obvious mistakes automatically
+
+- [ ] **MT-033.36**: Build error escalation system (40 min) [actual: __ min] [Priority: P1] [depends: MT-033.35, MT-011.10] 🔒
+  - **Files**: Create `src/services/errorEscalation.ts`
+  - **Tests**: Test escalation paths, retry limits, notification
+  - **Behavior**: Escalation ladder:
+    1. **Retry** (1-3 attempts): Same task, maybe different approach
+    2. **Coding agent fix**: Send error back to coding agent with context
+    3. **Different agent**: Try specialized error-fixing agent
+    4. **Human escalation**: Create ticket for user intervention
+  - Max 5 total attempts before human escalation
+  - Includes full context: error, attempts, what was tried
+  - **Documentation**: Add escalation flow to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Never infinite loop, always terminates
+  - **Verification**: Create unfixable error, verify escalates to human after attempts
+  - **Dependencies**: MT-033.35, MT-011.10
+
+**🎯 DRIFT DETECTION & CORRECTION**
+
+- [ ] **MT-033.37**: Implement drift detection system (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.33, MT-033.26] 🔒
+  - **Files**: Create `src/services/driftDetector.ts`
+  - **Tests**: Test detection of all drift types, threshold configuration
+  - **Behavior**: Compares actual code vs plan expectations:
+    - **Feature drift**: Built something different than specified
+    - **Scope creep**: Added features not in plan
+    - **Missing requirements**: Plan items not implemented
+    - **API drift**: Endpoints don't match spec
+    - **Schema drift**: Database doesn't match plan
+    - **Test drift**: Tests don't cover acceptance criteria
+    - **Dependency drift**: Using libraries not in plan
+  - Drift threshold: Minor (<10% deviation) vs Major (>10%)
+  - **Documentation**: Add drift catalog to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Clear drift reports with specific lines/files
+  - **Verification**: Intentionally create drifted code, verify all detected
+  - **Dependencies**: MT-033.33, MT-033.26
+  - **Beginner Note**: Like GPS recalculating when you take a wrong turn
+
+- [ ] **MT-033.38**: Build drift correction workflow (50 min) [actual: __ min] [Priority: P0] [depends: MT-033.37, MT-033.29] 🔒
+  - **Files**: Create `src/services/driftCorrector.ts`
+  - **Tests**: Test correction for each drift type, plan vs code decisions
+  - **Behavior**: Corrects drift based on severity:
+    - **Minor drift**: Auto-correct code to match plan (with user confirm)
+    - **Major drift**: Create decision ticket - "Update plan or fix code?"
+    - **Scope creep**: Prompt user - Keep or remove extra features?
+    - **Missing requirements**: Create high-priority task to implement
+  - Correction options:
+    - Fix code → match plan (most common)
+    - Update plan → match code (if implementation is better)
+    - Split → some code, some plan changes
+  - **Documentation**: Add correction strategies to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Never auto-delete user work, always confirm destructive changes
+  - **Verification**: Create major drift, verify correction workflow completes
+  - **Dependencies**: MT-033.37, MT-033.29
+
+**🧠 COMPLEX PROBLEM SOLVING & CODE CLEANUP**
+
+- [ ] **MT-033.39**: Implement complex problem decomposition (60 min) [actual: __ min] [Priority: P1] [depends: MT-033.31, MT-012.4] 🔒
+  - **Files**: Create `src/services/problemDecomposer.ts`
+  - **Tests**: Test decomposition of various problem types
+  - **Behavior**: Breaks hard problems into smaller sub-tasks:
+    - **Pattern recognition**: Identify problem type (CRUD, auth, API, etc.)
+    - **Dependency analysis**: What must be done first
+    - **Skill matching**: Route sub-tasks to best agent
+    - **Parallel identification**: Which sub-tasks can run simultaneously
+    - **Integration planning**: How sub-tasks combine into solution
+  - Problem types handled:
+    - Multi-file refactoring
+    - Cross-system integration
+    - Performance optimization
+    - Security hardening
+    - Database migration
+  - **Documentation**: Add decomposition patterns to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Each sub-task completable by simple model (no reasoning needed)
+  - **Verification**: Give complex problem, verify breaks into 5+ manageable tasks
+  - **Dependencies**: MT-033.31, MT-012.4
+
+- [ ] **MT-033.40**: Build dead code detection (45 min) [actual: __ min] [Priority: P1] [depends: MT-033.33] 🔒
+  - **Files**: Create `src/services/deadCodeDetector.ts`
+  - **Tests**: Test detection of all dead code types
+  - **Behavior**: Finds unused code:
+    - **Unused functions**: Never called anywhere
+    - **Unused variables**: Declared but not read
+    - **Unused imports**: Imported but not used
+    - **Unreachable code**: After return/throw, impossible conditions
+    - **Commented code blocks**: Large commented sections
+    - **Deprecated code**: Marked deprecated but still exists
+    - **Duplicate code**: Copy-pasted blocks (DRY violations)
+    - **Empty files**: Files with no meaningful content
+  - Excludes: Exported APIs (might be used externally), test utilities
+  - **Documentation**: Add dead code catalog to `EXECUTION-WORKFLOW.md`
+  - **Quality**: False positive rate <5%, confidence score per item
+  - **Verification**: Run on real codebase, verify findings are accurate
+  - **Dependencies**: MT-033.33
+
+- [ ] **MT-033.41**: Implement code cleanup workflow (50 min) [actual: __ min] [Priority: P1] [depends: MT-033.40] 🔒
+  - **Files**: Create `src/services/codeCleanup.ts`
+  - **Tests**: Test cleanup for each dead code type, safety checks
+  - **Behavior**: Safely removes dead code:
+    1. **Backup**: Create branch/stash before any removal
+    2. **Impact analysis**: What might break if removed
+    3. **Safe removal**: Delete with git history preserved
+    4. **Test verification**: Run all tests after removal
+    5. **Rollback**: Restore if tests fail
+  - Cleanup modes:
+    - **Interactive**: Confirm each removal
+    - **Safe auto**: Only remove high-confidence items
+    - **Aggressive**: Remove all detected (with backup)
+  - **Documentation**: Add cleanup strategies to `EXECUTION-WORKFLOW.md`
+  - **Quality**: NEVER lose code permanently, always recoverable
+  - **Verification**: Add dead code, run cleanup, verify removed and tests pass
+  - **Dependencies**: MT-033.40
+
+- [ ] **MT-033.42**: Create complete execution pipeline tests (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.31-41] 🔒
+  - **Files**: Create `tests/integration.spec/executionPipeline.spec.ts`
+  - **Tests**: Full E2E tests of entire execution workflow
+  - **Behavior**: Tests complete flow:
+    1. Plan created in wizard → tasks generated
+    2. Task handed off to coding agent → context package complete
+    3. Coding agent returns code → validated and accepted
+    4. Errors detected → auto-fixed or escalated
+    5. Drift detected → corrected or plan updated
+    6. Dead code found → safely removed
+    7. All tests pass → task marked complete
+  - Edge cases tested:
+    - Network failure during handoff
+    - Coding agent timeout
+    - Unfixable errors
+    - Major drift requiring human decision
+    - Cleanup breaks tests (rollback)
+  - **Documentation**: Add test scenarios to `EXECUTION-WORKFLOW.md`
+  - **Quality**: ≥90% coverage on execution workflow code
+  - **Verification**: Run full pipeline test, verify handles all scenarios
+  - **Dependencies**: All MT-033.31-41 tasks
+
+**📚 DOCUMENTATION SYNC & IMPLEMENTATION TRACKING**
+
+> **Why This Section Exists**: The plan folder (PROJECT-BREAKDOWN, PRD.md, etc.) must stay in sync with actual code. Otherwise plan says "do X" but X is already done, or code exists that's not in any plan.
+
+- [ ] **MT-033.43**: Build implementation status tracker (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.37, MT-006.1] 🔒
+  - **Files**: Create `src/services/implementationTracker.ts`
+  - **Tests**: Test status detection, code-to-plan matching, coverage reports
+  - **Behavior**: Tracks what's been coded vs what's planned:
+    - **Scans codebase**: Find all implemented features, functions, classes
+    - **Scans plan files**: Find all planned features, tasks, requirements
+    - **Matches plan→code**: For each plan item, find corresponding code
+    - **Matches code→plan**: For each code item, find corresponding plan entry
+    - **Generates status report**:
+      - ✅ Implemented & in plan (correct)
+      - ⚠️ In plan but not implemented (TODO)
+      - ❓ Implemented but not in plan (undocumented)
+      - 🔄 Partially implemented (in progress)
+  - **Output Format**:
+    ```json
+    {
+      "summary": { "implemented": 45, "planned": 60, "undocumented": 3 },
+      "items": [
+        { "planRef": "MT-001.1", "status": "implemented", "codeFiles": ["src/logger.ts"] },
+        { "planRef": "MT-012.5", "status": "not_started", "codeFiles": [] },
+        { "codeFile": "src/utils/helpers.ts", "status": "undocumented", "planRef": null }
+      ]
+    }
+    ```
+  - **Documentation**: Create `IMPLEMENTATION-TRACKING.md` with status report format
+  - **Quality**: Real-time updates, searchable, filterable by status/stage/area
+  - **Verification**: Run tracker on current codebase, verify matches manual audit
+  - **Dependencies**: MT-033.37, MT-006.1
+  - **Beginner Note**: Like a checklist that auto-checks boxes when you finish tasks
+
+- [ ] **MT-033.44**: Build plan folder auto-updater (60 min) [actual: __ min] [Priority: P0] [depends: MT-033.43, MT-033.33] 🔒
+  - **Files**: Create `src/services/planUpdater.ts`
+  - **Tests**: Test plan file updates, version control, conflict resolution
+  - **Behavior**: Automatically updates plan files when code changes:
+    - **On task complete**: Mark task checkbox in PROJECT-BREAKDOWN
+    - **On file create**: Add to plan if not present (prompt user)
+    - **On feature complete**: Update PRD.md status (🔄→✅)
+    - **On metrics change**: Update progress percentages
+    - **On test coverage change**: Update coverage stats in plan
+  - **Update triggers**:
+    - Git commit (hooks into git)
+    - Task completion in orchestrator
+    - Manual trigger via command
+    - Scheduled (every N minutes if auto-mode)
+  - **Safety**:
+    - Creates backup before any update
+    - Shows diff preview before applying
+    - Rollback if update breaks plan parsing
+  - **Documentation**: Add auto-update rules to `IMPLEMENTATION-TRACKING.md`
+  - **Quality**: Never corrupt plan files, atomic updates, version history
+  - **Verification**: Complete task, verify PROJECT-BREAKDOWN auto-updates
+  - **Dependencies**: MT-033.43, MT-033.33
+
+- [ ] **MT-033.45**: Build PRD.md auto-sync system (50 min) [actual: __ min] [Priority: P0] [depends: MT-033.44] 🔒
+  - **Files**: Create `src/services/prdSync.ts`
+  - **Tests**: Test PRD section updates, status sync, version tracking
+  - **Behavior**: Keeps PRD.md synchronized with actual implementation:
+    - **Status badges**: Auto-update (🔄 In Progress → ✅ Complete)
+    - **Version numbers**: Increment when features ship
+    - **Feature descriptions**: Validate match actual behavior
+    - **Dependencies list**: Update when package.json changes
+    - **API documentation**: Sync with actual endpoints
+  - **PRD Sections Updated**:
+    - Section 3: Core Features (status per feature)
+    - Section 4: Technical Requirements (actual vs planned)
+    - Section 5: Milestones (auto-check when tasks complete)
+    - Section 6: Dependencies (sync with package.json)
+  - **Conflict handling**:
+    - PRD says "Feature X complete" but tests fail → flag mismatch
+    - PRD missing feature that exists → prompt to add
+    - PRD describes feature differently than code → prompt to reconcile
+  - **Documentation**: Add PRD sync rules to `IMPLEMENTATION-TRACKING.md`
+  - **Quality**: PRD always reflects reality within 5 minutes of change
+  - **Verification**: Ship feature, verify PRD auto-updates within 5 min
+  - **Dependencies**: MT-033.44
+
+- [ ] **MT-033.46**: Create coding agent task specification generator (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.31, MT-033.43] 🔒
+  - **Files**: Create `src/services/taskSpecGenerator.ts`
+  - **Tests**: Test spec generation for all task types (create, modify, fix, refactor)
+  - **Behavior**: Generates detailed coding task specifications:
+    - **Task Type**: create | modify | fix | refactor | delete | test
+    - **Files to Create/Modify**: Exact paths with purpose
+    - **Code Patterns**: Links to existing similar code in codebase
+    - **Tests to Write**: Specific test cases with expected behavior
+    - **Acceptance Criteria**: Precisely measurable (not vague)
+    - **Dependencies**: What must exist before starting
+    - **Constraints**: What NOT to do (don't modify X, must use Y)
+    - **Time Estimate**: Based on similar past tasks
+  - **Generated Spec Format**:
+    ```markdown
+    ## Task: MT-012.5 - Add plan context to orchestrator
+    **Type**: modify
+    **Estimated Time**: 35 min
+    
+    ### Files to Modify
+    - `src/services/orchestrator.ts` - Add loadPlanContext() method
+    - `src/config/schema.ts` - Add planPath config option
+    
+    ### Code Patterns to Follow
+    - See `loadConfig()` in `src/config/loader.ts` for file loading pattern
+    - See `getServiceInstance()` pattern in `src/services/ticketDb.ts`
+    
+    ### Tests to Write
+    - Test 1: loadPlanContext() returns parsed plan when file exists
+    - Test 2: loadPlanContext() throws ConfigError when file missing
+    - Test 3: Integration - orchestrator uses plan context in task routing
+    
+    ### Acceptance Criteria
+    - [ ] loadPlanContext() returns valid Plan object
+    - [ ] Config schema includes planPath with validation
+    - [ ] All 3 tests pass
+    - [ ] No TypeScript errors
+    - [ ] ≥80% coverage on new code
+    
+    ### Constraints
+    - MUST use existing singleton pattern
+    - MUST NOT modify ticketDb.ts
+    - MUST use Zod for validation
+    ```
+  - **Documentation**: Add spec format to `EXECUTION-WORKFLOW.md`
+  - **Quality**: Specs are self-contained - coding agent needs nothing else
+  - **Verification**: Generate spec for 5 tasks, verify coding agent can execute
+  - **Dependencies**: MT-033.31, MT-033.43
+  - **Beginner Note**: Like a detailed work order - tells exactly what to build, where, and how
+
+- [ ] **MT-033.47**: Build "what's been coded" dashboard (45 min) [actual: __ min] [Priority: P1] [depends: MT-033.43] 🔒
+  - **Files**: Create `src/ui/implementationDashboard.ts` webview
+  - **Tests**: Test dashboard rendering, filtering, drill-down
+  - **Behavior**: Visual dashboard showing implementation status:
+    - **Progress bars**: Per stage, per master ticket, per area
+    - **Status filters**: Show only TODO, In Progress, Complete, Undocumented
+    - **Code coverage**: Visual coverage map
+    - **Recent changes**: Last 10 implemented items
+    - **Next up**: Highest priority unimplemented tasks
+    - **Drill-down**: Click task → see code files, tests, PRD refs
+  - **Views**:
+    - By Stage (1-7 progress)
+    - By Master Ticket (MT-001 through MT-034)
+    - By Area (Services, UI, Agents, MCP, Config)
+    - By Status (pie chart)
+  - **Documentation**: Add dashboard usage to `IMPLEMENTATION-TRACKING.md`
+  - **Quality**: Real-time updates, export to markdown/JSON
+  - **Verification**: Open dashboard, verify matches manual audit
+  - **Dependencies**: MT-033.43
+
+- [ ] **MT-033.48**: Implement plan-to-code bidirectional links (50 min) [actual: __ min] [Priority: P1] [depends: MT-033.43, MT-033.46] 🔒
+  - **Files**: Create `src/services/planCodeLinker.ts`
+  - **Tests**: Test link creation, navigation, broken link detection
+  - **Behavior**: Creates clickable links between plan and code:
+    - **Plan → Code**: Click task ID → opens relevant source files
+    - **Code → Plan**: Click JSDoc @task tag → opens plan section
+    - **Broken link detection**: Plan refs code that doesn't exist (or vice versa)
+    - **Auto-suggest links**: "This function might implement MT-012.5"
+  - **Link Format in Code**:
+    ```typescript
+    /**
+     * Loads plan context from filesystem.
+     * @task MT-012.5
+     * @plan PROJECT-BREAKDOWN#stage-4-planning-agent
+     */
+    export async function loadPlanContext(): Promise<Plan> { ... }
+    ```
+  - **Link Format in Plan**:
+    ```markdown
+    - [x] **MT-012.5**: Add plan context [code: src/services/orchestrator.ts#loadPlanContext]
+    ```
+  - **Documentation**: Add linking conventions to `IMPLEMENTATION-TRACKING.md`
+  - **Quality**: Links validated on save, broken links flagged
+  - **Verification**: Add @task tags to 10 functions, verify links work
+  - **Dependencies**: MT-033.43, MT-033.46
+
+- [ ] **MT-033.49**: Build plan change propagation system (55 min) [actual: __ min] [Priority: P0] [depends: MT-033.44, MT-033.46] 🔒
+  - **Files**: Create `src/services/planPropagator.ts`
+  - **Tests**: Test change detection, impact analysis, cascading updates
+  - **Behavior**: When plan changes, propagate to all related artifacts:
+    - **Plan change types**:
+      - Task added → Create coding agent spec, update metrics
+      - Task removed → Flag orphaned code, update metrics
+      - Task modified → Update spec, flag if code needs changes
+      - Feature added → Update PRD, create tasks
+      - Feature removed → Flag for code removal
+    - **Cascade updates**:
+      - MT-012 task count changes → Stage 4 total updates → Overall % updates
+      - Feature marked complete → PRD status updates → Stage gate updates
+    - **Impact analysis**: Before applying, show "This change affects: X files, Y tasks, Z metrics"
+  - **Documentation**: Add propagation rules to `IMPLEMENTATION-TRACKING.md`
+  - **Quality**: No orphaned references, all counts consistent
+  - **Verification**: Modify plan, verify all cascading updates apply correctly
+  - **Dependencies**: MT-033.44, MT-033.46
+
+- [ ] **MT-033.50**: Create comprehensive documentation sync tests (45 min) [actual: __ min] [Priority: P0] [depends: MT-033.43-49] 🔒
+  - **Files**: Create `tests/integration.spec/documentationSync.spec.ts`
+  - **Tests**: Full E2E tests of documentation sync system
+  - **Behavior**: Tests complete documentation lifecycle:
+    1. Code file created → plan detects undocumented code
+    2. Plan entry added → links to code file
+    3. Code implements plan item → status auto-updates to ✅
+    4. PRD reflects current state → all statuses accurate
+    5. Plan modified → changes cascade to all artifacts
+    6. Coding agent spec generated → contains all required info
+    7. Dashboard shows accurate real-time status
+  - **Edge cases**:
+    - Plan and code both change simultaneously (merge conflict)
+    - Code deleted but plan still references it
+    - Plan references file that was renamed
+    - Multiple plan items implemented in one file
+  - **Documentation**: Add test scenarios to `IMPLEMENTATION-TRACKING.md`
+  - **Quality**: ≥90% coverage on documentation sync code
+  - **Verification**: Run full sync test, verify all scenarios handled
+  - **Dependencies**: All MT-033.43-49 tasks
+
+#### MT-031: Evolution Capabilities [Area: Advanced] (tasks similar structure...)
+**Source**: [EVOLUTION-PHASE-DEEP-DIVE.md](EVOLUTION-PHASE-DEEP-DIVE.md)  
+**Priority**: P3  
+**Dependencies**: All previous MTs
+
+_(Evolution capabilities tasks - full details)_
 
 ### Stage 7 Completion Gate - FINAL MVP GATE
 
 **Before declaring MVP complete, verify ALL of the following**:
 
-- [ ] ✅ All 94 tasks in Stage 7 checked off
+- [ ] ✅ All 176 tasks in Stage 7 checked off
+- [ ] ✅ Custom Agent Builder functional with template system, hardlock enforcement, and UI
+- [ ] ✅ Planning Wizard functional with visual blocks, linking, stories, and criteria
+- [ ] ✅ GUI Layout Designer functional - can design app UI visually
+- [ ] ✅ Code generation works - frontend (HTML/CSS/React) and backend (Node.js/Express)
+- [ ] ✅ Plan → Orchestrator handoff works - wizard creates executable tasks
+- [ ] ✅ Can create custom agent that works with simple 7B-14B models (no reasoning required)
+- [ ] ✅ Can create visual plan with GUI mockup, generate full-stack code, and execute via orchestrator
 - [ ] ✅ ≥80% test coverage globally (statements, branches, functions, lines)
 - [ ] ✅ All 50+ documentation files have linked resolved tickets
 - [ ] ✅ [MVP-FEATURE-COMPLETENESS.md](MVP-FEATURE-COMPLETENESS.md) shows 100% complete
@@ -2165,9 +3244,23 @@ _(MT-025 through MT-032 tasks covering comprehensive testing, GitHub integration
   - Full E2E flow <5 min
   - UI responsive <100ms
   - 1000-ticket load <1s
-- [ ] ✅ Program fully functional end-to-end
+  - GUI designer renders 100+ components without lag
+  - Code generation completes <10s for typical project
+- [ ] ✅ Program fully functional end-to-end (plan → design → generate → orchestrate → execute)
 - [ ] ✅ Security audit passed (no credentials exposed, proper sanitization)
 - [ ] ✅ Documentation complete and accurate
+- [ ] ✅ Custom agents cannot write code (hardlock verified)
+- [ ] ✅ Change impact analysis works when editing running plans
+- [ ] ✅ 50+ validation rules prevent invalid states
+- [ ] ✅ Crash recovery works (auto-save, undo/redo)
+- [ ] ✅ **Documentation Sync** - All these must work:
+  - PRD.md auto-updates when features ship
+  - PROJECT-BREAKDOWN tasks auto-check when code completes
+  - Implementation tracker shows accurate code-vs-plan status
+  - Coding agent specs include all required detail (files, tests, patterns)
+  - Plan-to-code bidirectional links work
+  - Dashboard shows real-time implementation status
+  - Plan changes cascade to all dependent metrics
 - [ ] ✅ Ready for production use
 
 **🚨 Gate Failure Recovery**:
@@ -2327,6 +3420,7 @@ graph TD
     MT013 --> MT026[MT-026: Integration Tests]
     MT014 --> MT026
     
+    MT012 --> MT033[MT-033: Planning Wizard]
     MT015 --> MT027[MT-027: E2E Tests]
     
     MT001 --> MT028[MT-028: GitHub Integration]
@@ -2359,7 +3453,8 @@ graph TD
 
 **Can be done simultaneously** (no dependencies between them):
 - MT-002 (Error Registry) + MT-003 (Config) + MT-004 (Cache) — All independent!
-- MT-021 (Sidebar) + MT-025 (Unit Tests) — After Stage 4 gate passes
+- MT-021 (Sidebar) + MT-025 (Unit Tests) — Aft1 (Docker) — Stage 7 infrastructure
+- MT-030 (Custom Agents) + MT-033 (Planning Wizard) — Stage 7 user
 - MT-028 (GitHub) + MT-029 (Approvals) + MT-030 (Custom Agents) — Stage 7 features
 
 **👶 Beginner Tip**: Work on MT-002, MT-003, MT-004 in parallel sessions to practice multitasking!

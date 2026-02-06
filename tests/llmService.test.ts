@@ -4,7 +4,7 @@
  * Tests config reading, validation, completeLLM, streamLLM, error handling, and timeout behavior
  */
 
-import { initializeLLMService, completeLLM, streamLLM } from '../src/services/llmService';
+import { initializeLLMService, completeLLM, streamLLM, validateConnection } from '../src/services/llmService';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { initializeConfig, resetConfigForTests } from '../src/config';
@@ -209,10 +209,12 @@ describe('LLM Service', () => {
         it('should handle HTTP error responses', async () => {
             (global.fetch as jest.Mock).mockResolvedValue({
                 ok: false,
-                status: 500
+                status: 500,
+                statusText: 'Internal Server Error',
+                text: async () => 'Server error details'
             });
 
-            await expect(completeLLM('Test')).rejects.toThrow('HTTP error');
+            await expect(completeLLM('Test')).rejects.toThrow('LLM HTTP error: 500');
             expect(createTicket).toHaveBeenCalled();
         });
 
@@ -222,7 +224,7 @@ describe('LLM Service', () => {
             error.name = 'AbortError';
             (global.fetch as jest.Mock).mockRejectedValue(error);
 
-            await expect(completeLLM('Test')).rejects.toThrow('timed out');
+            await expect(completeLLM('Test')).rejects.toThrow('LLM request timeout');
             expect(createTicket).toHaveBeenCalled();
         });
 
@@ -373,7 +375,7 @@ describe('LLM Service', () => {
             });
 
             // With real timers, interval checks every 1s, so this will abort after ~2.2s total
-            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming inactivity timeout');
+            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM inactivity timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM inactivity timeout'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: inactivity'));
         }, 5000);  // 5 second timeout for real timeout testing
@@ -442,7 +444,7 @@ describe('LLM Service', () => {
             });
 
             // With real timers, this will abort after ~500ms of no startup chunks
-            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming startup timeout');
+            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM startup timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM startup timeout'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: startup'));
         }, 5000);  // 5 second timeout for real timeout testing
@@ -491,7 +493,7 @@ describe('LLM Service', () => {
             });
 
             // With real timers, interval checks every 1s, so this will abort after ~2.2s total
-            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM streaming inactivity timeout');
+            await expect(streamLLM('Test', () => { })).rejects.toThrow('LLM inactivity timeout');
             expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('LLM inactivity timeout'));
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Streaming aborted: inactivity'));
         }, 5000);  // 5 second timeout for real timeout testing
@@ -802,6 +804,104 @@ describe('LLM Service', () => {
                 // Just verify no errors
                 expect(chunks.length).toBeGreaterThan(0);
             });
+        });
+    });
+
+    describe('validateConnection', () => {
+        beforeEach(async () => {
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+            await initializeLLMService(mockContext);
+            jest.clearAllMocks();
+        });
+
+        it('should return success when endpoint responds with ok', async () => {
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({ models: [] })
+            });
+
+            const result = await validateConnection();
+
+            expect(result.success).toBe(true);
+            expect(result.error).toBeUndefined();
+            expect(logInfo).toHaveBeenCalledWith('LLM connection validated successfully');
+        });
+
+        it('should return failure when endpoint returns error status', async () => {
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: false,
+                status: 500
+            });
+
+            const result = await validateConnection();
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('health check failed: HTTP 500');
+        });
+
+        it('should return failure when endpoint is unreachable', async () => {
+            const error: any = new Error('connect ECONNREFUSED');
+            error.code = 'ECONNREFUSED';
+            (global.fetch as jest.Mock).mockRejectedValue(error);
+
+            const result = await validateConnection();
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('endpoint unreachable');
+        });
+
+        it('should return failure on timeout', async () => {
+            const error = new Error('The operation was aborted');
+            error.name = 'AbortError';
+            (global.fetch as jest.Mock).mockRejectedValue(error);
+
+            const result = await validateConnection();
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('timeout');
+        });
+    });
+
+    describe('temperature configuration', () => {
+        beforeEach(async () => {
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+            await initializeLLMService(mockContext);
+            jest.clearAllMocks();
+        });
+
+        it('should use config temperature by default', async () => {
+            // DEFAULT_CONFIG has temperature: 0.7
+            const mockResponse = {
+                choices: [{ message: { content: 'Response' } }],
+                usage: {}
+            };
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => mockResponse
+            });
+
+            await completeLLM('Test question');
+
+            const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+            const body = JSON.parse(fetchCall[1].body);
+            expect(body.temperature).toBe(0.7);
+        });
+
+        it('should allow temperature override in options', async () => {
+            const mockResponse = {
+                choices: [{ message: { content: 'Response' } }],
+                usage: {}
+            };
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => mockResponse
+            });
+
+            await completeLLM('Test question', { temperature: 0.2 });
+
+            const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+            const body = JSON.parse(fetchCall[1].body);
+            expect(body.temperature).toBe(0.2);
         });
     });
 });

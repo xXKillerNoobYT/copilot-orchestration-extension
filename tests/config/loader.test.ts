@@ -48,7 +48,7 @@ describe('Config Loader Tests', () => {
       );
 
       // Should use defaults
-      expect(config.llm.timeoutSeconds).toBe(120); // default
+      expect(config.llm.timeoutSeconds).toBe(60); // default
       expect(logInfo).toHaveBeenCalled();
       // File not existing is not necessarily a warning (controlled behavior)
     });
@@ -116,7 +116,7 @@ describe('Config Loader Tests', () => {
       expect(logWarn).toHaveBeenCalledWith(
         expect.stringContaining('Config validation failed')
       );
-      expect(config.llm.timeoutSeconds).toBe(120); // default, not -5
+      expect(config.llm.timeoutSeconds).toBe(60); // default, not -5
       // Note: merged valid values are re-validated, so orchestrator might revert too
     });
   });
