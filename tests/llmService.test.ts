@@ -401,10 +401,11 @@ describe('LLM Service', () => {
         it('should handle HTTP error in streaming', async () => {
             (global.fetch as jest.Mock).mockResolvedValue({
                 ok: false,
-                status: 500
+                status: 500,
+                text: jest.fn().mockResolvedValue('')
             });
 
-            await expect(streamLLM('Test', () => { })).rejects.toThrow('HTTP error');
+            await expect(streamLLM('Test', () => { })).rejects.toThrow('HTTP 500');
             expect(createTicket).toHaveBeenCalled();
         });
 

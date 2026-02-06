@@ -11,6 +11,7 @@ import { ConversationsTreeDataProvider } from './ui/conversationsTreeProvider';
 import { OrchestratorStatusTreeDataProvider } from './ui/orchestratorStatusTreeProvider';
 import { ConversationWebviewPanel } from './ui/conversationWebview';
 import { agentStatusTracker } from './ui/agentStatusTracker';
+import { openVerificationPanel } from './ui/verificationWebview';
 import { ResearchAgent } from './agents/researchAgent';
 import {
     initializeAnswerAgent,
@@ -111,7 +112,7 @@ async function setupAutoPlanning(): Promise<void> {
 
                     // Notify user
                     vscode.window.showWarningMessage(
-                        `COE: LLM unavailable - ticket ${lastTicket.id} marked as blocked. Check LM Studio connection.`
+                        `COE: LLM unavailable - ticket ${lastTicket.id} marked as blocked. Check LLM server connection.`
                     );
                     await updateStatusBar('$(warning) LLM Offline');
                     return;
@@ -526,6 +527,20 @@ export async function activate(context: vscode.ExtensionContext) {
         async () => {
             logInfo('[Verify] User triggered: Verify Last Ticket');
             await handleVerifyLastTicket();
+        }
+    );
+
+    /**
+     * Command: coe.openVerification
+     * Opens the verification checklist webview for a given task ID.
+     * If no task ID provided, generates one using current timestamp.
+     */
+    const openVerificationCommand = vscode.commands.registerCommand(
+        'coe.openVerification',
+        async (taskId?: string) => {
+            const id = taskId || `TASK-${Date.now()}`;
+            logInfo(`User triggered: Open Verification Checklist for ${id}`);
+            openVerificationPanel(id, context);
         }
     );
 
@@ -1313,6 +1328,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(planTaskCommand);
     context.subscriptions.push(verifyTaskCommand);
     context.subscriptions.push(verifyLastTicketCommand);
+    context.subscriptions.push(openVerificationCommand);
     context.subscriptions.push(askAnswerAgentCommand);
     context.subscriptions.push(askAnswerAgentContinueCommand);
     context.subscriptions.push(startNewConversationCommand);

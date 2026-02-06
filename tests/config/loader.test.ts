@@ -83,6 +83,38 @@ describe('Config Loader Tests', () => {
       );
     });
 
+    it('Test 2c: should prompt for LLM endpoint when creating new config', async () => {
+      // Simulate: .coe directory doesn't exist
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+      // User clicks "Yes, create .coe" 
+      (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Yes, create .coe');
+
+      // User enters custom LLM endpoint
+      (vscode.window.showInputBox as jest.Mock).mockResolvedValue('http://192.168.1.205:1234/v1');
+
+      const config = await loadConfigFromFile(
+        mockContext as vscode.ExtensionContext
+      );
+
+      // Should use the user-provided endpoint
+      expect(config.llm.endpoint).toBe('http://192.168.1.205:1234/v1');
+
+      // Should have called showInputBox for endpoint
+      expect(vscode.window.showInputBox).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'LLM Server Endpoint',
+        })
+      );
+
+      // Should have written config file with custom endpoint
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('config.json'),
+        expect.stringContaining('192.168.1.205'),
+        'utf-8'
+      );
+    });
+
     it('Test 3: should merge partial config with defaults', async () => {
       const partialJson = JSON.stringify({
         llm: { model: 'custom-model' },

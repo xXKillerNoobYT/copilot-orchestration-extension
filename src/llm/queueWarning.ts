@@ -178,7 +178,7 @@ export class QueueWarningManager {
                 `- Average wait time: ${stats?.averageWaitMs ? Math.round(stats.averageWaitMs) + 'ms' : 'unknown'}`,
                 '',
                 '**Possible Actions:**',
-                '- Check if LM Studio is running and responsive',
+                '- Check if your LLM server is running and responsive',
                 '- Consider increasing maxConcurrentRequests in config',
                 '- Review if requests are timing out (check timeoutSeconds)',
                 '- Check for slow or stuck requests',

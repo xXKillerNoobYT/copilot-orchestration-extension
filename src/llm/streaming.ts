@@ -3,7 +3,7 @@
  * @module LLMStreaming
  * @description Streaming chunk processing for LLM responses (MT-010.7)
  * 
- * Accumulates streaming chunks from LM Studio into complete responses.
+ * Accumulates streaming chunks from OpenAI-compatible API into complete responses.
  * Handles partial chunks, detects stream completion, and manages buffering.
  * 
  * **Simple explanation**: Like receiving a long letter in multiple envelopes -

@@ -31,7 +31,7 @@ export type DebugConfig = z.infer<typeof DebugConfigSchema>;
 // ============================================================================
 
 /**
- * LLM (Large Language Model) configuration for connecting to LM Studio.
+ * LLM (Large Language Model) configuration for connecting to an OpenAI-compatible API.
  *
  * **Simple explanation**: Like configuring directions to a restaurant –
  * where it is (endpoint), what you're ordering (model), and how long to wait
@@ -117,14 +117,14 @@ const GitHubIssuesConfigSchema = z
 export type GitHubIssuesConfig = z.infer<typeof GitHubIssuesConfigSchema>;
 
 // ============================================================================
-// Section 6: LM Studio Polling Configuration Schema
+// Section 6: LLM Polling Configuration Schema
 // ============================================================================
 
 /**
- * LM Studio polling configuration for token limit checks.
+ * LLM polling configuration for token limit checks.
  *
  * **Simple explanation**: Like a heartbeat check – how often to peek at
- * LM Studio's status without being annoying.
+ * the server's status without being annoying.
  */
 const LMStudioPollingConfigSchema = z
   .object({

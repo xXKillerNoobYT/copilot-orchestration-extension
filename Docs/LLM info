@@ -9,14 +9,20 @@ LLM Default Model: mistralai/ministral-3-14b-reasoning
 Accesses type: v1 
 
 
+API endpoints is. Open AI version one.
+
 
 Note: need to be chasable in settings
 
+
+Key docs the developer doc. https://lmstudio.ai/docs/developer
 
 
 
 
 More Information
+
+
 
 https://lmstudio.ai/docs/app/mcp/deeplink
 

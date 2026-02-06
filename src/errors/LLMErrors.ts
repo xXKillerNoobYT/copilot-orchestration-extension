@@ -71,9 +71,9 @@ export class LLMTimeoutError extends LLMError {
         context?: { model?: string; promptPreview?: string }
     ) {
         const phaseSuggestions: Record<string, string> = {
-            startup: 'Check if LM Studio is running and responsive. Consider increasing startupTimeoutSeconds.',
+            startup: 'Check if the LLM server is running and responsive. Consider increasing startupTimeoutSeconds.',
             streaming: 'The model may be generating a long response. Consider increasing maxTokens or timeoutSeconds.',
-            inactivity: 'The model stopped responding. Check LM Studio logs for errors.',
+            inactivity: 'The model stopped responding mid-generation. Check server logs for errors.',
             request: 'The request took too long. Consider increasing timeoutSeconds or simplifying the prompt.',
         };
 
@@ -150,6 +150,7 @@ export class LLMResponseError extends LLMError {
     public readonly statusCode: number;
     public readonly statusText: string;
     public readonly responseBody?: string;
+    public readonly parsedError?: { message: string; type?: string; param?: string };
     public readonly retryAfterMs?: number;
 
     constructor(
@@ -157,18 +158,51 @@ export class LLMResponseError extends LLMError {
         statusText: string,
         responseBody?: string
     ) {
-        const message = `LLM HTTP error: ${statusCode} ${statusText}`;
+        // Try to parse the response body for a more helpful error message
+        let parsedError: { message: string; type?: string; param?: string } | undefined;
+        let detailedMessage = `LLM HTTP error: ${statusCode} ${statusText}`;
+
+        if (responseBody) {
+            try {
+                const errorJson = JSON.parse(responseBody);
+                if (errorJson.error?.message) {
+                    parsedError = {
+                        message: errorJson.error.message,
+                        type: errorJson.error.type,
+                        param: errorJson.error.param,
+                    };
+                    // Use the API error message as the primary message
+                    detailedMessage = `LLM error (${statusCode}): ${errorJson.error.message}`;
+                }
+            } catch {
+                // Couldn't parse as JSON, use raw body if short enough
+                if (responseBody.length < 500) {
+                    detailedMessage = `LLM HTTP error: ${statusCode} ${statusText} - ${responseBody}`;
+                }
+            }
+        }
+
         const code = statusCode === 429 ? ErrorCode.RATE_LIMIT : ErrorCode.LLM_ERROR;
-        super(message, code, 'llm-response');
+        super(detailedMessage, code, 'llm-response');
         this.name = 'LLMResponseError';
         this.statusCode = statusCode;
         this.statusText = statusText;
         this.responseBody = responseBody;
+        this.parsedError = parsedError;
 
         // Extract retry-after for rate limits
         if (statusCode === 429) {
             this.retryAfterMs = 30000; // Default 30 seconds for rate limit
         }
+    }
+
+    /**
+     * Check if this is a model loading error.
+     * These errors indicate the model isn't available or failed to load.
+     */
+    isModelLoadingError(): boolean {
+        const msg = this.parsedError?.message || this.responseBody || '';
+        return msg.includes('Failed to load model') || msg.includes('Model loading');
     }
 
     /**

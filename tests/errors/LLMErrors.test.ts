@@ -58,7 +58,7 @@ describe('LLMErrors', () => {
             const streamingError = new LLMTimeoutError('streaming', 1000);
             const inactivityError = new LLMTimeoutError('inactivity', 1000);
 
-            expect(startupError.retrySuggestion).toContain('LM Studio');
+            expect(startupError.retrySuggestion).toContain('LLM server');
             expect(streamingError.retrySuggestion).toContain('maxTokens');
             expect(inactivityError.retrySuggestion).toContain('stopped responding');
         });
@@ -185,7 +185,7 @@ describe('LLMErrors', () => {
             const message = getLLMErrorMessage(error);
 
             expect(message).toContain('startup');
-            expect(message).toContain('LM Studio');
+            expect(message).toContain('LLM server');
         });
 
         it('Test 16: should extract fallback message from offline error', () => {

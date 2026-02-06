@@ -122,8 +122,8 @@ export async function runOnboarding(
         // Show welcome notification
         const action = await vscode.window.showInformationMessage(
             '🎉 Welcome to Copilot Orchestration Extension! ' +
-                'A default configuration file has been created. ' +
-                'Would you like to review it?',
+            'A default configuration file has been created. ' +
+            'Would you like to review it?',
             'Open Config',
             'Later'
         );
@@ -183,7 +183,7 @@ export function createExampleConfig(
                 timeoutSeconds: 120,
                 maxTokens: 2048,
                 startupTimeoutSeconds: 300,
-                _note: 'Configure your LM Studio connection here',
+                _note: 'Configure your LLM server connection here',
             },
             orchestrator: {
                 taskTimeoutSeconds: 30,
@@ -199,7 +199,7 @@ export function createExampleConfig(
             },
             lmStudioPolling: {
                 tokenPollIntervalSeconds: 30,
-                _note: 'How often to poll LM Studio (10-120 seconds)',
+                _note: 'How often to poll the LLM server (10-120 seconds)',
             },
             watcher: {
                 debounceMs: 500,
@@ -237,7 +237,7 @@ export function createExampleConfig(
 export async function promptForOnboarding(): Promise<boolean> {
     const action = await vscode.window.showInformationMessage(
         'Copilot Orchestration Extension needs to be configured. ' +
-            'Would you like to set it up now?',
+        'Would you like to set it up now?',
         'Yes',
         'Not Now'
     );
@@ -255,7 +255,7 @@ export async function showOnboardingTips(
 ): Promise<void> {
     const tips = [
         '💡 Tip: You can change the log level in .coe/config.json',
-        '💡 Tip: Configure your LM Studio endpoint in the config file',
+        '💡 Tip: Configure your LLM server endpoint in the config file',
         '💡 Tip: The config file will reload automatically when you edit it',
     ];
 

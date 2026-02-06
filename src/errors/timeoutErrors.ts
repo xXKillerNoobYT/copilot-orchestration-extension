@@ -122,9 +122,9 @@ export function createLLMTimeoutError(
     context?: { model?: string; promptPreview?: string }
 ): TimeoutError {
     const phaseSuggestions: Record<string, string> = {
-        startup: 'Check if LM Studio is running and responsive. Consider increasing startupTimeoutSeconds.',
+        startup: 'Check if the LLM server is running and responsive. Consider increasing startupTimeoutSeconds.',
         streaming: 'The model may be generating a long response. Consider increasing maxTokens or timeoutSeconds.',
-        inactivity: 'The model stopped responding. Check LM Studio logs for errors.',
+        inactivity: 'The model stopped responding mid-generation. Check server logs for errors.',
     };
 
     return {

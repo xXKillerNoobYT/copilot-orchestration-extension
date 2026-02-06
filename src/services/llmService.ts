@@ -90,7 +90,7 @@ interface CacheEntry {
 class LLMService {
     private config: LLMConfig | null = null;
     private cache: Map<string, CacheEntry> = new Map();
-    
+
     // Queue management for concurrency control
     private activeRequests = 0;
     private requestQueue: Array<{
@@ -231,7 +231,7 @@ class LLMService {
 
         // Queue this request (backpressure)
         logInfo(`Queue full (${this.activeRequests}/${maxConcurrent}), waiting for slot...`);
-        
+
         return new Promise<void>((resolve, reject) => {
             this.requestQueue.push({ resolve, reject });
         });
@@ -491,6 +491,90 @@ export async function validateConnection(): Promise<{ success: boolean; error?: 
 }
 
 /**
+ * List available models from the LLM endpoint.
+ * 
+ * **Simple explanation**: Ask the LLM server what models it has available.
+ * Note: Models may be listed but not loaded (server hot-loading).
+ * 
+ * @returns Array of model IDs or empty array if failed
+ */
+export async function listAvailableModels(): Promise<string[]> {
+    const config = llmServiceInstance.getConfig();
+    const timeoutMs = 5000;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(`${config.endpoint}/models`, {
+            method: 'GET',
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            logWarn(`Failed to list models: HTTP ${response.status}`);
+            return [];
+        }
+
+        const data: any = await response.json();
+        const models = (data.data || []).map((m: any) => m.id as string);
+        logInfo(`Available models: ${models.join(', ')}`);
+        return models;
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logWarn(`Failed to list models: ${err.message}`);
+        return [];
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+/**
+ * Check if the configured model is available on the LLM server.
+ * 
+ * Note: Some servers list models even if they're not loaded.
+ * A model being "available" doesn't mean it's ready - it may need hot-loading.
+ * The startupTimeoutSeconds config handles the wait for hot-loading.
+ * 
+ * @returns Object with availability status and list of available models
+ */
+export async function checkModelAvailability(): Promise<{
+    configured: string;
+    available: boolean;
+    allModels: string[];
+    suggestion?: string;
+}> {
+    const config = llmServiceInstance.getConfig();
+    const models = await listAvailableModels();
+    const available = models.includes(config.model);
+
+    const result = {
+        configured: config.model,
+        available,
+        allModels: models,
+        suggestion: undefined as string | undefined,
+    };
+
+    if (!available && models.length > 0) {
+        // Find a similar model name that might be correct
+        const lowerConfigured = config.model.toLowerCase();
+        const similar = models.find(m =>
+            m.toLowerCase().includes(lowerConfigured.split('/').pop() || '') ||
+            lowerConfigured.includes(m.toLowerCase().split('/').pop() || '')
+        );
+
+        if (similar) {
+            result.suggestion = similar;
+            logWarn(`Configured model "${config.model}" not found. Did you mean "${similar}"?`);
+        } else {
+            logWarn(`Configured model "${config.model}" not found. Available: ${models.join(', ')}`);
+        }
+    }
+
+    return result;
+}
+
+/**
  * Call LLM with non-streaming request (waits for full response)
  * 
  * This function sends a prompt to the LLM and waits for the complete response.
@@ -546,7 +630,7 @@ export async function completeLLM(
     // Apply defensive token trimming before sending to LLM
     messages = trimMessagesToTokenLimit(messages, config.maxTokens);
 
-    // Build request body for LM Studio API (OpenAI-compatible format)
+    // Build request body for OpenAI-compatible API
     const body = {
         model: config.model,
         messages,
@@ -778,7 +862,21 @@ export async function streamLLM(
 
         // Check if the response status is OK
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Read the error body to get the actual error message from the API
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+            try {
+                const errorBody = await response.text();
+                const errorJson = JSON.parse(errorBody);
+
+                if (errorJson.error?.message) {
+                    errorMessage = `HTTP ${response.status}: ${errorJson.error.message}`;
+                }
+            } catch {
+                // Couldn't parse error body, use generic message
+            }
+
+            throw new Error(errorMessage);
         }
 
         // Get a reader for the response body

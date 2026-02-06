@@ -51,6 +51,7 @@ export const window = {
   createOutputChannel(name: string): MockOutputChannel {
     return new MockOutputChannel(name);
   },
+  createWebviewPanel: jest.fn(),
   setStatusBarMessage: jest.fn().mockReturnValue({
     dispose: jest.fn()
   }),
@@ -60,6 +61,24 @@ export const window = {
   showInputBox: jest.fn().mockResolvedValue('http://127.0.0.1:1234/v1'), // Default mock returns default endpoint
   registerTreeDataProvider: jest.fn(),
   showTextDocument: jest.fn().mockResolvedValue(undefined),
+};
+
+// Mock env namespace
+export const env = {
+  openExternal: jest.fn().mockResolvedValue(true),
+  clipboard: {
+    readText: jest.fn().mockResolvedValue(''),
+    writeText: jest.fn().mockResolvedValue(undefined),
+  },
+  uriScheme: 'vscode',
+  appName: 'Visual Studio Code',
+  appRoot: '/mock/vscode',
+  language: 'en',
+  machineId: 'mock-machine-id',
+  sessionId: 'mock-session-id',
+  isNewAppInstall: false,
+  isTelemetryEnabled: false,
+  remoteName: undefined,
 };
 
 // Mock TreeItemCollapsibleState enum

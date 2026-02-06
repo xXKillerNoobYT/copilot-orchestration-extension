@@ -43,7 +43,7 @@ async function readConfigFile(
         // Ask for LLM endpoint - this makes new workspace setup much easier
         const llmEndpoint = await vscode.window.showInputBox({
           title: 'LLM Server Endpoint',
-          prompt: 'Enter your LLM server URL (e.g., LM Studio). Press Enter to accept default.',
+          prompt: 'Enter your LLM server URL (OpenAI-compatible API). Press Enter to accept default.',
           value: 'http://127.0.0.1:1234/v1',
           placeHolder: 'http://127.0.0.1:1234/v1 or http://192.168.x.x:1234/v1',
           ignoreFocusOut: true,

@@ -1,12 +1,12 @@
 /**
  * @file llm/polling.ts
  * @module LLMPolling
- * @description Token polling system for LM Studio integration (MT-010.3)
+ * @description Token polling system for OpenAI-compatible API integration (MT-010.3)
  * 
  * Polls for new streaming tokens at configurable intervals.
  * 
  * **Simple explanation**: Like checking your mailbox periodically for new mail -
- * we check LM Studio regularly to see if new tokens have arrived from the
+ * we check the LLM server regularly to see if new tokens have arrived from the
  * streaming response.
  */
 
@@ -97,7 +97,7 @@ export class TokenPoller extends EventEmitter {
     constructor(config: Partial<PollingConfig> = {}) {
         super();
         this.config = { ...DEFAULT_POLLING_CONFIG, ...config };
-        
+
         // Try to get interval from config
         try {
             const appConfig = getConfigInstance();
@@ -133,7 +133,7 @@ export class TokenPoller extends EventEmitter {
         pollFunction: () => Promise<PollResult>
     ): string {
         const sessionId = this.generateSessionId();
-        
+
         const session: PollingSession = {
             id: sessionId,
             isActive: true,
@@ -272,13 +272,13 @@ export class TokenPoller extends EventEmitter {
         for (const [sessionId, handle] of this.pollIntervalHandles) {
             clearInterval(handle);
             this.pollIntervalHandles.delete(sessionId);
-            
+
             const session = this.sessions.get(sessionId);
             if (session) {
                 session.isActive = false;
             }
         }
-        
+
         logInfo(`TokenPoller cleaned up (${this.sessions.size} sessions)`);
     }
 }

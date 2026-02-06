@@ -186,7 +186,7 @@ describe('Error Handling', () => {
                 expect(error.code).toBe(ErrorCode.TIMEOUT);
                 expect(error.message).toContain('startup');
                 expect(error.message).toContain('test-model');
-                expect(error.retrySuggestion).toContain('LM Studio');
+                expect(error.retrySuggestion).toContain('LLM server');
             });
 
             it('Test 18: should provide different suggestions for each phase', () => {
