@@ -45,6 +45,7 @@ export interface Ticket {
     taskId: string | null; // Task ID
     version: number;      // Version of the ticket
     resolution: string | null; // Resolution of the ticket
+    clarityScore?: number; // Clarity Agent score (0-100): red <60, yellow 60-84, green ≥85
 }
 
 // Database abstraction - works with SQLite OR in-memory
@@ -61,13 +62,36 @@ class TicketDatabase {
         const config = getConfigInstance();
         const dbPathFromConfig = config.tickets.dbPath;
 
-        // Step 2: Resolve absolute path (relative to extension root)
-        this.dbPath = path.resolve(context.extensionPath, dbPathFromConfig);
+        // Step 2: Resolve absolute path (relative to WORKSPACE folder, not extension path)
+        // The .coe directory should be in the user's project, not the extension install location
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        
+        if (!workspaceFolder) {
+            logWarn('No workspace folder found. Ticket database will use in-memory mode.');
+            this.isInMemoryMode = true;
+            this.inMemoryStore = new Map();
+            return;
+        }
+        
+        this.dbPath = path.resolve(workspaceFolder, dbPathFromConfig);
 
-        // Step 3: Ensure .coe directory exists
+        // Step 3: Check if .coe directory exists
+        // Note: Config loader already prompted user to create .coe directory.
+        // If it still doesn't exist, user declined - fall back to in-memory mode.
         const dbDir = path.dirname(this.dbPath);
         if (!fs.existsSync(dbDir)) {
-            fs.mkdirSync(dbDir, { recursive: true });
+            // Directory doesn't exist - user likely declined config's prompt
+            // Create it silently for tickets (less intrusive than second prompt)
+            try {
+                fs.mkdirSync(dbDir, { recursive: true });
+                logInfo(`Created .coe directory at ${dbDir} for ticket database`);
+            } catch (err) {
+                const errMsg = err instanceof Error ? err.message : String(err);
+                logWarn(`Failed to create .coe directory: ${errMsg}. Using in-memory mode.`);
+                this.isInMemoryMode = true;
+                this.inMemoryStore = new Map();
+                return;
+            }
         }
 
         // Step 4: Try to initialize SQLite

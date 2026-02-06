@@ -7,12 +7,26 @@ jest.mock('fs');
 jest.mock('../../src/logger');
 
 describe('Config Loader Tests', () => {
+  const mockWorkspacePath = '/home/user/my-project';
   const mockContext: Partial<vscode.ExtensionContext> = {
     extensionPath: '/home/user/.vscode/extensions/coe',
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock workspace folders - config is read from workspace, not extension path
+    (vscode.workspace as any).workspaceFolders = [
+      {
+        uri: { fsPath: mockWorkspacePath },
+        name: 'my-project',
+        index: 0,
+      },
+    ];
+  });
+
+  afterEach(() => {
+    // Reset workspace folders mock
+    (vscode.workspace as any).workspaceFolders = undefined;
   });
 
   describe('File I/O (Happy Path)', () => {
@@ -51,6 +65,22 @@ describe('Config Loader Tests', () => {
       expect(config.llm.timeoutSeconds).toBe(60); // default
       expect(logInfo).toHaveBeenCalled();
       // File not existing is not necessarily a warning (controlled behavior)
+    });
+
+    it('Test 2b: should handle no workspace folder gracefully', async () => {
+      // Simulate VS Code with no folder open
+      (vscode.workspace as any).workspaceFolders = undefined;
+
+      const config = await loadConfigFromFile(
+        mockContext as vscode.ExtensionContext
+      );
+
+      // Should use defaults and warn
+      expect(config.llm.timeoutSeconds).toBe(60); // default
+      expect(config.llm.endpoint).toBe('http://127.0.0.1:1234/v1'); // default
+      expect(logWarn).toHaveBeenCalledWith(
+        'No workspace folder found. Using default configuration.'
+      );
     });
 
     it('Test 3: should merge partial config with defaults', async () => {

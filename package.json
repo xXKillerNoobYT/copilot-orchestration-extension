@@ -127,8 +127,8 @@
             "properties": {
                 "coe.autoProcessTickets": {
                     "type": "boolean",
-                    "default": false,
-                    "description": "Enable automatic ticket processing. When enabled (Auto mode), new tickets are automatically routed to agents and processed with LLM. When disabled (Manual mode - default), tickets stay in 'Pending' status awaiting manual action."
+                    "default": true,
+                    "description": "Default startup mode for ticket processing. When enabled (Auto mode - default), new tickets are automatically routed to agents. When disabled (Manual mode), tickets stay in 'Pending' status. Note: The sidebar toggle is a runtime-only override that does not change this setting."
                 },
                 "coe.enablePlanningAgent": {
                     "type": "boolean",

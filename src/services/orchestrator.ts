@@ -33,6 +33,7 @@ import { llmStatusBar } from '../ui/llmStatusBar';
 import { updateStatusBar } from '../extension';
 import AnswerAgent from '../agents/answerAgent';
 import { getConfigInstance } from '../config';
+import { getAutoModeEnabled } from './autoModeState';
 
 // MT-016: Task Queue with dependency management
 import {
@@ -574,8 +575,8 @@ export class OrchestratorService {
      */
     private async handleManualModeTicketChange(): Promise<void> {
         try {
-            const config = vscode.workspace.getConfiguration('coe');
-            const autoProcessEnabled = config.get<boolean>('autoProcessTickets', false);
+            // Use getAutoModeEnabled() which checks runtime override first, then setting
+            const autoProcessEnabled = getAutoModeEnabled();
 
             if (autoProcessEnabled) {
                 return;

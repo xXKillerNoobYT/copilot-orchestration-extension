@@ -33,6 +33,12 @@ jest.mock('../../src/logger', () => ({
     logWarn: jest.fn(),
 }));
 
+// Mock autoModeState - controls whether getAutoModeEnabled returns true or false
+const mockGetAutoModeEnabled = jest.fn(() => true); // Default to Auto mode (the new default)
+jest.mock('../../src/services/autoModeState', () => ({
+    getAutoModeEnabled: () => mockGetAutoModeEnabled(),
+}));
+
 import { agentStatusTracker } from '../../src/ui/agentStatusTracker';
 import { onTicketChange } from '../../src/services/ticketDb';
 import { logError } from '../../src/logger';
@@ -104,13 +110,9 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             expect(result[5].label).toBe('Research');
         });
 
-        it('should display Manual mode toggle when autoProcessTickets is false', () => {
-            mockWorkspaceConfig.get.mockImplementation((key: string, defaultValue?: any) => {
-                if (key === 'autoProcessTickets') {
-                    return false;
-                }
-                return defaultValue !== undefined ? defaultValue : true;
-            });
+        it('should display Manual mode toggle when getAutoModeEnabled returns false', () => {
+            // Override autoModeState to return Manual mode
+            mockGetAutoModeEnabled.mockReturnValue(false);
 
             const result = provider.getChildren();
             const toggleItem = result[0];
@@ -121,13 +123,9 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             expect(toggleItem.tooltip).toContain('Manual mode');
         });
 
-        it('should display Auto mode toggle when autoProcessTickets is true', () => {
-            mockWorkspaceConfig.get.mockImplementation((key: string, defaultValue?: any) => {
-                if (key === 'autoProcessTickets') {
-                    return true;
-                }
-                return defaultValue !== undefined ? defaultValue : true;
-            });
+        it('should display Auto mode toggle when getAutoModeEnabled returns true', () => {
+            // Override autoModeState to return Auto mode
+            mockGetAutoModeEnabled.mockReturnValue(true);
 
             const result = provider.getChildren();
             const toggleItem = result[0];

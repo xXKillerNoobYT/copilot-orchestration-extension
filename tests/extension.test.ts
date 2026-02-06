@@ -63,6 +63,7 @@ jest.mock('../src/services/orchestrator', () => {
 
 jest.mock('../src/services/llmService', () => ({
     initializeLLMService: jest.fn(),
+    validateConnection: jest.fn(() => Promise.resolve({ success: true })),
 }));
 
 jest.mock('../src/mcpServer', () => ({
@@ -1369,22 +1370,16 @@ describe('Extension Helpers', () => {
     it('should auto-plan for new ai_to_human tickets', async () => {
         const mockTicketDb = require('../src/services/ticketDb');
         const mockOrchestrator = require('../src/services/orchestrator');
+        const autoModeState = await import('../src/services/autoModeState');
 
         const mockContext = {
             extensionPath: '/mock/path',
             subscriptions: [],
         } as any;
 
-        // Mock settings to return true for autoProcessTickets (Auto mode)
-        const mockGetConfiguration = jest.fn(() => ({
-            get: jest.fn((key: string, defaultValue?: any) => {
-                if (key === 'autoProcessTickets') {
-                    return true; // Auto mode
-                }
-                return defaultValue;
-            }),
-        }));
-        (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+        // Reset auto mode state and set to Auto mode
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(true);
 
         const answerAgent = {
             cleanupInactiveConversations: jest.fn(async () => { })
@@ -1410,35 +1405,41 @@ describe('Extension Helpers', () => {
             }
         ]);
 
+        // Mock validateConnection to return success
+        const mockLLMService = require('../src/services/llmService');
+        mockLLMService.validateConnection.mockResolvedValue({ success: true });
+
         await activate(mockContext);
 
         const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
-        await listener();
+
+        // Trigger the listener (this starts the debounce timer)
+        listener();
+
+        // Wait for the debounce timer (500ms) + processing time
+        await new Promise(resolve => setTimeout(resolve, 700));
 
         expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-101', {
             description: 'Auto-plan result'
         });
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
     });
 
     it('should skip auto-planning when autoProcessTickets is false (Manual mode)', async () => {
         const mockTicketDb = require('../src/services/ticketDb');
         const mockOrchestrator = require('../src/services/orchestrator');
+        const autoModeState = await import('../src/services/autoModeState');
 
         const mockContext = {
             extensionPath: '/mock/path',
             subscriptions: [],
         } as any;
 
-        // Mock settings to return false for autoProcessTickets (Manual mode)
-        const mockGetConfiguration = jest.fn(() => ({
-            get: jest.fn((key: string, defaultValue?: any) => {
-                if (key === 'autoProcessTickets') {
-                    return false; // Manual mode
-                }
-                return defaultValue;
-            }),
-        }));
-        (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+        // Reset auto mode state and set to Manual mode
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(false);
 
         const answerAgent = {
             cleanupInactiveConversations: jest.fn(async () => { })
@@ -1469,11 +1470,19 @@ describe('Extension Helpers', () => {
         await activate(mockContext);
 
         const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
-        await listener();
+
+        // Trigger the listener (this starts the debounce timer)
+        listener();
+
+        // Wait for the debounce timer (500ms) + processing time
+        await new Promise(resolve => setTimeout(resolve, 700));
 
         // Planning agent should NOT be called in Manual mode
         expect(mockRouteToPlanningAgent).not.toHaveBeenCalled();
         expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
     });
 
     it('should run Ask Answer Agent continue with active chat', async () => {
@@ -2019,7 +2028,10 @@ describe('Answer Agent Persistence', () => {
             );
         });
 
-        it('should toggle from Manual to Auto mode', async () => {
+        it('should toggle from Manual to Auto mode (runtime override, not persisted)', async () => {
+            // Import the autoModeState module to check the runtime override
+            const { resetAutoModeState, getAutoModeEnabled, setAutoModeOverride } = await import('../src/services/autoModeState');
+
             const mockContext = {
                 extensionPath: '/mock/path',
                 subscriptions: [],
@@ -2032,7 +2044,7 @@ describe('Answer Agent Persistence', () => {
             const mockUpdate = jest.fn(async () => { });
             const mockGet = jest.fn((key: string, defaultValue?: any) => {
                 if (key === 'autoProcessTickets') {
-                    return false; // Currently Manual
+                    return false; // Setting says Manual
                 }
                 return defaultValue;
             });
@@ -2041,6 +2053,9 @@ describe('Answer Agent Persistence', () => {
                 update: mockUpdate,
             }));
             (vscode.workspace as any).getConfiguration = mockGetConfiguration;
+
+            // Reset state before test
+            resetAutoModeState();
 
             await activate(mockContext);
 
@@ -2056,17 +2071,25 @@ describe('Answer Agent Persistence', () => {
 
             await toggleHandler();
 
-            expect(mockUpdate).toHaveBeenCalledWith(
-                'autoProcessTickets',
-                true,
-                vscode.ConfigurationTarget.Global
-            );
+            // Should NOT call config.update - this is a runtime-only toggle
+            expect(mockUpdate).not.toHaveBeenCalled();
+
+            // Should show message indicating session-only mode
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-                'Processing mode: Auto'
+                'Processing mode: Auto (session only)'
             );
+
+            // Verify runtime state was changed
+            expect(getAutoModeEnabled()).toBe(true);
+
+            // Cleanup
+            resetAutoModeState();
         });
 
-        it('should toggle from Auto to Manual mode', async () => {
+        it('should toggle from Auto to Manual mode (runtime override, not persisted)', async () => {
+            // Import the autoModeState module to check the runtime override
+            const { resetAutoModeState, getAutoModeEnabled, setAutoModeOverride } = await import('../src/services/autoModeState');
+
             const mockContext = {
                 extensionPath: '/mock/path',
                 subscriptions: [],
@@ -2079,7 +2102,7 @@ describe('Answer Agent Persistence', () => {
             const mockUpdate = jest.fn(async () => { });
             const mockGet = jest.fn((key: string, defaultValue?: any) => {
                 if (key === 'autoProcessTickets') {
-                    return true; // Currently Auto
+                    return true; // Setting says Auto
                 }
                 return defaultValue;
             });
@@ -2089,6 +2112,9 @@ describe('Answer Agent Persistence', () => {
             }));
             (vscode.workspace as any).getConfiguration = mockGetConfiguration;
 
+            // Reset state before test
+            resetAutoModeState();
+
             await activate(mockContext);
 
             const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
@@ -2101,50 +2127,50 @@ describe('Answer Agent Persistence', () => {
 
             await toggleHandler();
 
-            expect(mockUpdate).toHaveBeenCalledWith(
-                'autoProcessTickets',
-                false,
-                vscode.ConfigurationTarget.Global
-            );
+            // Should NOT call config.update - this is a runtime-only toggle
+            expect(mockUpdate).not.toHaveBeenCalled();
+
+            // Should show message indicating session-only mode
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-                'Processing mode: Manual'
+                'Processing mode: Manual (session only)'
             );
+
+            // Verify runtime state was changed
+            expect(getAutoModeEnabled()).toBe(false);
+
+            // Cleanup
+            resetAutoModeState();
         });
 
-        it('should handle errors when updating settings', async () => {
-            const mockContext = {
-                extensionPath: '/mock/path',
-                subscriptions: [],
-                globalState: {
-                    get: jest.fn(),
-                    update: jest.fn(),
-                },
-            } as any;
+        it('should reset to setting value after resetAutoModeState', async () => {
+            // Import the autoModeState module
+            const { resetAutoModeState, getAutoModeEnabled, setAutoModeOverride } = await import('../src/services/autoModeState');
 
-            const mockUpdate = jest.fn(async () => {
-                throw new Error('Settings update failed');
+            const mockGet = jest.fn((key: string, defaultValue?: any) => {
+                if (key === 'autoProcessTickets') {
+                    return true; // Setting says Auto (the new default)
+                }
+                return defaultValue;
             });
             const mockGetConfiguration = jest.fn(() => ({
-                get: jest.fn(() => false),
-                update: mockUpdate,
+                get: mockGet,
+                update: jest.fn(),
             }));
             (vscode.workspace as any).getConfiguration = mockGetConfiguration;
 
-            await activate(mockContext);
+            // Reset to clean state
+            resetAutoModeState();
 
-            const registerCommandCalls = (vscode.commands.registerCommand as jest.Mock).mock.calls;
-            const toggleCall = registerCommandCalls.find(
-                call => call[0] === 'coe.toggleAutoProcessing'
-            );
-            const toggleHandler = toggleCall![1];
+            // Initially should use setting value (true)
+            expect(getAutoModeEnabled()).toBe(true);
 
-            jest.clearAllMocks();
+            // Set override to Manual
+            setAutoModeOverride(false);
+            expect(getAutoModeEnabled()).toBe(false);
 
-            await toggleHandler();
-
-            expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
-                'Failed to toggle processing mode'
-            );
+            // Reset should revert to setting
+            resetAutoModeState();
+            expect(getAutoModeEnabled()).toBe(true);
         });
     });
 });

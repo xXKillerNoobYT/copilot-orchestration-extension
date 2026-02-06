@@ -6,6 +6,7 @@ import { logWarn, logInfo } from '../logger';
 
 /**
  * Safely read and parse config file from .coe/config.json.
+ * Prompts user to create .coe directory if it doesn't exist.
  *
  * **Simple explanation**: Like carefully opening a recipe card that might be
  * torn or messy, but you can always fall back to the standard recipe if needed.
@@ -13,24 +14,85 @@ import { logWarn, logInfo } from '../logger';
  * @param context VS Code extension context for path resolution
  * @returns Raw parsed config object (or empty object if file missing/invalid JSON)
  */
-function readConfigFile(
+async function readConfigFile(
   context: vscode.ExtensionContext
-): Record<string, unknown> {
-  const configPath = path.join(context.extensionPath, '.coe', 'config.json');
+): Promise<Record<string, unknown>> {
+  // Use workspace folder (where user's project is) NOT extension install path
+  // The .coe/config.json file lives in the user's project root
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  
+  if (!workspaceFolder) {
+    logWarn('No workspace folder found. Using default configuration.');
+    return {};
+  }
+  
+  const coeDir = path.join(workspaceFolder, '.coe');
+  const configPath = path.join(coeDir, 'config.json');
+
+  // Check if .coe directory exists, prompt to create if not
+  if (!fs.existsSync(coeDir)) {
+    const createDir = await vscode.window.showInformationMessage(
+      `COE extension: No ".coe" directory found. Create it with default config?`,
+      { modal: false },
+      'Yes, create .coe',
+      'No, use defaults'
+    );
+    
+    if (createDir === 'Yes, create .coe') {
+      try {
+        fs.mkdirSync(coeDir, { recursive: true });
+        
+        // Create a starter config.json with helpful comments (as separate README)
+        const starterConfig = {
+          llm: {
+            endpoint: 'http://127.0.0.1:1234/v1',
+            model: 'ministral-3-14b-reasoning',
+            timeoutSeconds: 60,
+            maxTokens: 2048
+          },
+          orchestrator: {
+            taskTimeoutSeconds: 30
+          },
+          tickets: {
+            dbPath: '.coe/tickets.db'
+          }
+        };
+        
+        fs.writeFileSync(configPath, JSON.stringify(starterConfig, null, 2), 'utf-8');
+        logInfo(`Created .coe directory and config.json at ${coeDir}`);
+        
+        // Show info about editing the config
+        vscode.window.showInformationMessage(
+          `Created .coe/config.json. Edit it to configure your LLM endpoint (e.g., for LM Studio at 192.168.x.x:1234).`
+        );
+        
+        return starterConfig;
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        logWarn(`Failed to create .coe directory: ${errMsg}. Using defaults.`);
+        return {};
+      }
+    } else {
+      logInfo('User declined to create .coe directory. Using default configuration.');
+      return {};
+    }
+  }
 
   try {
     if (!fs.existsSync(configPath)) {
-      // File doesn't exist – return empty for merge with defaults
+      // Directory exists but no config file – return empty for merge with defaults
+      logInfo(`Config file not found at ${configPath}, using defaults`);
       return {};
     }
 
     const fileContent = fs.readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(fileContent);
+    logInfo('Config loaded successfully. Using file configuration.');
     return parsed ?? {};
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     logWarn(
-      `Failed to read config file at .coe/config.json: ${errorMsg}. Using defaults.`
+      `Failed to read config file at ${configPath}: ${errorMsg}. Using defaults.`
     );
     return {}; // Return empty to merge with defaults
   }
@@ -131,7 +193,7 @@ function validateAndTransform(
 export async function loadConfigFromFile(
   context: vscode.ExtensionContext
 ): Promise<Config> {
-  const rawConfig = readConfigFile(context);
+  const rawConfig = await readConfigFile(context);
   const validatedConfig = validateAndTransform(rawConfig);
 
   const source = Object.keys(rawConfig).length > 0 ? 'file' : 'default';

@@ -3,7 +3,7 @@ import { initializeLogger, logInfo, logError, logWarn } from './logger';
 import { initializeConfig } from './config';
 import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange, getTicket } from './services/ticketDb';
 import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
-import { initializeLLMService } from './services/llmService';
+import { initializeLLMService, validateConnection } from './services/llmService';
 import { initializeMCPServer } from './mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
 import { TicketsTreeDataProvider } from './ui/ticketsTreeProvider';
@@ -17,9 +17,23 @@ import {
     createChatId,
     persistAnswerAgentHistory,
 } from './agents/answerAgent';
+import {
+    getAutoModeEnabled,
+    setAutoModeOverride,
+    isTicketProcessed,
+    markTicketProcessed,
+    getDebounceTimer,
+    setDebounceTimer,
+    clearDebounceTimer,
+    resetAutoModeState,
+    AUTO_PLAN_DEBOUNCE_MS,
+} from './services/autoModeState';
 
 // Module-level status bar item - can be updated from orchestrator
 let statusBarItem: vscode.StatusBarItem | null = null;
+
+// Re-export for backward compatibility with tests
+export { getAutoModeEnabled, resetAutoModeState as resetAutoModeOverrideForTests } from './services/autoModeState';
 
 /**
  * Update the status bar with new text and optional tooltip.
@@ -39,30 +53,69 @@ export async function updateStatusBar(text: string, tooltip?: string): Promise<v
 
 /**
  * Setup auto-planning listener
- * Triggers Planning Agent when a new ai_to_human ticket is created
+ * Triggers Planning Agent when a new ai_to_human ticket is created.
+ * 
+ * **Guards against infinite loops:**
+ * 1. Debounce timer (500ms) - prevents rapid-fire triggers
+ * 2. Processed ticket Set - skips already-processed tickets
+ * 3. LLM health check - blocks ticket if LLM unavailable
+ * 4. Status change on failure - prevents re-triggering
  */
 async function setupAutoPlanning(): Promise<void> {
     onTicketChange(async () => {
-        try {
-            // Check if auto-processing is enabled
-            const config = vscode.workspace.getConfiguration('coe');
-            const autoProcessEnabled = config.get<boolean>('autoProcessTickets', false);
+        // DEBOUNCE: Clear existing timer and set new one
+        clearDebounceTimer();
 
-            if (!autoProcessEnabled) {
-                // Manual mode: Skip auto-processing, tickets stay pending
-                logInfo('[Auto-Plan] Skipped - Manual mode enabled (autoProcessTickets = false)');
-                return;
-            }
+        const timer = setTimeout(async () => {
+            setDebounceTimer(null);
 
-            // Fetch all tickets, get last created
-            const tickets = await listTickets();
-            if (tickets.length === 0) return;
+            try {
+                // GUARD 1: Check if auto-processing is enabled (runtime override or setting)
+                if (!getAutoModeEnabled()) {
+                    logInfo('[Auto-Plan] Skipped - Manual mode enabled');
+                    return;
+                }
 
-            const lastTicket = tickets[0]; // listTickets returns DESC by createdAt
+                // Fetch all tickets, get last created
+                const tickets = await listTickets();
+                if (tickets.length === 0) return;
 
-            // Only auto-plan if type is 'ai_to_human' and status is 'open'
-            if (lastTicket.type === 'ai_to_human' && lastTicket.status === 'open') {
+                const lastTicket = tickets[0]; // listTickets returns DESC by createdAt
+
+                // Only auto-plan if type is 'ai_to_human' and status is 'open'
+                if (lastTicket.type !== 'ai_to_human' || lastTicket.status !== 'open') {
+                    return;
+                }
+
+                // GUARD 2: Already processed this ticket? Prevents infinite loop.
+                if (isTicketProcessed(lastTicket.id)) {
+                    logInfo(`[Auto-Plan] Skipped - Ticket ${lastTicket.id} already processed`);
+                    return;
+                }
+
+                // Mark as processed BEFORE calling LLM (prevents re-entry)
+                markTicketProcessed(lastTicket.id);
+
                 logInfo(`[Auto-Plan] Detected new ai_to_human ticket: ${lastTicket.id}`);
+
+                // GUARD 3: Check LLM availability BEFORE planning
+                const { success: llmAvailable, error: llmError } = await validateConnection();
+                if (!llmAvailable) {
+                    logWarn(`[Auto-Plan] LLM unavailable: ${llmError}`);
+
+                    // Mark ticket as blocked (prevents re-triggering)
+                    await updateTicket(lastTicket.id, {
+                        status: 'blocked',
+                        description: `Auto-planning blocked: ${llmError || 'LLM unavailable'}`
+                    });
+
+                    // Notify user
+                    vscode.window.showWarningMessage(
+                        `COE: LLM unavailable - ticket ${lastTicket.id} marked as blocked. Check LM Studio connection.`
+                    );
+                    await updateStatusBar('$(warning) LLM Offline');
+                    return;
+                }
 
                 // Reset agent statuses when new planning cycle starts
                 agentStatusTracker.resetAll();
@@ -71,17 +124,44 @@ async function setupAutoPlanning(): Promise<void> {
                 const orchestrator = getOrchestratorInstance();
                 const plan = await orchestrator.routeToPlanningAgent(lastTicket.title);
 
-                // Store plan in ticket description
-                await updateTicket(lastTicket.id, {
-                    description: plan
-                });
+                // Check if planning actually succeeded (not just returned fallback)
+                const isFallbackResponse = plan.includes('Planning service is currently unavailable');
 
-                logInfo(`[Auto-Plan] DONE - Plan stored in ${lastTicket.id}`);
+                if (isFallbackResponse) {
+                    // Planning failed - mark as blocked to prevent re-triggering
+                    await updateTicket(lastTicket.id, {
+                        status: 'blocked',
+                        description: plan
+                    });
+                    logWarn(`[Auto-Plan] Failed - Ticket ${lastTicket.id} marked as blocked`);
+                } else {
+                    // Planning succeeded - store plan but keep status 'open' for next step
+                    await updateTicket(lastTicket.id, {
+                        description: plan
+                    });
+                    logInfo(`[Auto-Plan] DONE - Plan stored in ${lastTicket.id}`);
+                }
+
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : String(error);
+                logError(`[Auto-Plan] Failed: ${msg}`);
+
+                // Try to mark ticket as blocked on error to prevent infinite loop
+                try {
+                    const tickets = await listTickets();
+                    if (tickets.length > 0 && tickets[0].status === 'open') {
+                        await updateTicket(tickets[0].id, {
+                            status: 'blocked',
+                            description: `Auto-planning error: ${msg}`
+                        });
+                    }
+                } catch {
+                    // Ignore secondary errors
+                }
             }
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : String(error);
-            logError(`[Auto-Plan] Failed: ${msg}`);
-        }
+        }, AUTO_PLAN_DEBOUNCE_MS);
+
+        setDebounceTimer(timer);
     });
     logInfo('[Auto-Plan] Listener registered');
 }
@@ -379,7 +459,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
     /**
      * Command: coe.toggleAutoProcessing
-     * Toggles between Auto and Manual ticket processing mode
+     * Toggles between Auto and Manual ticket processing mode.
+     * 
+     * **IMPORTANT**: This is a RUNTIME-ONLY override. It does NOT persist to settings.
+     * On extension reload/restart, the mode reverts to the setting value.
+     * 
      * Auto mode: Tickets are automatically routed to agents and processed with LLM
      * Manual mode: Tickets stay in "Pending" status, waiting for manual action
      * Called when clicking the Processing toggle at top of Agents tab
@@ -388,19 +472,19 @@ export async function activate(context: vscode.ExtensionContext) {
         logInfo('[ToggleAutoProcessing] User clicked processing mode toggle');
 
         try {
-            const config = vscode.workspace.getConfiguration('coe');
-            const currentMode = config.get<boolean>('autoProcessTickets', false);
+            // Get current effective mode (runtime override or setting)
+            const currentMode = getAutoModeEnabled();
             const newMode = !currentMode;
 
-            // Update setting
-            await config.update('autoProcessTickets', newMode, vscode.ConfigurationTarget.Global);
+            // Set runtime override (does NOT persist to settings)
+            setAutoModeOverride(newMode);
 
             // Refresh agents tree view to show updated toggle state
             agentsProvider.refresh();
 
             const modeText = newMode ? 'Auto' : 'Manual';
-            vscode.window.showInformationMessage(`Processing mode: ${modeText}`);
-            logInfo(`[ToggleAutoProcessing] Mode changed to: ${modeText}`);
+            vscode.window.showInformationMessage(`Processing mode: ${modeText} (session only)`);
+            logInfo(`[ToggleAutoProcessing] Mode changed to: ${modeText} (runtime override, not persisted)`);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             logError(`[ToggleAutoProcessing] Failed to toggle mode: ${message}`);

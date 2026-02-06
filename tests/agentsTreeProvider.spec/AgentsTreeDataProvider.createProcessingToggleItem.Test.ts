@@ -2,6 +2,7 @@
 import * as vscode from 'vscode';
 import { AgentsTreeDataProvider } from '../../src/ui/agentsTreeProvider';
 import { Logger } from '../../utils/logger';
+import * as autoModeState from '../../src/services/autoModeState';
 
 jest.mock('vscode', () => ({
     ...jest.requireActual('vscode'),
@@ -25,6 +26,10 @@ jest.mock('../../utils/logger', () => ({
     },
 }));
 
+jest.mock('../../src/services/autoModeState', () => ({
+    getAutoModeEnabled: jest.fn(),
+}));
+
 /** @aiContributed-2026-02-04 */
 describe('AgentsTreeDataProvider', () => {
     let provider: AgentsTreeDataProvider;
@@ -37,16 +42,13 @@ describe('AgentsTreeDataProvider', () => {
     /** @aiContributed-2026-02-04 */
     describe('createProcessingToggleItem', () => {
         /** @aiContributed-2026-02-04 */
-        it('should create a TreeItem with Auto mode when autoProcessTickets is true', () => {
-            const mockConfig = {
-                get: jest.fn().mockReturnValue(true),
-            };
-            (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+        it('should create a TreeItem with Auto mode when getAutoModeEnabled returns true', () => {
+            // Mock getAutoModeEnabled to return true (Auto mode)
+            (autoModeState.getAutoModeEnabled as jest.Mock).mockReturnValue(true);
 
             const treeItem = provider['createProcessingToggleItem']();
 
-            expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith('coe');
-            expect(mockConfig.get).toHaveBeenCalledWith('autoProcessTickets', false);
+            expect(autoModeState.getAutoModeEnabled).toHaveBeenCalled();
             expect(vscode.TreeItem).toHaveBeenCalledWith('Processing', vscode.TreeItemCollapsibleState.None);
             expect(treeItem.description).toBe('Auto');
             expect(vscode.ThemeIcon).toHaveBeenCalledWith('play', expect.any(vscode.ThemeColor));
@@ -62,16 +64,13 @@ describe('AgentsTreeDataProvider', () => {
         });
 
         /** @aiContributed-2026-02-04 */
-        it('should create a TreeItem with Manual mode when autoProcessTickets is false', () => {
-            const mockConfig = {
-                get: jest.fn().mockReturnValue(false),
-            };
-            (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+        it('should create a TreeItem with Manual mode when getAutoModeEnabled returns false', () => {
+            // Mock getAutoModeEnabled to return false (Manual mode)
+            (autoModeState.getAutoModeEnabled as jest.Mock).mockReturnValue(false);
 
             const treeItem = provider['createProcessingToggleItem']();
 
-            expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith('coe');
-            expect(mockConfig.get).toHaveBeenCalledWith('autoProcessTickets', false);
+            expect(autoModeState.getAutoModeEnabled).toHaveBeenCalled();
             expect(vscode.TreeItem).toHaveBeenCalledWith('Processing', vscode.TreeItemCollapsibleState.None);
             expect(treeItem.description).toBe('Manual');
             expect(vscode.ThemeIcon).toHaveBeenCalledWith('debug-stop', expect.any(vscode.ThemeColor));
@@ -88,11 +87,11 @@ describe('AgentsTreeDataProvider', () => {
 
         /** @aiContributed-2026-02-04 */
         it('should handle errors gracefully and log them', () => {
-            (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(() => {
-                throw new Error('Configuration error');
+            (autoModeState.getAutoModeEnabled as jest.Mock).mockImplementation(() => {
+                throw new Error('Auto mode state error');
             });
 
-            expect(() => provider['createProcessingToggleItem']()).toThrow('Configuration error');
+            expect(() => provider['createProcessingToggleItem']()).toThrow('Auto mode state error');
             expect(Logger.error).toHaveBeenCalledWith(expect.any(Error));
         });
     });

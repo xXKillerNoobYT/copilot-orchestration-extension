@@ -147,6 +147,14 @@ export const workspace = {
     get: jest.fn(),
     update: jest.fn(),
   }),
+  // Default workspace folder for tests - can be overridden per test
+  workspaceFolders: [
+    {
+      uri: { fsPath: '/mock/workspace/path' },
+      name: 'mock-workspace',
+      index: 0,
+    },
+  ] as any[] | undefined,
 };
 
 // Mock ExtensionContext

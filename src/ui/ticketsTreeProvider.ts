@@ -87,6 +87,7 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
     /**
      * Helper to create a TreeItem for a ticket
      * Now includes plan preview extracted from ticket.description
+     * Includes Clarity score with color coding (red <60, yellow 60-84, green ≥85)
      * @param ticket The ticket data from database
      */
     private createTicketItem(ticket: Ticket): vscode.TreeItem {
@@ -106,16 +107,23 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
             }
         }
 
-        // Description = status + createdAt date + plan preview (shows to the right of the label)
+        // Build clarity score display string if present
+        const clarityDisplay = this.formatClarityScore(ticket.clarityScore);
+
+        // Description = status + clarity score + createdAt date + plan preview (shows to the right of the label)
         const createdDate = new Date(ticket.createdAt).toLocaleDateString();
-        item.description = `${ticket.status} • ${createdDate} • Plan: ${planPreview}`;
+        item.description = `${ticket.status}${clarityDisplay} • ${createdDate} • Plan: ${planPreview}`;
 
         // Tooltip = full ticket data for debugging (user hovers to read full plan)
-        // Include full description so users can hover to see complete plan text
-        item.tooltip = ticket.description || 'No plan stored yet';
+        // Include full description and clarity score breakdown
+        let tooltip = ticket.description || 'No plan stored yet';
+        if (ticket.clarityScore !== undefined) {
+            tooltip += `\n\n📊 Clarity Score: ${ticket.clarityScore}/100`;
+        }
+        item.tooltip = tooltip;
 
-        // Icon = status-based ThemeIcon
-        item.iconPath = this.getIconForStatus(ticket.status);
+        // Icon = status-based ThemeIcon with optional clarity color
+        item.iconPath = this.getIconForStatus(ticket.status, ticket.clarityScore);
 
         // Command = make item clickable, passing ticket.id as argument
         // When user clicks this ticket, VS Code will execute 'coe.openTicket' with ticketId
@@ -133,20 +141,60 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
     }
 
     /**
+     * Format clarity score for display in description
+     * Returns empty string if no score, or " • 📊 XX" with emoji indicator
+     * @param score The clarity score (0-100) or undefined
+     */
+    private formatClarityScore(score: number | undefined): string {
+        if (score === undefined) {
+            return '';
+        }
+        // Add emoji based on score range: 🔴 <60, 🟡 60-84, 🟢 ≥85
+        const emoji = score >= 85 ? '🟢' : score >= 60 ? '🟡' : '🔴';
+        return ` • ${emoji} ${score}`;
+    }
+
+    /**
+     * Get ThemeColor based on clarity score
+     * red <60, yellow 60-84, green ≥85
+     * Returns undefined if no score (no color tint)
+     * 
+     * **Simple explanation**: Like traffic lights - green means clear, yellow means needs work, red means unclear.
+     * @param score The clarity score (0-100) or undefined
+     */
+    getClarityColor(score: number | undefined): vscode.ThemeColor | undefined {
+        if (score === undefined) {
+            return undefined;
+        }
+        // Color thresholds from MT-011.13: red <60, yellow 60-84, green ≥85
+        if (score >= 85) {
+            return new vscode.ThemeColor('testing.iconPassed'); // Green
+        } else if (score >= 60) {
+            return new vscode.ThemeColor('testing.iconQueued'); // Yellow
+        } else {
+            return new vscode.ThemeColor('testing.iconFailed'); // Red
+        }
+    }
+
+    /**
      * Helper to get icon based on ticket status
      * ThemeIcon = built-in VS Code icon by name
      * ~spin suffix = adds spinning animation
+     * Now includes clarity score color tinting
+     * @param status The ticket status
+     * @param clarityScore Optional clarity score for color tinting
      */
-    private getIconForStatus(status: string): vscode.ThemeIcon {
+    private getIconForStatus(status: string, clarityScore?: number): vscode.ThemeIcon {
+        const color = this.getClarityColor(clarityScore);
         switch (status) {
             case 'open':
-                return new vscode.ThemeIcon('issue-opened');
+                return new vscode.ThemeIcon('issue-opened', color);
             case 'in-progress':
-                return new vscode.ThemeIcon('sync~spin'); // Spinning icon for active work
+                return new vscode.ThemeIcon('sync~spin', color); // Spinning icon for active work
             case 'blocked':
-                return new vscode.ThemeIcon('warning');
+                return new vscode.ThemeIcon('warning', color);
             default:
-                return new vscode.ThemeIcon('circle-outline');
+                return new vscode.ThemeIcon('circle-outline', color);
         }
     }
 

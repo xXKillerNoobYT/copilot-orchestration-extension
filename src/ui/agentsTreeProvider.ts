@@ -12,6 +12,7 @@ import * as vscode from 'vscode';
 import { agentStatusTracker } from './agentStatusTracker';
 import { onTicketChange } from '../services/ticketDb';
 import { logError, logInfo } from '../logger';
+import { getAutoModeEnabled } from '../services/autoModeState';
 
 export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     // EventEmitter for notifying VS Code when tree data changes (triggers refresh)
@@ -149,9 +150,8 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
      * Red icon + "Manual" when auto-processing disabled (default)
      */
     private createProcessingToggleItem(): vscode.TreeItem {
-        // Get current auto-processing setting (default: false = Manual mode)
-        const config = vscode.workspace.getConfiguration('coe');
-        const isAutoMode = config.get<boolean>('autoProcessTickets', false);
+        // Get current auto-processing state (runtime override or setting, default: true = Auto mode)
+        const isAutoMode = getAutoModeEnabled();
 
         // Create label and icon based on current mode
         const label = 'Processing';
