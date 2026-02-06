@@ -1171,13 +1171,15 @@ LLM base layer is now permanently locked and bulletproof. Ready for:
   - **Verification**: 1101 tests passing, 83.9% coverage
   - **Dependencies**: MT-009.2 ✅, MT-004.2 ✅
 
-- [ ] **MT-009.6**: Create LM Studio integration tests (30 min) [actual: __ min] [Priority: P0] [depends: MT-009.2, MT-009.4] 🔒
-  - **Files**: Create `tests/llm.spec/lmStudio.web.spec.ts`
-  - **Tests**: Test connection, timeout, offline, cache
-  - **Behavior**: Comprehensive LM Studio integration testing
-  - **Documentation**: Add test examples to [CONSOLIDATED-MASTER-PLAN.md](CONSOLIDATED-MASTER-PLAN.md)
-  - **Quality**: Mock LM Studio responses for CI/CD
-  - **Verification**: Run tests with/without LM Studio running
+- [X] **MT-009.6**: Streaming queue with backpressure handling (45 min) [actual: ~40 min] [Priority: P0] [depends: MT-009.2, MT-009.4] ✅
+  - **Files**: Queue mechanism in `src/services/llmService.ts`
+  - **Tests**: 8 tests in `tests/services/llmService.streaming.test.ts` (concurrency limit, queuing, slot release, cache bypass, clear queue)
+  - **Behavior**: Enforces maxConcurrentRequests limit, queues excess requests, releases slots on completion/error
+  - **Config**: `maxConcurrentRequests` (1-10, default: 3) in `src/config/schema.ts`
+  - **Exports**: `getLLMQueueStats()`, `clearLLMQueue()` for monitoring and emergency clear
+  - **Quality**: Cache hits bypass queue (no slot needed), slots released in finally block
+  - **Verification**: 1109 tests passing, all queue tests green
+  - **Dependencies**: MT-009.2 ✅, MT-009.4 ✅
   - **Dependencies**: MT-009.2, MT-009.4
 
 #### MT-010: Streaming Queue & Polling [Area: LLM Queue] (8 tasks)

@@ -23,6 +23,8 @@ export interface LLMConfig {
     cacheEnabled?: boolean;
     cacheTTLMinutes?: number;
     cacheMaxEntries?: number;
+    // Concurrency configuration
+    maxConcurrentRequests?: number;
 }
 
 /**
@@ -60,7 +62,8 @@ const DEFAULT_CONFIG: LLMConfig = {
     offlineFallbackMessage: 'LLM offline – ticket created for manual review',
     cacheEnabled: true,
     cacheTTLMinutes: 30,
-    cacheMaxEntries: 200
+    cacheMaxEntries: 200,
+    maxConcurrentRequests: 3
 };
 
 /**
@@ -82,10 +85,18 @@ interface CacheEntry {
  * 
  * **Simple explanation**: Like a single waiter that handles all LLM orders.
  * The cache is like a notepad the waiter keeps to remember frequent orders.
+ * The queue ensures the waiter doesn't take too many orders at once.
  */
 class LLMService {
     private config: LLMConfig | null = null;
     private cache: Map<string, CacheEntry> = new Map();
+    
+    // Queue management for concurrency control
+    private activeRequests = 0;
+    private requestQueue: Array<{
+        resolve: () => void;
+        reject: (err: Error) => void;
+    }> = [];
 
     /**
      * Get the current configuration
@@ -195,6 +206,80 @@ class LLMService {
      */
     isCacheEnabled(): boolean {
         return this.config?.cacheEnabled ?? true;
+    }
+
+    // ========================================================================
+    // Queue / Concurrency Management
+    // ========================================================================
+
+    /**
+     * Acquire a slot in the request queue.
+     * If slots are available, returns immediately.
+     * Otherwise, waits until a slot becomes available (backpressure).
+     * 
+     * **Simple explanation**: Like taking a ticket at the deli counter - if 
+     * they're at capacity, you wait your turn.
+     */
+    async acquireSlot(): Promise<void> {
+        const maxConcurrent = this.config?.maxConcurrentRequests ?? 3;
+
+        if (this.activeRequests < maxConcurrent) {
+            this.activeRequests++;
+            logInfo(`Queue slot acquired: ${this.activeRequests}/${maxConcurrent} active`);
+            return;
+        }
+
+        // Queue this request (backpressure)
+        logInfo(`Queue full (${this.activeRequests}/${maxConcurrent}), waiting for slot...`);
+        
+        return new Promise<void>((resolve, reject) => {
+            this.requestQueue.push({ resolve, reject });
+        });
+    }
+
+    /**
+     * Release a slot back to the pool and process next queued request.
+     * 
+     * **Simple explanation**: Like finishing at the deli counter - the next 
+     * person in line can now be served.
+     */
+    releaseSlot(): void {
+        const maxConcurrent = this.config?.maxConcurrentRequests ?? 3;
+
+        // Process next queued request if any
+        const next = this.requestQueue.shift();
+        if (next) {
+            logInfo(`Queue slot released, processing next queued request (${this.requestQueue.length} remaining)`);
+            next.resolve();
+            // Note: activeRequests stays the same (transferred to next request)
+        } else {
+            this.activeRequests--;
+            logInfo(`Queue slot released: ${this.activeRequests}/${maxConcurrent} active`);
+        }
+    }
+
+    /**
+     * Get current queue statistics for monitoring/testing.
+     */
+    getQueueStats(): { active: number; queued: number; max: number } {
+        return {
+            active: this.activeRequests,
+            queued: this.requestQueue.length,
+            max: this.config?.maxConcurrentRequests ?? 3
+        };
+    }
+
+    /**
+     * Clear the queue (for testing) - rejects all pending requests.
+     */
+    clearQueue(): void {
+        const count = this.requestQueue.length;
+        for (const item of this.requestQueue) {
+            item.reject(new Error('Queue cleared'));
+        }
+        this.requestQueue = [];
+        this.activeRequests = 0;
+        logInfo(`Queue cleared: ${count} pending requests rejected`);
     }
 }
 
@@ -341,12 +426,14 @@ export async function initializeLLMService(context: vscode.ExtensionContext): Pr
         cacheEnabled: llmConfig.cacheEnabled,
         cacheTTLMinutes: llmConfig.cacheTTLMinutes,
         cacheMaxEntries: llmConfig.cacheMaxEntries,
+        maxConcurrentRequests: llmConfig.maxConcurrentRequests,
     };
 
     // Store validated config
     llmServiceInstance.setConfig(config);
     const cacheStatus = config.cacheEnabled ? `cache: ${config.cacheTTLMinutes}min TTL, max ${config.cacheMaxEntries}` : 'cache: disabled';
-    logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model}, ${cacheStatus})`);
+    const queueStatus = `queue: max ${config.maxConcurrentRequests} concurrent`;
+    logInfo(`LLM service initialized: ${config.endpoint} (model: ${config.model}, ${cacheStatus}, ${queueStatus})`);
 }
 
 /**
@@ -433,6 +520,9 @@ export async function completeLLM(
         }
         logInfo(`Cache MISS: ${cacheKey.substring(0, 8)}... (making real request)`);
     }
+
+    // Acquire queue slot before making actual request (enforces maxConcurrentRequests)
+    await llmServiceInstance.acquireSlot();
 
     llmStatusBar.start();
 
@@ -540,6 +630,8 @@ export async function completeLLM(
         // Always clear the timeout, even if there was an error
         clearTimeout(timeoutId);
         llmStatusBar.end();
+        // Release queue slot so next request can proceed
+        llmServiceInstance.releaseSlot();
     }
 }
 
@@ -561,6 +653,10 @@ export async function streamLLM(
     options?: LLMRequestOptions
 ): Promise<LLMResponse> {
     const config = llmServiceInstance.getConfig();
+
+    // Acquire queue slot before making actual request (enforces maxConcurrentRequests)
+    await llmServiceInstance.acquireSlot();
+
     llmStatusBar.start();
 
     // Build messages array - support two modes for backward compatibility
@@ -787,6 +883,8 @@ export async function streamLLM(
         }
     } finally {
         await cleanup(); // Call cleanup helper - runs only once, idempotent
+        // Release queue slot so next request can proceed
+        llmServiceInstance.releaseSlot();
     }
 }
 // ============================================================================
@@ -830,4 +928,31 @@ export function isLLMCacheEnabled(): boolean {
  */
 export function getLLMCacheKey(prompt: string, options?: LLMRequestOptions): string {
     return llmServiceInstance.getCacheKey(prompt, options);
+}
+
+// ============================================================================
+// Queue Utility Functions (exported for testing and monitoring)
+// ============================================================================
+
+/**
+ * Get current queue statistics.
+ * 
+ * **Simple explanation**: Like checking traffic - tells you how many cars (requests)
+ * are on the road vs waiting at the intersection.
+ * 
+ * @returns Object with active, queued, and max concurrent request counts
+ */
+export function getLLMQueueStats(): { active: number; queued: number; max: number } {
+    return llmServiceInstance.getQueueStats();
+}
+
+/**
+ * Clear the request queue (drops all pending requests).
+ * 
+ * **Simple explanation**: Like clearing a waiting line - everyone waiting is dismissed.
+ * Active requests continue, but pending ones are dropped.
+ * Use with caution - only in error recovery or shutdown scenarios.
+ */
+export function clearLLMQueue(): void {
+    llmServiceInstance.clearQueue();
 }

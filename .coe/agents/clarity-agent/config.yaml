@@ -1,0 +1,100 @@
+# Clarity Agent Configuration
+# Reviews ticket replies for completeness, clarity, and accuracy
+# MT-011: Clarity Agent Implementation
+
+role: clarity-reviewer
+priority: P1  # Always runs at high priority
+model: ministral-3-14b-reasoning
+
+# Scoring configuration
+scoring:
+  # Minimum acceptable score (0-100)
+  threshold: 85
+  # Weights for each dimension (must sum to 1.0)
+  weights:
+    completeness: 0.40  # Does reply address all parts of the question?
+    clarity: 0.35       # Is the reply unambiguous and specific?
+    accuracy: 0.25      # Does reply align with project context?
+
+# Follow-up configuration  
+followUp:
+  # Maximum number of clarification iterations before escalation
+  maxIterations: 5
+  # Maximum number of follow-up questions to generate
+  maxQuestions: 3
+
+# Trigger configuration
+trigger:
+  # Delay after reply before starting review (seconds)
+  reviewDelaySeconds: 5
+  # Minimum reply length to trigger review (characters)
+  minReplyLength: 10
+
+# Prompts
+prompts:
+  # System prompt for scoring
+  scoring: |
+    You are a Clarity Agent that reviews ticket replies for quality.
+    Score each reply on a scale of 0-100 based on completeness, clarity, and accuracy.
+    Return JSON with scores for each dimension and an overall score.
+    
+  # Prompt template for completeness assessment
+  completeness: |
+    Review this reply for completeness. Does it address all parts of the original question?
+    
+    Original question: {{question}}
+    Reply: {{reply}}
+    
+    Score 0-100 where:
+    - 0-30: Misses most key points
+    - 31-60: Partially addresses question
+    - 61-80: Addresses main points but missing details
+    - 81-100: Thoroughly addresses all aspects
+    
+    Return JSON: {"score": <number>, "reasoning": "<explanation>", "missing": ["<point1>", ...]}
+
+  # Prompt template for clarity assessment
+  clarity: |
+    Review this reply for clarity. Is it unambiguous and specific?
+    
+    Reply: {{reply}}
+    
+    Score 0-100 where:
+    - 0-30: Vague, ambiguous, or confusing
+    - 31-60: Somewhat clear but needs clarification
+    - 61-80: Clear but could be more specific
+    - 81-100: Very clear and specific
+    
+    Return JSON: {"score": <number>, "reasoning": "<explanation>", "vague_parts": ["<part1>", ...]}
+
+  # Prompt template for accuracy assessment
+  accuracy: |
+    Review this reply for accuracy against the project context.
+    
+    Project context: {{context}}
+    Reply: {{reply}}
+    
+    Score 0-100 where:
+    - 0-30: Contains inaccuracies or contradictions
+    - 31-60: Mostly accurate but some discrepancies
+    - 61-80: Accurate but could be more aligned
+    - 81-100: Fully accurate and well-aligned
+    
+    Return JSON: {"score": <number>, "reasoning": "<explanation>", "discrepancies": ["<issue1>", ...]}
+
+  # Prompt for generating follow-up questions
+  followUp: |
+    Generate targeted follow-up questions to improve this reply.
+    
+    Original question: {{question}}
+    Reply: {{reply}}
+    Issues found: {{issues}}
+    
+    Generate 1-3 specific questions that would help clarify the reply.
+    Return JSON: {"questions": ["<q1>", "<q2>", ...]}
+
+# Quality checklist (CL1-CL3)
+checklist:
+  CL1: "Scoring uses all three dimensions with proper weights"
+  CL2: "Follow-up questions are specific and actionable"
+  CL3: "Escalation happens after max iterations"

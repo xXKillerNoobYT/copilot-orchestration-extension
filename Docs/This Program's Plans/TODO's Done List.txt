@@ -5,7 +5,7 @@
 # ===============================================================================
 # MT-009.5 LLM RESPONSE CACHING — 2026-02-05
 # ===============================================================================
-MT-009.5 Add LLM response caching — 2026-02-05 — pending
+MT-009.5 Add LLM response caching — 2026-02-05 — 42cbf0d
 # Implementation:
 #   - Config: cacheEnabled, cacheTTLMinutes (0-1440, default 30), cacheMaxEntries (10-1000, default 200)
 #   - In-memory cache with SHA-256 prompt hash key
@@ -13,6 +13,21 @@ MT-009.5 Add LLM response caching — 2026-02-05 — pending
 #   - Error responses NOT cached
 # Tests: 22 new tests in tests/services/llmService.cache.test.ts
 # Final: 1101 tests passing, 83.9% coverage
+# ===============================================================================
+
+# ===============================================================================
+# MT-009.6 STREAMING QUEUE & BACKPRESSURE — 2026-02-06
+# ===============================================================================
+MT-009.6 Streaming queue with backpressure handling — 2026-02-06 — pending
+# Implementation:
+#   - Config: maxConcurrentRequests (1-10, default 3) in src/config/schema.ts
+#   - Queue mechanism in LLMService class (acquireSlot, releaseSlot, getQueueStats, clearQueue)
+#   - completeLLM and streamLLM wrapped with acquireSlot/releaseSlot
+#   - Cache hits bypass queue (no slot needed)
+#   - Slots released in finally block for both success and error paths
+# Exports: getLLMQueueStats(), clearLLMQueue()
+# Tests: 8 new tests in tests/services/llmService.streaming.test.ts
+# Final: 1109 tests passing
 # ===============================================================================
 
 MT-005.2 Add indexes for performance — 2026-02-05 — 506614c

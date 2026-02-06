@@ -55,6 +55,8 @@ const LLMConfigSchema = z
     cacheEnabled: z.boolean().default(true),
     cacheTTLMinutes: z.number().min(0).max(1440).default(30),
     cacheMaxEntries: z.number().min(10).max(1000).default(200),
+    // Concurrency / queue configuration
+    maxConcurrentRequests: z.number().min(1).max(10).default(3),
   })
   .default({});
 
@@ -221,6 +223,7 @@ export const DEFAULT_CONFIG: Config = {
     cacheEnabled: true,
     cacheTTLMinutes: 30,
     cacheMaxEntries: 200,
+    maxConcurrentRequests: 3,
   },
   orchestrator: { taskTimeoutSeconds: 30 },
   tickets: { dbPath: './.coe/tickets.db' },

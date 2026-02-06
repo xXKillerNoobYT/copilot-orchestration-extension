@@ -1,0 +1,174 @@
+# Planning Team Agent Configuration
+# Purpose: Analyzes requirements and decomposes them into atomic tasks
+# Source: 02-Agent-Role-Definitions.md Agent 1, AGENT-CONFIG-TEMPLATES.md Template 1
+
+agent:
+  name: "Planning Team"
+  role: "requirement_analysis"
+  priority: P0
+  description: "Analyzes user requirements, detects vagueness, and decomposes features into atomic 15-60 minute tasks"
+
+llm:
+  model: "ministral-3-14b-reasoning"
+  temperature: 0.3 # Lower for more consistent analysis
+  maxTokens: 2048
+  timeoutSeconds: 120
+
+# Vagueness Detection Configuration
+vagueness:
+  enabled: true
+  threshold: 0.7 # Score below this triggers clarification
+  # Common vague phrases that need clarification
+  patterns:
+    - "make it nice"
+    - "user-friendly"
+    - "fast"
+    - "efficient"
+    - "clean"
+    - "simple"
+    - "better"
+    - "improved"
+    - "good"
+    - "modern"
+    - "intuitive"
+    - "easy to use"
+    - "scalable"
+    - "robust"
+
+# Task Decomposition Rules
+decomposition:
+  minDurationMinutes: 15
+  maxDurationMinutes: 60
+  defaultDurationMinutes: 30
+  maxSubtasksPerFeature: 20
+  requireAcceptanceCriteria: true
+  minAcceptanceCriteria: 3
+
+# SmartPlan Integration
+smartPlan:
+  enabled: true
+  checklists:
+    - id: "CL1"
+      name: "Requirement Completeness"
+      items:
+        - "Has clear user story format (As a X, I want Y, so that Z)"
+        - "Has measurable acceptance criteria"
+        - "Has defined scope boundaries"
+        - "Has identified dependencies"
+        - "Has time estimate"
+    - id: "CL2"
+      name: "Technical Specification"
+      items:
+        - "Has identified files to modify"
+        - "Has identified patterns to follow"
+        - "Has test requirements"
+        - "Has error handling considerations"
+    - id: "CL3"
+      name: "Verification Readiness"
+      items:
+        - "Has testable criteria"
+        - "Has defined success state"
+        - "Has rollback plan"
+
+# Priority Rules
+priority:
+  P0:
+    description: "Critical for MVP, blocks other work"
+    conditions:
+      - "Is dependency for 3+ other tasks"
+      - "Affects core functionality"
+  P1:
+    description: "High priority, needed soon"
+    conditions:
+      - "Is dependency for 1-2 other tasks"
+      - "User-facing feature"
+  P2:
+    description: "Medium priority, important but not urgent"
+    conditions:
+      - "Enhancement to existing feature"
+      - "Performance improvement"
+  P3:
+    description: "Lower priority, nice to have"
+    conditions:
+      - "Polish or refinement"
+      - "Documentation"
+
+# Handoff Configuration
+handoff:
+  mode: "orchestrator" # After planning completes, hand off to orchestrator
+  preventReentry: true # Planning Team cannot be called after handoff
+  includeContext:
+    - "plan_summary"
+    - "dependency_graph"
+    - "acceptance_criteria"
+    - "time_estimates"
+
+# Prompt Templates
+prompts:
+  requirementAnalysis: |
+    Analyze the following requirement and extract:
+    1. FEATURES: List distinct features (one per line)
+    2. CONSTRAINTS: Technical or business constraints
+    3. DEPENDENCIES: External dependencies needed
+    4. UNCLEAR: Parts that need clarification
+
+    Requirement:
+    {{requirement}}
+
+    Format response as:
+    FEATURES:
+    - [feature description]
+
+    CONSTRAINTS:
+    - [constraint]
+
+    DEPENDENCIES:
+    - [dependency]
+
+    UNCLEAR:
+    - [vague part] → [clarification question]
+
+  vaguenessDetection: |
+    Check the following text for vague or unclear requirements.
+    Score each item from 0-100 (100 = perfectly clear, 0 = completely vague).
+
+    Text:
+    {{text}}
+
+    For each vague item, provide:
+    VAGUE: [phrase] | SCORE: [0-100] | CLARIFICATION: [specific question to ask]
+
+  taskDecomposition: |
+    Break down this feature into atomic tasks (15-60 minutes each).
+    Each task must be independently testable and have clear acceptance criteria.
+
+    Feature:
+    {{feature}}
+
+    Context:
+    {{context}}
+
+    For each task, provide:
+    TASK: [task title]
+    ESTIMATE: [minutes]
+    DEPENDS_ON: [task IDs or "none"]
+    ACCEPTANCE_CRITERIA:
+    - [ ] [criterion 1]
+    - [ ] [criterion 2]
+    - [ ] [criterion 3]
+    FILES: [files to modify]
+    PATTERNS: [existing code patterns to follow]
+
+  acceptanceCriteria: |
+    Generate SMART acceptance criteria for this task:
+    - Specific: Exactly what needs to be done
+    - Measurable: How to verify it's done
+    - Achievable: Within scope of the task
+    - Relevant: Directly related to the task
+    - Time-bound: Can be verified quickly
+
+    Task:
+    {{task}}
+
+    Generate 3-5 acceptance criteria in checkbox format:
+    - [ ] [criterion]
