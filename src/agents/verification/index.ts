@@ -24,6 +24,25 @@ export * from './matching';
 export * from './testRunner';
 export * from './decision';
 export * from './investigation';
+export * from './visualDetection';
+export * from './checklist';
+export * from './coverage';
+export * from './reVerify';
+export * from './devServer';
+export {
+    VerificationReporter,
+    getVerificationReporter,
+    resetVerificationReporterForTests,
+    type CriterionResult,
+    type TestResultDetail,
+    type VerificationReport,
+    type ReportFormat
+} from './reporting';
+export * from './matchReport';
+export * from './followUp';
+export * from './retryLimit';
+export * from './escalation';
+export * from './logging';
 
 // ============================================================================
 // Configuration

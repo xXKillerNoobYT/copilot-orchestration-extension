@@ -26,6 +26,11 @@ export * from './confidence';
 export * from './timeout';
 export * from './planContext';
 export * from './prdContext';
+export * from './citations';
+export * from './validation';
+export * from './handlers';
+export * from './designSystem';
+export * from './cache';
 
 // ============================================================================
 // Configuration

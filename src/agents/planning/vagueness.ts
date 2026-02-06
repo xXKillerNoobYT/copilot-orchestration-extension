@@ -119,17 +119,115 @@ const VAGUE_PATTERNS: Array<{
     ];
 
 /**
+ * SmartPlan-specific vague patterns for planning requirements
+ * 
+ * **Simple explanation**: These patterns catch planning-specific vagueness
+ * like undefined acceptance criteria, missing dependencies, and unclear scope.
+ */
+const SMARTPLAN_PATTERNS: Array<{
+    pattern: RegExp;
+    category: VaguenessResult['category'];
+    question: string;
+    suggestions: string[];
+}> = [
+        {
+            pattern: /\b(improve|enhance|optimize)\b/i,
+            category: 'unmeasurable',
+            question: 'By how much should we improve? What metric defines success?',
+            suggestions: ['Define baseline measurement', 'Set target improvement %', 'Specify before/after criteria']
+        },
+        {
+            pattern: /\b(various|multiple|several)\b\s+\w+/i,
+            category: 'undefined',
+            question: 'Exactly how many? Please list all items explicitly.',
+            suggestions: ['Provide complete enumeration', 'Define minimum count', 'Set maximum scope']
+        },
+        {
+            pattern: /\b(appropriate|suitable|proper)\b/i,
+            category: 'subjective',
+            question: 'What makes something "appropriate" in this context? Define criteria.',
+            suggestions: ['Define selection criteria', 'List requirements', 'Provide examples']
+        },
+        {
+            pattern: /\b(seamless|smooth)\b/i,
+            category: 'subjective',
+            question: 'What makes the experience "seamless"? Max latency? Error handling?',
+            suggestions: ['Define performance targets', 'Specify error recovery', 'List UX requirements']
+        },
+        {
+            pattern: /\b(support|handle)\b\s+\w+/i,
+            category: 'undefined',
+            question: 'What specific cases should be supported? Edge cases? Error conditions?',
+            suggestions: ['List supported cases', 'Define error handling', 'Specify limitations']
+        },
+        {
+            pattern: /\bflexible\b/i,
+            category: 'ambiguous',
+            question: 'Flexible in what way? Configuration options? Extension points?',
+            suggestions: ['Define customization points', 'List configurable options', 'Specify extension mechanism']
+        },
+        {
+            pattern: /\b(later|future|eventually)\b/i,
+            category: 'context-dependent',
+            question: 'When specifically? Is this in scope for current work or deferred?',
+            suggestions: ['Set specific timeline', 'Mark as out-of-scope if deferred', 'Create follow-up ticket']
+        },
+        {
+            pattern: /\blike\s+\w+/i,
+            category: 'ambiguous',
+            question: 'What specific aspects should be similar? Exact behavior or general pattern?',
+            suggestions: ['List specific features to match', 'Define differences allowed', 'Provide reference implementation']
+        },
+        {
+            pattern: /\b(other|additional)\b\s+\w+/i,
+            category: 'undefined',
+            question: 'What other/additional items? Please enumerate completely.',
+            suggestions: ['List all items', 'Define scope boundary', 'Mark as explicitly excluded if not in scope']
+        },
+        {
+            pattern: /\b(standard|normal|typical)\b/i,
+            category: 'context-dependent',
+            question: 'What is the standard/normal in this context? Reference industry norm or internal convention?',
+            suggestions: ['Reference specific standard', 'Document internal convention', 'Provide baseline example']
+        }
+    ];
+
+/**
+ * VaguenessDetector configuration
+ */
+export interface VaguenessDetectorConfig {
+    /** Clarity threshold (0-100), below which clarification is required */
+    threshold: number;
+    /** Enable SmartPlan patterns for planning-specific vagueness */
+    enableSmartPlan: boolean;
+    /** Strictness level: 'relaxed' | 'standard' | 'strict' */
+    strictness: 'relaxed' | 'standard' | 'strict';
+}
+
+const DEFAULT_VAGUENESS_CONFIG: VaguenessDetectorConfig = {
+    threshold: 70,
+    enableSmartPlan: true,
+    strictness: 'standard'
+};
+
+/**
  * VaguenessDetector class for finding unclear requirements
  * 
  * **Simple explanation**: Like a writing coach that spots fuzzy language
  * and helps you make your ideas more concrete.
  */
 export class VaguenessDetector {
-    private threshold: number;
+    private config: VaguenessDetectorConfig;
     private systemPrompt: string;
 
-    constructor(threshold: number = 70) {
-        this.threshold = threshold;
+    constructor(configOrThreshold: Partial<VaguenessDetectorConfig> | number = {}) {
+        // Support legacy constructor (just threshold number)
+        if (typeof configOrThreshold === 'number') {
+            this.config = { ...DEFAULT_VAGUENESS_CONFIG, threshold: configOrThreshold };
+        } else {
+            this.config = { ...DEFAULT_VAGUENESS_CONFIG, ...configOrThreshold };
+        }
+
         this.systemPrompt = `You are a requirements clarity analyst. Your job is to find vague, ambiguous, or unmeasurable requirements and suggest specific clarification questions.
 
 Focus on:
@@ -142,6 +240,27 @@ For each vague item, provide a specific clarification question and concrete sugg
     }
 
     /**
+     * Get combined patterns based on configuration
+     */
+    private getPatterns(): typeof VAGUE_PATTERNS {
+        if (this.config.enableSmartPlan) {
+            return [...VAGUE_PATTERNS, ...SMARTPLAN_PATTERNS];
+        }
+        return VAGUE_PATTERNS;
+    }
+
+    /**
+     * Get score adjustment based on strictness
+     */
+    private getStrictnessAdjustment(): number {
+        switch (this.config.strictness) {
+            case 'relaxed': return 10;   // More lenient scores
+            case 'strict': return -10;   // Stricter scores
+            default: return 0;
+        }
+    }
+
+    /**
      * Detect vagueness in given text
      * 
      * @param text - Text to analyze
@@ -149,7 +268,7 @@ For each vague item, provide a specific clarification question and concrete sugg
      * @returns Vagueness analysis result
      */
     async detect(text: string, ticketId?: string): Promise<VaguenessAnalysis> {
-        logInfo('[VaguenessDetector] Starting vagueness detection');
+        logInfo(`[VaguenessDetector] Starting vagueness detection (SmartPlan: ${this.config.enableSmartPlan}, strictness: ${this.config.strictness})`);
 
         // First, quick pattern-based detection
         const quickResults = this.quickDetect(text);
@@ -164,7 +283,7 @@ For each vague item, provide a specific clarification question and concrete sugg
 
         // Calculate overall score
         const overallScore = this.calculateOverallScore(allItems);
-        const requiresClarification = overallScore < this.threshold;
+        const requiresClarification = overallScore < this.config.threshold;
 
         const analysis: VaguenessAnalysis = {
             originalText: text,
@@ -188,8 +307,10 @@ For each vague item, provide a specific clarification question and concrete sugg
      */
     quickDetect(text: string): VaguenessResult[] {
         const results: VaguenessResult[] = [];
+        const patterns = this.getPatterns();
+        const scoreAdjustment = this.getStrictnessAdjustment();
 
-        for (const { pattern, category, question, suggestions } of VAGUE_PATTERNS) {
+        for (const { pattern, category, question, suggestions } of patterns) {
             const matches = text.match(new RegExp(pattern, 'gi'));
             if (matches) {
                 for (const match of matches) {
@@ -197,7 +318,7 @@ For each vague item, provide a specific clarification question and concrete sugg
                     if (!results.some(r => r.phrase.toLowerCase() === match.toLowerCase())) {
                         results.push({
                             phrase: match,
-                            score: 30, // Pattern-matched items are quite vague
+                            score: Math.max(0, Math.min(100, 30 + scoreAdjustment)), // Pattern-matched items are quite vague
                             clarificationQuestion: question,
                             category,
                             suggestions
@@ -347,14 +468,35 @@ Only report genuinely vague items. Skip technical terms that are domain-specific
      * Set the clarity threshold
      */
     setThreshold(threshold: number): void {
-        this.threshold = Math.max(0, Math.min(100, threshold));
+        this.config.threshold = Math.max(0, Math.min(100, threshold));
     }
 
     /**
      * Get current threshold
      */
     getThreshold(): number {
-        return this.threshold;
+        return this.config.threshold;
+    }
+
+    /**
+     * Enable or disable SmartPlan patterns
+     */
+    setSmartPlanEnabled(enabled: boolean): void {
+        this.config.enableSmartPlan = enabled;
+    }
+
+    /**
+     * Check if SmartPlan patterns are enabled
+     */
+    isSmartPlanEnabled(): boolean {
+        return this.config.enableSmartPlan;
+    }
+
+    /**
+     * Set strictness level
+     */
+    setStrictness(level: 'relaxed' | 'standard' | 'strict'): void {
+        this.config.strictness = level;
     }
 }
 

@@ -448,3 +448,14 @@ export { getVaguenessDetector, resetVaguenessDetectorForTests } from './vaguenes
 export { getTaskDecomposer, resetTaskDecomposerForTests } from './decomposer';
 export { getPRDParser, resetPRDParserForTests } from './prdParser';
 export { getHandoffManager, resetHandoffManagerForTests } from './handoff';
+
+// New modules from Stage 4
+export * from './acceptanceCriteria';
+export * from './planValidator';
+export * from './prompts';
+export * from './patterns';
+export * from './context';
+export * from './estimation';
+export * from './priority';
+export * from './zenTasks';
+export * from './tasksync';
