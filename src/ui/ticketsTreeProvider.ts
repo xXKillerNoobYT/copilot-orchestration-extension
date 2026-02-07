@@ -16,6 +16,7 @@
 
 import * as vscode from 'vscode';
 import { listTickets, onTicketChange, Ticket } from '../services/ticketDb';
+import { getDisplayTickets } from '../services/ticketCleanup';
 import { logInfo, logError } from '../logger';
 
 export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
@@ -58,22 +59,19 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
         }
 
         try {
-            // Query database for all tickets (async/await = wait for database)
-            const tickets = await listTickets();
+            // Get display tickets (filters out resolved/removed using cleanup service)
+            const displayTickets = await getDisplayTickets(false); // false = include blocked tickets
 
-            // Filter to only open tickets (status !== 'done')
-            const openTickets = tickets.filter(t => t.status !== 'done');
-
-            // If no open tickets, show placeholder message
-            if (openTickets.length === 0) {
+            // If no active tickets, show placeholder message
+            if (displayTickets.length === 0) {
                 const emptyItem = new vscode.TreeItem('No open tickets', vscode.TreeItemCollapsibleState.None);
                 emptyItem.iconPath = new vscode.ThemeIcon('inbox');
-                emptyItem.tooltip = 'All tickets are completed or no tickets exist';
+                emptyItem.tooltip = 'All active problems resolved! Check archive for completed tickets.';
                 return [emptyItem];
             }
 
             // Map tickets to TreeItems
-            return openTickets.map(ticket => this.createTicketItem(ticket));
+            return displayTickets.map(ticket => this.createTicketItem(ticket));
         } catch (err) {
             // Error handling: Show error item if database query fails
             logError(`Failed to load tickets: ${err}`);

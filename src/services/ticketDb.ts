@@ -32,7 +32,7 @@ export interface TicketThreadMessage {
 export interface Ticket {
     id: string;           // Unique ID (e.g., "TICKET-001")
     title: string;        // Short description
-    status: 'open' | 'in-progress' | 'done' | 'blocked' | 'pending' | 'in_review' | 'resolved' | 'rejected' | 'escalated';
+    status: 'open' | 'in-progress' | 'done' | 'blocked' | 'pending' | 'in_review' | 'resolved' | 'rejected' | 'escalated' | 'removed';
     type?: 'ai_to_human' | 'human_to_ai' | 'answer_agent'; // Optional ticket type for routing
     createdAt: string;    // ISO timestamp (e.g., "2026-02-01T10:30:00Z")
     updatedAt: string;    // ISO timestamp
@@ -46,6 +46,7 @@ export interface Ticket {
     version: number;      // Version of the ticket
     resolution: string | null; // Resolution of the ticket
     clarityScore?: number; // Clarity Agent score (0-100): red <60, yellow 60-84, green ≥85
+    linkedTo?: string | null; // Optional: ID of master ticket if this is a duplicate
 }
 
 // Database abstraction - works with SQLite OR in-memory

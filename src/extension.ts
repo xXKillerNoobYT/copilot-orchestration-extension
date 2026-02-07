@@ -3,6 +3,8 @@ import { initializeLogger, logInfo, logError, logWarn } from './logger';
 import { initializeConfig } from './config';
 import { initializeTicketDb, createTicket, listTickets, updateTicket, onTicketChange, getTicket } from './services/ticketDb';
 import { initializeOrchestrator, getOrchestratorInstance } from './services/orchestrator';
+import { checkAndDeduplicateTicket, generateDuplicationReport } from './services/deduplication';
+import { initializePeriodicCleanup } from './services/ticketCleanup';
 import { initializeLLMService, validateConnection } from './services/llmService';
 import { initializeMCPServer } from './mcpServer';
 import { AgentsTreeDataProvider } from './ui/agentsTreeProvider';
@@ -98,6 +100,30 @@ async function setupAutoPlanning(): Promise<void> {
                 markTicketProcessed(lastTicket.id);
 
                 logInfo(`[Auto-Plan] Detected new ai_to_human ticket: ${lastTicket.id}`);
+
+                // CHECK DUPLICATES: See if this ticket is a duplicate of an existing one
+                logInfo(`[Auto-Plan] Checking for duplicate problems...`);
+                const deduplicationResult = await checkAndDeduplicateTicket(lastTicket, {
+                    minSimilarityScore: 70,
+                    autoRemoveDuplicates: true,  // Auto-remove duplicates - keep queue clean
+                    bumpMasterPriority: true     // Bump existing ticket priority
+                });
+
+                if (deduplicationResult.isDuplicate && deduplicationResult.matches.length > 0) {
+                    logInfo(`[Auto-Plan] Duplicate problem detected! ${deduplicationResult.matches.length} match(es) - consolidated`);
+                    logInfo(generateDuplicationReport(deduplicationResult));
+                    
+                    // Notify user about consolidation
+                    vscode.window.showInformationMessage(
+                        `COE: Duplicate problem consolidated. ` +
+                        `${deduplicationResult.report.duplicatesRemoved.length} duplicate ticket(s) removed, ` +
+                        `${deduplicationResult.report.mastersPrioritized.length} master(s) prioritized.`
+                    );
+                    return; // Skip planning - duplicate handled
+                }
+
+                // Continue with regular planning
+                logInfo(`[Auto-Plan] No significant duplicates found - proceeding with planning`);
 
                 // GUARD 3: Check LLM availability BEFORE planning
                 const { success: llmAvailable, error: llmError } = await validateConnection();
@@ -248,6 +274,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialize Orchestrator after TicketDb (depends on it)
     await initializeOrchestrator(context);
+
+    // Initialize periodic ticket cleanup (removes stale resolved/duplicate tickets every 1 hour)
+    initializePeriodicCleanup(1, 7); // 1 hour interval, archive resolved tickets after 7 days
 
     const orchestrator = getOrchestratorInstance();
 

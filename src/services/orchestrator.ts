@@ -28,6 +28,7 @@ import * as fs from 'fs';
 import { logInfo, logWarn, logError } from '../logger';
 import { listTickets, createTicket, onTicketChange, updateTicket, Ticket, TicketThreadMessage } from './ticketDb';
 import { completeLLM, streamLLM } from './llmService';
+import { createStreamBuffer } from './streamBuffer';
 import { agentStatusTracker } from '../ui/agentStatusTracker';
 import { llmStatusBar } from '../ui/llmStatusBar';
 import { updateStatusBar } from '../extension';
@@ -717,15 +718,26 @@ export class OrchestratorService {
 
         llmStatusBar.start();
         try {
+            // Create buffered logger for cleaner LLM output
+            const buffer = createStreamBuffer({
+                minWordsPerFlush: 10,
+                maxWordsPerFlush: 20,
+                flushIntervalMs: 30000,
+                logPrefix: 'Planning'
+            });
+
             const response = await streamLLM(
                 question,
                 (chunk) => {
-                    logInfo(`LLM: ${chunk}`); // Real-time logging of each chunk
+                    buffer.onChunk(chunk);
                 },
                 {
                     systemPrompt: PLANNING_SYSTEM_PROMPT
                 }
             );
+
+            // Flush any remaining buffer content
+            buffer.flush();
 
             const fullPlan = response.content;
             if (!fullPlan) {

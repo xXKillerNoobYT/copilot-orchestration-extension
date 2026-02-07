@@ -103,7 +103,7 @@ This is your **complete master guide to program completion** breaking down the e
 
 ### Overall Completion
 ```
-[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░] 60.2% (265/440 tasks)
+[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░] 61.8% (272/440 tasks)
 ```
 
 ### Stage Completion
@@ -116,12 +116,27 @@ This is your **complete master guide to program completion** breaking down the e
 | **Stage 4: Agent Teams** | ✅ Complete | 71 | 71/71 | 100% | ✅ Passed |
 | **Stage 5: Context & Data** | ✅ Complete | 52 | 52/52 | 100% | ✅ Passed |
 | **Stage 6: VS Code UI** | ✅ Complete | 49 | 49/49 | 100% | ✅ Passed |
-| **Stage 7: Testing & Advanced** | � In Progress | 176 | 2/176 | 1.1% | 🔓 Unlocked |
-**ACTIVE**: Stage 7 - MT-030: Custom Agent Builder (2/22 tasks complete) 
+| **Stage 7: Testing & Advanced** | � In Progress | 176 | 6/176 | 3.4% | 🔓 Unlocked |
+**ACTIVE**: Stage 7 - MT-030: Custom Agent Builder (6/22 tasks complete) 
 
 ### 🎉 Recently Completed (Last 5 Tasks)
 
-1. ✅ **MT-030.9**: Agent storage system (Feb 6, 2026)
+1. ✅ **MT-030.16**: Agent routing rules (Feb 7, 2026)
+   - Created `src/agents/custom/routing.ts` (699 lines) - task routing engine
+   - Created 70 tests: priority scoring, keyword/pattern/tag matching, routeTask, analysis
+   - routeTask(), findBestAgent(), analyzeRouting(), getRoutingSummary(), findRoutingConflicts()
+
+2. ✅ **MT-030.15**: Agent activation/deactivation (Feb 7, 2026)
+   - Updated `src/agents/custom/executor.ts` (+240 lines) - activation controls
+   - Added 31 tests (Tests 82-112): activate/deactivate/toggle/bulk operations
+   - activateAgent(), deactivateAgent(), toggleAgentActivation(), isAgentActive()
+
+3. ✅ **MT-030.10**: Agent execution framework (Feb 6, 2026)
+   - Created `src/agents/custom/executor.ts` (~680 lines) - runtime execution engine
+   - Created 81 tests: variable substitution, system prompt building, agent execution
+   - executeCustomAgent(), CustomAgentExecutor class, auto-fill date/time variables
+
+4. ✅ **MT-030.9**: Agent storage system (Feb 6, 2026)
    - Created `src/agents/custom/storage.ts` (650+ lines) - complete persistence layer
    - Created 65 tests for CRUD, backups, atomic writes, import/export, stats
    - Save/load to `.coe/agents/custom/{name}/config.json` with auto-backup
@@ -2531,23 +2546,23 @@ _(MT-025 through MT-029 tasks covering comprehensive testing, GitHub integration
   - **Dependencies**: MT-030.1 ✅, MT-006.1 ✅
   - **Beginner Note**: Filing cabinet for custom agents - CRUD + backups + atomic writes
 
-- [ ] **MT-030.10**: Create agent execution framework (50 min) [actual: __ min] [Priority: P0] [depends: MT-030.9 ✅, MT-030.2 ✅] 🔒
-  - **Files**: Create `src/agents/custom/executor.ts`
-  - **Tests**: Test agent invocation, tool access, hardlock enforcement
-  - **Behavior**: Loads custom agent config, applies system prompt, enforces tool whitelist
-  - **Documentation**: Add execution flow to `CUSTOM-AGENT-TEMPLATE.md`
-  - **Quality**: Isolate custom agent context, clear error messages, timeout handling
-  - **Verification**: Invoke custom agent, verify prompt applied and hardlock active
-  - **Dependencies**: MT-030.9, MT-030.2
+- [x] **MT-030.10**: Create agent execution framework (50 min) [actual: 90 min] [Priority: P0] [depends: MT-030.9 ✅, MT-030.2 ✅] ✅
+  - **Files**: Created `src/agents/custom/executor.ts` (~680 lines)
+  - **Tests**: ✅ 81 tests passing (substituteVariables, buildSystemPrompt, executeCustomAgent, CustomAgentExecutor, utilities, errors, edge cases)
+  - **Behavior**: Loads custom agent config, applies system prompt with variable substitution, enforces hardlock tools
+  - **Documentation**: Added execution flow to module JSDoc
+  - **Quality**: Isolated context, typed errors (AgentNotFoundError, AgentInactiveError, AgentTimeoutError), auto-fill date/time
+  - **Verification**: ✅ All 81 tests passing
+  - **Dependencies**: MT-030.9 ✅, MT-030.2 ✅
 
-- [ ] **MT-030.11**: Add agent preview/test mode (35 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
+- [ ] **MT-030.11**: Add agent preview/test mode (35 min) [actual: __ min] [Priority: P1] [depends: MT-030.10 ✅] 🔒
   - **Files**: Update `src/ui/customAgentBuilder.ts`
   - **Tests**: Test preview with sample query, verify output
   - **Behavior**: "Test" button sends sample query to agent, shows response in preview pane
   - **Documentation**: Add test mode to `CUSTOM-AGENT-TEMPLATE.md`
   - **Quality**: Mock LLM for fast preview, show token usage, timing
   - **Verification**: Test agent before saving, verify response makes sense
-  - **Dependencies**: MT-030.10
+  - **Dependencies**: MT-030.10 ✅
 
 - [ ] **MT-030.12**: Implement agent templates library (40 min) [actual: __ min] [Priority: P2] [depends: MT-030.1] 🔒
   - **Files**: Create `src/agents/custom/templates.ts`, add template YAML files
@@ -2576,32 +2591,33 @@ _(MT-025 through MT-029 tasks covering comprehensive testing, GitHub integration
   - **Verification**: Update agent 5 times, rollback to version 2, verify restored
   - **Dependencies**: MT-030.9
 
-- [ ] **MT-030.15**: Add agent activation/deactivation (20 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
-  - **Files**: Update `src/agents/custom/executor.ts`
-  - **Tests**: Test enable/disable agents, verify inactive agents not invoked
-  - **Behavior**: Agents have active/inactive state, inactive agents don't appear in routing
-  - **Documentation**: Add activation to `CUSTOM-AGENT-TEMPLATE.md`
-  - **Quality**: Bulk enable/disable, quick toggle in UI
-  - **Verification**: Deactivate agent, verify not available for tasks
-  - **Dependencies**: MT-030.10
+- [x] **MT-030.15**: Add agent activation/deactivation (20 min) [actual: 15 min] [Priority: P1] [depends: MT-030.10 ✅] ✅
+  - **Files**: Updated `src/agents/custom/executor.ts` (+240 lines)
+  - **Tests**: 31 new tests (Tests 82-112) covering activate/deactivate/toggle/bulk operations
+  - **Behavior**: activateAgent(), deactivateAgent(), toggleAgentActivation(), isAgentActive(), bulk operations
+  - **Documentation**: ActivationResult interface, JSDoc with beginner explanations
+  - **Quality**: Graceful error handling, skip save if already in desired state
+  - **Verification**: ✅ All 112 executor tests passing (includes 31 new activation tests)
+  - **Dependencies**: MT-030.10 ✅
 
-- [ ] **MT-030.16**: Implement agent routing rules (40 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
-  - **Files**: Create `src/agents/custom/routing.ts`
-  - **Tests**: Test keyword matching, priority ordering, fallback
-  - **Behavior**: Routes tasks to custom agents based on keywords, patterns, ticket tags
-  - **Documentation**: Add routing config to `CUSTOM-AGENT-TEMPLATE.md`
-  - **Quality**: Regex patterns, fuzzy matching, manual override
-  - **Verification**: Create ticket matching agent keywords, verify routed correctly
-  - **Dependencies**: MT-030.10
+- [x] **MT-030.16**: Implement agent routing rules (40 min) [actual: 45 min] [Priority: P1] [depends: MT-030.10 ✅] ✅
+  - **Files**: Created `src/agents/custom/routing.ts` (699 lines)
+  - **Tests**: `tests/agents/custom/routing.test.ts` - 70 tests covering all routing scenarios
+  - **Behavior**: Routes tasks to custom agents based on keywords, patterns, ticket tags, priority
+  - **Documentation**: Full JSDoc with beginner explanations, TaskContext/RoutingMatch/RoutingResult interfaces
+  - **Quality**: Regex patterns, fuzzy matching, word boundary matching, manual override (agentOverride), score calculation
+  - **Verification**: ✅ All 70 tests passing (priority scoring, keyword/pattern/tag matching, routeTask, utilities, analysis, edge cases)
+  - **Dependencies**: MT-030.10 ✅
+  - **Beginner Note**: Traffic cop for custom agents - decides which agent handles each task based on rules
 
-- [ ] **MT-030.17**: Add agent performance metrics (30 min) [actual: __ min] [Priority: P2] [depends: MT-030.10] 🔒
+- [ ] **MT-030.17**: Add agent performance metrics (30 min) [actual: __ min] [Priority: P2] [depends: MT-030.10 ✅] 🔒
   - **Files**: Create `src/agents/custom/metrics.ts`
   - **Tests**: Test metric collection, aggregation, display
   - **Behavior**: Tracks invocations, avg response time, success rate, user ratings
   - **Documentation**: Add metrics to `CUSTOM-AGENT-TEMPLATE.md`
   - **Quality**: Charts in UI, export to CSV, comparison between agents
   - **Verification**: Run agent 10 times, verify metrics accurate
-  - **Dependencies**: MT-030.10
+  - **Dependencies**: MT-030.10 ✅
 
 - [ ] **MT-030.18**: Create agent sharing/export (30 min) [actual: __ min] [Priority: P2] [depends: MT-030.9] 🔒
   - **Files**: Create `src/agents/custom/export.ts`
@@ -2621,7 +2637,7 @@ _(MT-025 through MT-029 tasks covering comprehensive testing, GitHub integration
   - **Verification**: Test each permission level, verify enforcement
   - **Dependencies**: MT-030.2
 
-- [ ] **MT-030.20**: Add agent context limits (25 min) [actual: __ min] [Priority: P1] [depends: MT-030.10] 🔒
+- [ ] **MT-030.20**: Add agent context limits (25 min) [actual: __ min] [Priority: P1] [depends: MT-030.10 ✅] 🔒
   - **Files**: Update `src/agents/custom/executor.ts`
   - **Tests**: Test token limits, truncation, context overflow
   - **Behavior**: Configurable max context (default 4000 tokens), auto-truncate with warning

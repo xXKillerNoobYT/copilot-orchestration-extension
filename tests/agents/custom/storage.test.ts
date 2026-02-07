@@ -497,7 +497,7 @@ describe('listCustomAgents', () => {
 
     it('Test 38: should return items with validation status', () => {
         const validAgent = createValidAgent('valid-agent');
-        
+
         mockFs.readdirSync.mockReturnValue([
             { name: 'valid-agent', isDirectory: () => true },
             { name: 'broken-agent', isDirectory: () => true },
@@ -512,7 +512,7 @@ describe('listCustomAgents', () => {
         const result = listCustomAgents('/test/workspace');
 
         expect(result.length).toBe(2);
-        
+
         // Find results by checking which one loaded successfully
         const validResult = result.find(r => r.valid);
         const invalidResult = result.find(r => !r.valid);
@@ -525,7 +525,7 @@ describe('listCustomAgents', () => {
 
     it('Test 39: should filter to valid only when option set', () => {
         const validAgent = createValidAgent('valid-agent');
-        
+
         mockFs.readdirSync.mockReturnValue([
             { name: 'valid-agent', isDirectory: () => true },
             { name: 'broken-agent', isDirectory: () => true },
@@ -758,7 +758,7 @@ describe('getStorageStats', () => {
             { name: 'active-agent', isDirectory: () => true },
             { name: 'inactive-agent', isDirectory: () => true },
         ] as any);
-        
+
         // Use mockReturnValueOnce in order of directory listing
         mockFs.readFileSync
             .mockReturnValueOnce(JSON.stringify(activeAgent))
@@ -796,13 +796,13 @@ describe('getStorageStats', () => {
 
     it('Test 58: should count invalid agents correctly', () => {
         const validAgent = createValidAgent('valid-agent');
-        
+
         mockFs.existsSync.mockReturnValue(true);
         mockFs.readdirSync.mockReturnValue([
             { name: 'valid-agent', isDirectory: () => true },
             { name: 'broken-agent', isDirectory: () => true },
         ] as any);
-        
+
         // First returns valid, second returns unparseable JSON
         mockFs.readFileSync
             .mockReturnValueOnce(JSON.stringify(validAgent))

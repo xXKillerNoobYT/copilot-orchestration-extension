@@ -2,10 +2,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { logInfo, logWarn, logError } from '../../logger';
-import { 
-    CustomAgent, 
-    validateCustomAgent, 
-    validateAgentName 
+import {
+    CustomAgent,
+    validateCustomAgent,
+    validateAgentName
 } from './schema';
 
 /**
@@ -186,10 +186,10 @@ export function ensureAgentDir(workspaceFolder: string, agentName: string): void
  */
 function atomicWriteFile(filePath: string, content: string): void {
     const tempPath = filePath + TEMP_SUFFIX;
-    
+
     // Write to temp file
     fs.writeFileSync(tempPath, content, 'utf-8');
-    
+
     // Rename temp to target (atomic on most filesystems)
     fs.renameSync(tempPath, filePath);
 }
@@ -207,7 +207,7 @@ function createBackup(filePath: string): boolean {
     if (!fs.existsSync(filePath)) {
         return false;
     }
-    
+
     const backupPath = filePath + BACKUP_SUFFIX;
     fs.copyFileSync(filePath, backupPath);
     logInfo(`Created backup: ${backupPath}`);
@@ -520,15 +520,15 @@ export function listCustomAgents(
 
     for (const name of agentNames) {
         const configPath = getAgentConfigPath(workspaceFolder, name);
-        
+
         try {
             const agent = loadCustomAgent(workspaceFolder, name);
-            
+
             // Filter by active status if requested
             if (options.activeOnly && !agent.isActive) {
                 continue;
             }
-            
+
             results.push({
                 name,
                 configPath,
@@ -540,7 +540,7 @@ export function listCustomAgents(
             if (options.validOnly) {
                 continue;
             }
-            
+
             const err = error instanceof Error ? error : new Error(String(error));
             results.push({
                 name,
