@@ -4,6 +4,7 @@
  */
 
 import { ConfidenceScorer, createConfidenceScorer, ConfidenceResult } from '../../../src/agents/answer/confidence';
+import { logInfo, logWarn, logError } from '../../../src/logger';
 
 // Mock logger
 jest.mock('../../../src/logger', () => ({
@@ -319,6 +320,45 @@ describe('ConfidenceScorer', () => {
 
             // With 50 threshold, 60 should not need escalation
             expect(result.needsEscalation).toBe(false);
+        });
+
+        it('Test 21: should handle ticket creation failure during escalation', async () => {
+            const escalatingScorer = createConfidenceScorer({ threshold: 90 });
+
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"score": 30, "reasoning": "Very uncertain"}'
+            });
+
+            mockCreateTicket.mockRejectedValue(new Error('Database connection failed'));
+
+            // Use public escalate method
+            const result = await escalatingScorer.escalate(
+                'Why is the sky blue?',
+                'Maybe because of light refraction.',
+                {
+                    score: 30,
+                    reasoning: 'Very uncertain',
+                    factors: [{ name: 'citations', present: false, weight: 0.2, description: 'Has citations' }],
+                    needsEscalation: true
+                }
+            );
+
+            // Should return empty string on failure
+            expect(result).toBe('');
+            expect(logError).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to create escalation ticket')
+            );
+        });
+
+        it('Test 22: should handle malformed JSON in score response', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{invalid json: not parseable}'  // Malformed JSON
+            });
+
+            const result = await scorer.scoreConfidence('Question?', 'An answer that is long enough.', '');
+
+            // Should fallback to number extraction
+            expect(logWarn).toHaveBeenCalledWith('[ConfidenceScorer] Failed to parse JSON response');
         });
     });
 });

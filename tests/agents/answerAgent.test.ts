@@ -11,6 +11,7 @@ jest.mock('../../src/services/ticketDb', () => ({
 }));
 
 const mockCompleteLLM = llmService.completeLLM as jest.MockedFunction<typeof llmService.completeLLM>;
+const mockStreamLLM = llmService.streamLLM as jest.MockedFunction<typeof llmService.streamLLM>;
 const mockUpdateTicket = updateTicket as jest.MockedFunction<typeof updateTicket>;
 
 const defaultTicketFields = {
@@ -92,6 +93,36 @@ describe('AnswerAgent', () => {
             });
         });
 
+        it('should support streaming mode with onStream callback', async () => {
+            // Arrange
+            const agent = new AnswerAgent();
+            const question = 'What is streaming?';
+            const expectedAnswer = 'Streaming delivers data in chunks.';
+            const chunks: string[] = [];
+
+            mockStreamLLM.mockImplementation(async (prompt, onChunk) => {
+                // Simulate streaming chunks
+                onChunk?.('Streaming ');
+                onChunk?.('delivers ');
+                onChunk?.('data ');
+                onChunk?.('in chunks.');
+                return {
+                    content: expectedAnswer,
+                    usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+                };
+            });
+
+            // Act
+            const answer = await agent.ask(question, undefined, {
+                onStream: (chunk) => chunks.push(chunk)
+            });
+
+            // Assert
+            expect(answer).toBe(expectedAnswer);
+            expect(mockStreamLLM).toHaveBeenCalled();
+            expect(chunks).toEqual(['Streaming ', 'delivers ', 'data ', 'in chunks.']);
+        });
+
         it('should store question and answer in history after first ask', async () => {
             // Arrange
             const agent = new AnswerAgent();
@@ -136,6 +167,38 @@ describe('AnswerAgent', () => {
             const parsed = JSON.parse(serialized) as ConversationMetadata;
             expect(parsed.chatId).toBe(chatId);
             expect(parsed.messages.length).toBe(2);
+        });
+
+        it('should warn when ticket not found during persistence', async () => {
+            const agent = new AnswerAgent();
+            const chatId = 'MISSING-TICKET';
+            const question = 'This ticket does not exist.';
+            const answer = 'Answered.';
+
+            mockCompleteLLM.mockResolvedValue({ content: answer });
+            mockUpdateTicket.mockResolvedValue(null);  // Ticket not found
+
+            await agent.ask(question, chatId);
+
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('Could not persist history for chat MISSING-TICKET (ticket not found)')
+            );
+        });
+
+        it('should handle persistence errors gracefully', async () => {
+            const agent = new AnswerAgent();
+            const chatId = 'ERROR-TICKET';
+            const question = 'This will error.';
+            const answer = 'Answered.';
+
+            mockCompleteLLM.mockResolvedValue({ content: answer });
+            mockUpdateTicket.mockRejectedValue(new Error('Database connection failed'));
+
+            await agent.ask(question, chatId);
+
+            expect(logWarn).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to persist history for chat ERROR-TICKET')
+            );
         });
 
         it('should generate new chatId if none provided', async () => {
@@ -830,6 +893,136 @@ describe('AnswerAgent', () => {
 
             expect(logWarn).toHaveBeenCalledWith(
                 expect.stringContaining('History truncated due to size')
+            );
+        });
+    });
+});
+
+// ===========================================
+// Wrapper Function Tests
+// ===========================================
+
+import {
+    initializeAnswerAgent,
+    answerQuestion,
+    getConversationHistory,
+    clearConversation,
+    getActiveConversations,
+    restoreAnswerAgentHistory,
+    persistAnswerAgentHistory,
+    resetAnswerAgentForTests
+} from '../../src/agents/answerAgent';
+
+describe('AnswerAgent Wrapper Functions', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        resetAnswerAgentForTests();
+        mockCompleteLLM.mockResolvedValue({
+            content: 'Test response',
+            usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 }
+        });
+    });
+
+    afterEach(() => {
+        resetAnswerAgentForTests();
+    });
+
+    describe('initializeAnswerAgent', () => {
+        it('should initialize singleton', () => {
+            initializeAnswerAgent();
+            expect(logInfo).toHaveBeenCalledWith('[Answer Agent] Singleton initialized');
+        });
+
+        it('should not reinitialize if already initialized', () => {
+            initializeAnswerAgent();
+            (logInfo as jest.Mock).mockClear();
+            initializeAnswerAgent();
+            expect(logInfo).not.toHaveBeenCalledWith('[Answer Agent] Singleton initialized');
+        });
+    });
+
+    describe('answerQuestion', () => {
+        it('should call agent.ask through wrapper', async () => {
+            initializeAnswerAgent();
+            const response = await answerQuestion('Test question');
+            expect(response).toBe('Test response');
+        });
+
+        it('should throw if not initialized', async () => {
+            await expect(answerQuestion('Test')).rejects.toThrow(
+                'AnswerAgent not initialized'
+            );
+        });
+    });
+
+    describe('getConversationHistory', () => {
+        it('should return empty array for unknown chatId', () => {
+            initializeAnswerAgent();
+            expect(getConversationHistory('unknown-chat')).toEqual([]);
+        });
+
+        it('should return messages for known chatId', async () => {
+            initializeAnswerAgent();
+            await answerQuestion('Hello', 'chat-1');
+            const history = getConversationHistory('chat-1');
+            expect(history.length).toBeGreaterThan(0);
+        });
+    });
+
+    describe('clearConversation', () => {
+        it('should clear conversation history', async () => {
+            initializeAnswerAgent();
+            await answerQuestion('Hello', 'chat-1');
+            clearConversation('chat-1');
+            expect(getConversationHistory('chat-1')).toEqual([]);
+        });
+    });
+
+    describe('getActiveConversations', () => {
+        it('should return all active conversations', async () => {
+            initializeAnswerAgent();
+            await answerQuestion('Hello', 'chat-1');
+            await answerQuestion('World', 'chat-2');
+            const conversations = getActiveConversations();
+            expect(conversations.length).toBe(2);
+        });
+    });
+
+    describe('restoreAnswerAgentHistory', () => {
+        it('should restore serialized history', () => {
+            initializeAnswerAgent();
+            const history = {
+                'chat-restored': JSON.stringify({
+                    chatId: 'chat-restored',
+                    createdAt: new Date().toISOString(),
+                    lastActivityAt: new Date().toISOString(),
+                    messages: [
+                        { role: 'user', content: 'Restored question' },
+                        { role: 'assistant', content: 'Restored answer' }
+                    ]
+                })
+            };
+            restoreAnswerAgentHistory(history);
+            const restored = getConversationHistory('chat-restored');
+            expect(restored.length).toBe(2);
+        });
+    });
+
+    describe('persistAnswerAgentHistory', () => {
+        it('should persist conversation history', async () => {
+            initializeAnswerAgent();
+            await answerQuestion('Hello', 'chat-persist');
+            const persisted = persistAnswerAgentHistory();
+            expect(persisted).toHaveProperty('chat-persist');
+        });
+    });
+
+    describe('resetAnswerAgentForTests', () => {
+        it('should reset singleton', () => {
+            initializeAnswerAgent();
+            resetAnswerAgentForTests();
+            expect(() => getConversationHistory('any')).toThrow(
+                'AnswerAgent not initialized'
             );
         });
     });

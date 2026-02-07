@@ -173,6 +173,137 @@ describe('ClarityScorer', () => {
             expect(scorer.getScoreColor(100)).toBe('green');
         });
     });
+
+    describe('Weight normalization', () => {
+        it('Test 12: should normalize weights that do not sum to 1', () => {
+            const customScorer = new ClarityScorer({
+                weights: {
+                    completeness: 0.5,
+                    clarity: 0.5,
+                    accuracy: 0.5
+                }
+            });
+            const config = customScorer.getConfig();
+            const sum = config.weights.completeness + config.weights.clarity + config.weights.accuracy;
+            expect(Math.abs(sum - 1.0)).toBeLessThan(0.01);
+        });
+    });
+
+    describe('Threshold boundary cases', () => {
+        it('Test 13: should throw error for negative threshold', () => {
+            expect(() => scorer.setThreshold(-1)).toThrow('Threshold must be 0-100');
+        });
+
+        it('Test 14: should throw error for threshold over 100', () => {
+            expect(() => scorer.setThreshold(101)).toThrow('Threshold must be 0-100');
+        });
+
+        it('Test 15: should accept boundary values 0 and 100', () => {
+            scorer.setThreshold(0);
+            expect(scorer.getThreshold()).toBe(0);
+            scorer.setThreshold(100);
+            expect(scorer.getThreshold()).toBe(100);
+        });
+    });
+
+    describe('Weight updates', () => {
+        it('Test 16: should update weights with setWeights', () => {
+            scorer.setWeights({ completeness: 0.5, clarity: 0.3, accuracy: 0.2 });
+            const config = scorer.getConfig();
+            expect(config.weights.completeness).toBe(0.5);
+            expect(config.weights.clarity).toBe(0.3);
+            expect(config.weights.accuracy).toBe(0.2);
+        });
+
+        it('Test 17: should re-normalize after partial weight update', () => {
+            scorer.setWeights({ completeness: 0.8 });  // Only update one
+            const config = scorer.getConfig();
+            const sum = config.weights.completeness + config.weights.clarity + config.weights.accuracy;
+            expect(Math.abs(sum - 1.0)).toBeLessThan(0.01);
+        });
+    });
+
+    describe('Scoring history', () => {
+        it('Test 18: should track scoring history', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"score": 80, "reasoning": "ok", "missing": []}'
+            });
+
+            await scorer.scoreReply('ticket-1', 'Q1', 'A1');
+            await scorer.scoreReply('ticket-1', 'Q2', 'A2');
+
+            const history = scorer.getHistory('ticket-1');
+            expect(history.length).toBe(2);
+        });
+
+        it('Test 19: should return empty array for unknown ticket', () => {
+            const history = scorer.getHistory('nonexistent');
+            expect(history).toEqual([]);
+        });
+
+        it('Test 20: should clear history for specific ticket', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"score": 80, "reasoning": "ok", "missing": []}'
+            });
+
+            await scorer.scoreReply('ticket-1', 'Q', 'A');
+            expect(scorer.getHistory('ticket-1').length).toBe(1);
+
+            scorer.clearHistory('ticket-1');
+            expect(scorer.getHistory('ticket-1').length).toBe(0);
+        });
+    });
+
+    describe('Error handling', () => {
+        it('Test 21: should use fallback score on LLM failure', async () => {
+            mockCompleteLLM.mockRejectedValue(new Error('LLM error'));
+
+            // The scorer gracefully handles errors with fallback score of 50
+            const result = await scorer.scoreReply('ticket-1', 'Q', 'A');
+            expect(result.scores.completeness).toBe(50);
+            expect(result.scores.clarity).toBe(50);
+            expect(result.scores.accuracy).toBe(50);
+        });
+
+        it('Test 22: should handle malformed JSON response gracefully', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Not valid JSON at all'
+            });
+
+            // Should use fallback score of 50
+            const result = await scorer.scoreReply('ticket-1', 'Q', 'A');
+            expect(result.scores.completeness).toBe(50);
+        });
+
+        it('Test 23: should clamp scores to 0-100 range', async () => {
+            mockCompleteLLM
+                .mockResolvedValueOnce({ content: '{"score": 150, "reasoning": "high", "missing": []}' })
+                .mockResolvedValueOnce({ content: '{"score": -50, "reasoning": "low", "vague_parts": []}' })
+                .mockResolvedValueOnce({ content: '{"score": 80, "reasoning": "ok", "discrepancies": []}' });
+
+            const result = await scorer.scoreReply('ticket-1', 'Q', 'A');
+            expect(result.scores.completeness).toBe(100);  // Clamped from 150
+            expect(result.scores.clarity).toBe(0);  // Clamped from -50
+        });
+
+        it('Test 24: should handle NaN score as 50', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"score": "invalid", "reasoning": "bad", "missing": []}'
+            });
+
+            const result = await scorer.scoreReply('ticket-1', 'Q', 'A');
+            expect(result.scores.completeness).toBe(50);
+        });
+    });
+
+    describe('Config access', () => {
+        it('Test 25: should return copy of config', () => {
+            const config1 = scorer.getConfig();
+            const config2 = scorer.getConfig();
+            expect(config1).toEqual(config2);
+            expect(config1).not.toBe(config2);  // Should be different objects
+        });
+    });
 });
 
 // ============================================================================

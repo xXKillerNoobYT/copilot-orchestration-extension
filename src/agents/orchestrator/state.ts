@@ -80,7 +80,14 @@ export class OrchestratorStateManager {
     private dirty: boolean = false;
 
     constructor(workspacePath?: string) {
-        this.state = { ...DEFAULT_STATE, sessionId: this.generateSessionId() };
+        // Deep copy arrays to prevent shared state between instances
+        this.state = {
+            ...DEFAULT_STATE,
+            verificationQueue: [],
+            pausedTasks: [],
+            checkpoints: [],
+            sessionId: this.generateSessionId()
+        };
 
         // Use workspace path or tmp directory
         const baseDir = workspacePath ||
