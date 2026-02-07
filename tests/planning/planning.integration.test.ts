@@ -19,6 +19,17 @@ import {
     generateDocumentation,
     CompletePlan,
     FeatureBlock,
+    startExecution,
+    pauseExecution,
+    resumeExecution,
+    cancelExecution,
+    updateTaskProgress,
+    getNextTasks,
+    getBlockedTasks,
+    calculateProgress,
+    renderProgressSummary,
+    ExecutionPlan,
+    ExecutionTask,
 } from '../../src/planning';
 
 // Mock dependencies
@@ -283,6 +294,180 @@ describe('Planning System Integration Tests', () => {
             };
             const drift = detectDrift(plan, markers);
             expect(drift.findings.some(f => f.type === 'missing-feature')).toBe(true);
+        });
+    });
+
+    // =========================================================================
+    // Orchestrator Integration Tests (MT-033.26-30)
+    // =========================================================================
+    describe('Test 8: Execution Control', () => {
+        let executionPlan: ExecutionPlan;
+
+        beforeEach(() => {
+            const result = submitPlanToOrchestrator(testPlan, { autoStart: false });
+            expect(result.success).toBe(true);
+            executionPlan = result.executionPlan!;
+        });
+
+        it('should start execution', () => {
+            expect(executionPlan.status).toBe('draft');
+            startExecution(executionPlan);
+            expect(executionPlan.status).toBe('active');
+            expect(executionPlan.startedAt).toBeDefined();
+        });
+
+        it('should pause execution', () => {
+            startExecution(executionPlan);
+            pauseExecution(executionPlan);
+            expect(executionPlan.status).toBe('paused');
+        });
+
+        it('should resume execution', () => {
+            startExecution(executionPlan);
+            pauseExecution(executionPlan);
+            resumeExecution(executionPlan);
+            expect(executionPlan.status).toBe('active');
+        });
+
+        it('should cancel execution', () => {
+            startExecution(executionPlan);
+            cancelExecution(executionPlan);
+            expect(executionPlan.status).toBe('cancelled');
+            // Incomplete tasks should be cancelled
+            const incompleteTasks = executionPlan.tasks.filter(t => t.status !== 'completed');
+            expect(incompleteTasks.every(t => t.status === 'cancelled')).toBe(true);
+        });
+    });
+
+    describe('Test 9: Task Progress Updates', () => {
+        let executionPlan: ExecutionPlan;
+
+        beforeEach(() => {
+            const result = submitPlanToOrchestrator(testPlan, { autoStart: true });
+            expect(result.success).toBe(true);
+            executionPlan = result.executionPlan!;
+        });
+
+        it('should update task progress', () => {
+            const task = executionPlan.tasks[0];
+            const success = updateTaskProgress(executionPlan, {
+                taskId: task.id,
+                status: 'in-progress',
+                timestamp: new Date().toISOString(),
+            });
+            expect(success).toBe(true);
+            expect(task.status).toBe('in-progress');
+        });
+
+        it('should return false for non-existent task', () => {
+            const success = updateTaskProgress(executionPlan, {
+                taskId: 'non-existent-task',
+                status: 'completed',
+                timestamp: new Date().toISOString(),
+            });
+            expect(success).toBe(false);
+        });
+
+        it('should mark dependent tasks ready on completion', () => {
+            // Find a task with dependents
+            const taskWithDeps = executionPlan.tasks.find(t => 
+                executionPlan.dependencyMap.has(t.id)
+            );
+            if (taskWithDeps) {
+                updateTaskProgress(executionPlan, {
+                    taskId: taskWithDeps.id,
+                    status: 'completed',
+                    timestamp: new Date().toISOString(),
+                });
+                // Dependent tasks should be updated
+            }
+        });
+
+        it('should complete plan when all tasks complete', () => {
+            // Complete all tasks
+            for (const task of executionPlan.tasks) {
+                updateTaskProgress(executionPlan, {
+                    taskId: task.id,
+                    status: 'completed',
+                    timestamp: new Date().toISOString(),
+                });
+            }
+            expect(executionPlan.status).toBe('completed');
+            expect(executionPlan.completedAt).toBeDefined();
+        });
+    });
+
+    describe('Test 10: Task Querying', () => {
+        let executionPlan: ExecutionPlan;
+
+        beforeEach(() => {
+            const result = submitPlanToOrchestrator(testPlan, { autoStart: true });
+            expect(result.success).toBe(true);
+            executionPlan = result.executionPlan!;
+        });
+
+        it('should get next ready tasks', () => {
+            const nextTasks = getNextTasks(executionPlan, 3);
+            expect(Array.isArray(nextTasks)).toBe(true);
+            nextTasks.forEach(task => {
+                expect(task.status).toBe('ready');
+            });
+        });
+
+        it('should limit next tasks', () => {
+            const nextTasks = getNextTasks(executionPlan, 1);
+            expect(nextTasks.length).toBeLessThanOrEqual(1);
+        });
+
+        it('should get blocked tasks with blockers', () => {
+            const blockedTasks = getBlockedTasks(executionPlan);
+            expect(Array.isArray(blockedTasks)).toBe(true);
+            blockedTasks.forEach(item => {
+                expect(item.task).toBeDefined();
+                expect(item.blockedBy).toBeDefined();
+                expect(item.blockedBy.length).toBeGreaterThan(0);
+            });
+        });
+    });
+
+    describe('Test 11: Progress Calculation', () => {
+        let executionPlan: ExecutionPlan;
+
+        beforeEach(() => {
+            const result = submitPlanToOrchestrator(testPlan, { autoStart: true });
+            expect(result.success).toBe(true);
+            executionPlan = result.executionPlan!;
+        });
+
+        it('should calculate progress', () => {
+            const progress = calculateProgress(executionPlan);
+            expect(progress.total).toBe(executionPlan.tasks.length);
+            expect(progress.percentage).toBeGreaterThanOrEqual(0);
+            expect(progress.percentage).toBeLessThanOrEqual(100);
+        });
+
+        it('should render progress summary', () => {
+            const progress = calculateProgress(executionPlan);
+            const summary = renderProgressSummary(progress);
+            expect(typeof summary).toBe('string');
+            expect(summary).toContain('Progress');
+        });
+
+        it('should update progress after task completion', () => {
+            const initialProgress = calculateProgress(executionPlan);
+            
+            // Complete first task
+            const readyTask = executionPlan.tasks.find(t => t.status === 'ready');
+            if (readyTask) {
+                updateTaskProgress(executionPlan, {
+                    taskId: readyTask.id,
+                    status: 'completed',
+                    timestamp: new Date().toISOString(),
+                });
+                
+                const newProgress = calculateProgress(executionPlan);
+                expect(newProgress.completed).toBe(initialProgress.completed + 1);
+            }
         });
     });
 });

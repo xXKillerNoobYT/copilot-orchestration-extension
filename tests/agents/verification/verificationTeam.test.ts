@@ -511,6 +511,123 @@ All files | 85.5 | 80 | 90 | 85
                 expect(newManager.isBlocked('task-1')).toBe(false);
             });
         });
+
+        describe('Test 32: blockForInvestigation', () => {
+            it('blocks task for investigation', () => {
+                const manager = new TaskBlockingManager();
+                
+                const block = manager.blockForInvestigation('task-1', 'investigation-1');
+                
+                expect(block.taskId).toBe('task-1');
+                expect(block.blockingTaskId).toBe('investigation-1');
+                expect(block.reason).toBe(BlockingReason.INVESTIGATION_PENDING);
+                expect(block.autoUnblock).toBe(true);
+                expect(manager.isBlocked('task-1')).toBe(true);
+            });
+        });
+
+        describe('Test 33: blockTask manual', () => {
+            it('blocks task with reason and notes', () => {
+                const manager = new TaskBlockingManager();
+                
+                const block = manager.blockTask('task-1', BlockingReason.MANUAL_HOLD, 'Test notes');
+                
+                expect(block.taskId).toBe('task-1');
+                expect(block.reason).toBe(BlockingReason.MANUAL_HOLD);
+                expect(block.notes).toBe('Test notes');
+                expect(block.autoUnblock).toBe(false);
+            });
+        });
+
+        describe('Test 34: unblockAll', () => {
+            it('unblocks all blocks on a task', () => {
+                const manager = new TaskBlockingManager();
+                
+                manager.blockForFix('task-1', 'fix-1');
+                manager.blockForInvestigation('task-1', 'investigate-1');
+                
+                const count = manager.unblockAll('task-1');
+                
+                expect(count).toBe(2);
+                expect(manager.isBlocked('task-1')).toBe(false);
+            });
+
+            it('returns 0 when no blocks exist', () => {
+                const manager = new TaskBlockingManager();
+                
+                const count = manager.unblockAll('nonexistent');
+                
+                expect(count).toBe(0);
+            });
+        });
+
+        describe('Test 35: getActiveFixTasks', () => {
+            it('returns active fix tasks', () => {
+                const manager = new TaskBlockingManager();
+                
+                manager.blockForFix('task-1', 'fix-1');
+                manager.blockForFix('task-2', 'fix-2');
+                
+                const activeFixes = manager.getActiveFixTasks();
+                
+                expect(activeFixes.get('fix-1')).toBe('task-1');
+                expect(activeFixes.get('fix-2')).toBe('task-2');
+            });
+        });
+
+        describe('Test 36: clear', () => {
+            it('clears all blocking state', () => {
+                const manager = new TaskBlockingManager();
+                
+                manager.blockForFix('task-1', 'fix-1');
+                manager.blockForInvestigation('task-2', 'investigate-1');
+                
+                manager.clear();
+                
+                expect(manager.isBlocked('task-1')).toBe(false);
+                expect(manager.isBlocked('task-2')).toBe(false);
+                expect(manager.getActiveFixTasks().size).toBe(0);
+            });
+        });
+
+        describe('Test 37: getSummary', () => {
+            it('returns summary with blocked tasks', () => {
+                const manager = new TaskBlockingManager();
+                
+                manager.blockForFix('task-1', 'fix-1');
+                
+                const summary = manager.getSummary();
+                
+                expect(summary).toContain('Blocked tasks: 1');
+                expect(summary).toContain('Active fix tasks: 1');
+                expect(summary).toContain('task-1');
+            });
+
+            it('returns summary with no blocked tasks', () => {
+                const manager = new TaskBlockingManager();
+                
+                const summary = manager.getSummary();
+                
+                expect(summary).toContain('Blocked tasks: 0');
+                expect(summary).toContain('Active fix tasks: 0');
+            });
+        });
+
+        describe('Test 38: fixTaskFailed edge case', () => {
+            it('handles fix task failure without blocks', () => {
+                const manager = new TaskBlockingManager();
+                
+                // Create block but remove it
+                manager.blockForFix('task-1', 'fix-1');
+                manager.unblock('task-1', 'fix-1');
+                
+                // Fix task fails but task no longer blocked
+                manager.fixTaskFailed('fix-1');
+                
+                // Should not crash
+                expect(manager.isBlocked('task-1')).toBe(false);
+            });
+        });
     });
 
     // =========================================================================

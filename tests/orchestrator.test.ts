@@ -543,6 +543,48 @@ describe('Orchestrator Service', () => {
             // Note: might be called once from first init, not called again
             // (The singleton prevents re-initialization)
         });
+
+        it('Test 13a: should fail atomic pick when updateTicket throws', async () => {
+            // Setup: one task in queue, but updateTicket will fail
+            const mockTickets = [
+                { id: 'T1', title: 'Task to pick', status: 'open', createdAt: '2024-01-01T00:00:00Z' },
+            ];
+            mockTicketDb.listTickets.mockResolvedValue(mockTickets);
+            mockTicketDb.updateTicket.mockRejectedValue(new Error('DB write failed'));
+
+            await initializeOrchestrator(mockContext);
+
+            // Execute: try to pick task - should fail atomic update
+            const task = await getNextTask();
+
+            // Verify: returns null because atomic pick failed
+            expect(task).toBeNull();
+            expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to atomically pick task'));
+        });
+
+        it('Test 13b: should leave task in queue when atomic pick fails', async () => {
+            // Setup: one task in queue, but updateTicket will fail only once
+            const mockTickets = [
+                { id: 'T1', title: 'Task to retry', status: 'open', createdAt: '2024-01-01T00:00:00Z' },
+            ];
+            mockTicketDb.listTickets.mockResolvedValue(mockTickets);
+
+            // First call fails, second succeeds
+            mockTicketDb.updateTicket
+                .mockRejectedValueOnce(new Error('DB temporary failure'))
+                .mockResolvedValueOnce(undefined);
+
+            await initializeOrchestrator(mockContext);
+
+            // First attempt fails
+            const task1 = await getNextTask();
+            expect(task1).toBeNull();
+
+            // Second attempt succeeds (task still in queue)
+            const task2 = await getNextTask();
+            expect(task2).not.toBeNull();
+            expect(task2?.id).toBe('T1');
+        });
     });
 
     describe('routeQuestionToAnswer', () => {
@@ -1250,5 +1292,262 @@ describe('initializeOrchestrator', () => {
         // Config system uses defaults for invalid values, so we get 30s
         expect(logInfo).toHaveBeenCalledWith('Orchestrator initialized with timeout: 30s');
         expect(orchestrator).toBeDefined();
+    });
+});
+// =========================================================================
+// Queue Status and Details Tests (coverage improvement)
+// =========================================================================
+describe('Queue Status and Details', () => {
+    let mockContext: vscode.ExtensionContext;
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        resetOrchestratorForTests();
+        resetConfigForTests();
+        
+        mockContext = {
+            extensionPath: '/mock/extension/path',
+        } as unknown as vscode.ExtensionContext;
+
+        await initializeConfig(mockContext);
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+        (listTickets as jest.Mock).mockResolvedValue([]);
+    });
+
+    describe('getQueueStatus', () => {
+        it('Test 14: should return queue count and blocked P1 count', async () => {
+            const mockTickets = [
+                { id: 'T1', title: 'Normal ticket', status: 'blocked' },
+                { id: 'T2', title: 'P1 BLOCKED: Critical issue', status: 'blocked' },
+                { id: 'T3', title: '[P1] Another critical', status: 'blocked' },
+            ];
+            (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const status = await orchestrator.getQueueStatus();
+
+            expect(status.blockedP1Count).toBe(2);
+            expect(status).toHaveProperty('queueCount');
+            expect(status).toHaveProperty('lastPickedTitle');
+        });
+
+        it('Test 15: should handle listTickets error gracefully', async () => {
+            await initializeOrchestrator(mockContext);
+            (listTickets as jest.Mock).mockRejectedValue(new Error('DB error'));
+
+            const orchestrator = getOrchestratorInstance();
+            const status = await orchestrator.getQueueStatus();
+
+            expect(status.blockedP1Count).toBe(0);
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining('Failed to get queue status'));
+        });
+
+        it('Test 16: should count P1: prefixed tickets', async () => {
+            const mockTickets = [
+                { id: 'T1', title: 'P1: urgent fix', status: 'blocked' },
+            ];
+            (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const status = await orchestrator.getQueueStatus();
+
+            expect(status.blockedP1Count).toBe(1);
+        });
+    });
+
+    describe('getQueueDetails', () => {
+        it('Test 17: should return queue titles and blocked P1 titles', async () => {
+            const mockTickets = [
+                { id: 'T1', title: 'P1 BLOCKED: Critical', status: 'blocked' },
+                { id: 'T2', title: 'Normal blocked', status: 'blocked' },
+            ];
+            (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const details = await orchestrator.getQueueDetails();
+
+            expect(details).toHaveProperty('queueTitles');
+            expect(details).toHaveProperty('pickedTitles');
+            expect(details).toHaveProperty('blockedP1Titles');
+            expect(details.blockedP1Titles).toContain('P1 BLOCKED: Critical');
+            expect(details.blockedP1Titles).not.toContain('Normal blocked');
+        });
+
+        it('Test 18: should return lastPickedTitle and lastPickedAt', async () => {
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const details = await orchestrator.getQueueDetails();
+
+            expect(details).toHaveProperty('lastPickedTitle');
+            expect(details).toHaveProperty('lastPickedAt');
+        });
+    });
+
+    describe('isBlockedP1Ticket (private method via getQueueStatus)', () => {
+        it('Test 19: should not count non-blocked tickets', async () => {
+            const mockTickets = [
+                { id: 'T1', title: 'P1 BLOCKED: But status is open', status: 'open' },
+            ];
+            (listTickets as jest.Mock).mockResolvedValue(mockTickets);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+            const status = await orchestrator.getQueueStatus();
+
+            expect(status.blockedP1Count).toBe(0);
+        });
+    });
+
+    describe('answerQuestion', () => {
+        it('Test 20: should lazy initialize AnswerAgent and return answer', async () => {
+            (completeLLM as jest.Mock).mockResolvedValue({ content: 'Test answer' });
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            const answer = await orchestrator.answerQuestion('What is COE?');
+
+            expect(answer).toBe('Test answer');
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Starting conversation'));
+        });
+
+        it('Test 21: should support follow-up questions with chatId', async () => {
+            (completeLLM as jest.Mock).mockResolvedValue({ content: 'Follow-up answer' });
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            const answer = await orchestrator.answerQuestion('More details?', 'chat-123', true);
+
+            expect(answer).toBe('Follow-up answer');
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('[Answer] Continuing conversation'));
+        });
+
+        it('Test 22: should handle LLM errors in answerQuestion gracefully', async () => {
+            (completeLLM as jest.Mock).mockRejectedValue(new Error('LLM timeout'));
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            const answer = await orchestrator.answerQuestion('Test question?');
+
+            expect(answer).toContain('LLM service is currently unavailable');
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining('[Answer] Failed to answer question'));
+        });
+    });
+
+    describe('getAnswerAgent', () => {
+        it('Test 23: should lazy initialize and return AnswerAgent', async () => {
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            const agent = orchestrator.getAnswerAgent();
+
+            expect(agent).toBeDefined();
+            expect(agent.constructor.name).toBe('AnswerAgent');
+        });
+
+        it('Test 24: should return same AnswerAgent instance on multiple calls', async () => {
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            const agent1 = orchestrator.getAnswerAgent();
+            const agent2 = orchestrator.getAnswerAgent();
+
+            expect(agent1).toBe(agent2);
+        });
+    });
+
+    describe('refreshQueueFromTickets', () => {
+        it('Test 25: should add new open tickets to queue', async () => {
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            // Add new open ticket to TicketDb
+            (listTickets as jest.Mock).mockResolvedValue([
+                { id: 'T1', title: 'New ticket', status: 'open', createdAt: new Date().toISOString() }
+            ]);
+
+            await orchestrator.refreshQueueFromTickets();
+
+            expect(logInfo).toHaveBeenCalledWith('[Orchestrator] Queue refreshed from TicketDb');
+        });
+
+        it('Test 26: should remove closed tickets from queue', async () => {
+            // Start with one open ticket
+            (listTickets as jest.Mock).mockResolvedValue([
+                { id: 'T1', title: 'Test ticket', status: 'open', createdAt: new Date().toISOString() }
+            ]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            // Now ticket is closed - should be removed from queue
+            (listTickets as jest.Mock).mockResolvedValue([
+                { id: 'T1', title: 'Test ticket', status: 'closed', createdAt: new Date().toISOString() }
+            ]);
+
+            await orchestrator.refreshQueueFromTickets();
+
+            expect(logInfo).toHaveBeenCalledWith('[Orchestrator] Queue refreshed from TicketDb');
+        });
+
+        it('Test 27: should handle refresh errors gracefully', async () => {
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            // Simulate TicketDb error
+            (listTickets as jest.Mock).mockRejectedValue(new Error('DB connection failed'));
+
+            await orchestrator.refreshQueueFromTickets();
+
+            expect(logError).toHaveBeenCalledWith(expect.stringContaining('[Orchestrator] Queue refresh failed'));
+        });
+    });
+
+    describe('onQueueChange', () => {
+        it('Test 28: should register listener and receive events', async () => {
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            const listener = jest.fn();
+            orchestrator.onQueueChange(listener);
+
+            // Trigger queue change by refreshing
+            (listTickets as jest.Mock).mockResolvedValue([
+                { id: 'T1', title: 'New ticket', status: 'open', createdAt: new Date().toISOString() }
+            ]);
+            await orchestrator.refreshQueueFromTickets();
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('Test 29: should return disposable for cleanup', async () => {
+            (listTickets as jest.Mock).mockResolvedValue([]);
+
+            await initializeOrchestrator(mockContext);
+            const orchestrator = getOrchestratorInstance();
+
+            const listener = jest.fn();
+            const disposable = orchestrator.onQueueChange(listener);
+
+            expect(disposable).toHaveProperty('dispose');
+        });
     });
 });

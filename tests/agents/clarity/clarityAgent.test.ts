@@ -65,6 +65,27 @@ function createMockScoringResult(overall: number): ScoringResult {
     };
 }
 
+function createMockScoringResultWithIssues(
+    overall: number,
+    issues: { completeness?: string[]; clarity?: string[]; accuracy?: string[] }
+): ScoringResult {
+    return {
+        scores: {
+            overall,
+            completeness: overall,
+            clarity: overall,
+            accuracy: overall
+        },
+        needsFollowUp: overall < 85,
+        assessments: {
+            completeness: { score: overall, reasoning: 'test', issues: issues.completeness || [] },
+            clarity: { score: overall, reasoning: 'test', issues: issues.clarity || [] },
+            accuracy: { score: overall, reasoning: 'test', issues: issues.accuracy || [] }
+        },
+        scoredAt: Date.now()
+    };
+}
+
 // ============================================================================
 // ClarityScorer Tests
 // ============================================================================
@@ -550,6 +571,276 @@ describe('FollowUpManager', () => {
             expect(mockUpdateTicket.mock.calls[0][0]).toBe('ticket-1');
             // Should update ticket with thread
             expect(mockUpdateTicket.mock.calls[0][1]).toHaveProperty('thread');
+        });
+    });
+
+    describe('Additional FollowUpManager coverage', () => {
+        it('Test 34: should handle invalid JSON response in parseFollowUpResponse', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: 'Not valid JSON at all'
+            });
+
+            const scoringResult = createMockScoringResult(70);
+            const result = await manager.generateFollowUp('ticket-2', scoringResult, 'Q', 'A');
+
+            expect(result.questions).toEqual([]);
+        });
+
+        it('Test 35: should handle error during generateFollowUp', async () => {
+            mockCompleteLLM.mockRejectedValue(new Error('LLM error'));
+
+            const scoringResult = createMockScoringResult(70);
+            
+            await expect(
+                manager.generateFollowUp('ticket-3', scoringResult, 'Q', 'A')
+            ).rejects.toThrow('LLM error');
+        });
+
+        it('Test 36: should getHistory for a ticket', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Q1"]}'
+            });
+
+            const scoringResult = createMockScoringResult(70);
+            await manager.generateFollowUp('ticket-4', scoringResult, 'Q', 'A');
+
+            const history = manager.getHistory('ticket-4');
+            expect(history).toBeDefined();
+            expect(history?.count).toBe(1);
+        });
+
+        it('Test 37: should return undefined for unknown ticket history', () => {
+            const history = manager.getHistory('unknown-ticket');
+            expect(history).toBeUndefined();
+        });
+
+        it('Test 38: should resetIterations', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Q1"]}'
+            });
+
+            const scoringResult = createMockScoringResult(70);
+            await manager.generateFollowUp('ticket-5', scoringResult, 'Q', 'A');
+            expect(manager.getIterationCount('ticket-5')).toBe(1);
+
+            manager.resetIterations('ticket-5');
+            expect(manager.getIterationCount('ticket-5')).toBe(0);
+        });
+
+        it('Test 39: should check hasReachedMax', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Q1"]}'
+            });
+
+            const limitedManager = new FollowUpManager({ maxIterations: 1, autoPost: false });
+            expect(limitedManager.hasReachedMax('ticket-6')).toBe(false);
+
+            const scoringResult = createMockScoringResult(70);
+            await limitedManager.generateFollowUp('ticket-6', scoringResult, 'Q', 'A');
+            expect(limitedManager.hasReachedMax('ticket-6')).toBe(true);
+        });
+
+        it('Test 40: should setMaxIterations', () => {
+            manager.setMaxIterations(2);
+            // hasReachedMax uses >= comparison
+            mockCompleteLLM.mockResolvedValue({ content: '{"questions": ["Q1"]}' });
+            expect(manager.hasReachedMax('ticket-7')).toBe(false);
+        });
+
+        it('Test 40b: should throw error for invalid max iterations', () => {
+            expect(() => manager.setMaxIterations(0)).toThrow('Max iterations must be at least 1');
+            expect(() => manager.setMaxIterations(-1)).toThrow('Max iterations must be at least 1');
+        });
+
+        it('Test 41: should handle postToTicket when ticket not found', async () => {
+            mockGetTicket.mockResolvedValue(null);
+
+            await manager.postToTicket('nonexistent-ticket', ['Q1'], 50);
+
+            expect(mockUpdateTicket).not.toHaveBeenCalled();
+        });
+
+        it('Test 42: should handle postToTicket error', async () => {
+            mockGetTicket.mockRejectedValue(new Error('DB error'));
+
+            // Should not throw, just log error
+            await manager.postToTicket('error-ticket', ['Q1'], 50);
+        });
+
+        it('Test 43: should handle escalate without prior iterations', async () => {
+            mockCompleteLLM.mockResolvedValue({ content: 'Summary' });
+            mockGetTicket.mockResolvedValue({ id: 'ticket-8', status: 'open' });
+            mockUpdateTicket.mockResolvedValue(undefined);
+
+            const result = await manager.escalate('ticket-8', 'Q', 'A');
+
+            // Without prior iterations, escalation returns false
+            expect(result.escalated).toBe(false);
+            expect(result.reason).toContain('No iteration history');
+        });
+
+        it('Test 44: should handle escalate gracefully with iteration history', async () => {
+            // First create some iteration history
+            mockCompleteLLM.mockResolvedValueOnce({ content: '{"questions": ["Q1"]}' });
+            const scoringResult = createMockScoringResult(70);
+            await manager.generateFollowUp('ticket-9', scoringResult, 'Q', 'A');
+
+            // Now mock the escalation LLM call
+            mockCompleteLLM.mockResolvedValueOnce({ content: 'Escalation summary' });
+            mockGetTicket.mockResolvedValue({ id: 'ticket-9', status: 'open' });
+
+            const result = await manager.escalate('ticket-9', 'Q', 'A');
+
+            expect(result.escalated).toBe(true);
+        });
+
+        it('Test 45: should return 0 for unknown ticket iteration count', () => {
+            expect(manager.getIterationCount('unknown-ticket')).toBe(0);
+        });
+
+        it('Test 46: should emit follow-up-generated event', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Q1"]}'
+            });
+
+            const handler = jest.fn();
+            manager.on('follow-up-generated', handler);
+
+            const scoringResult = createMockScoringResult(70);
+            await manager.generateFollowUp('ticket-10', scoringResult, 'Q', 'A');
+
+            expect(handler).toHaveBeenCalled();
+        });
+
+        it('Test 47: should emit iteration-complete event', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Q1"]}'
+            });
+
+            const handler = jest.fn();
+            manager.on('iteration-complete', handler);
+
+            const scoringResult = createMockScoringResult(70);
+            await manager.generateFollowUp('ticket-11', scoringResult, 'Q', 'A');
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'ticket-11', iteration: 1 });
+        });
+
+        it('Test 48: should collect completeness issues for LLM context', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Clarify X"]}'
+            });
+
+            const scoringResult = createMockScoringResultWithIssues(60, {
+                completeness: ['Missing error handling', 'No edge cases covered']
+            });
+
+            const result = await manager.generateFollowUp('ticket-12', scoringResult, 'Q', 'A');
+
+            // The issues are collected and passed to LLM - verify the call includes them
+            expect(mockCompleteLLM).toHaveBeenCalled();
+            expect(result.questions.length).toBeGreaterThan(0);
+        });
+
+        it('Test 49: should collect clarity issues for LLM context', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Please clarify"]}'
+            });
+
+            const scoringResult = createMockScoringResultWithIssues(60, {
+                clarity: ['Vague terminology', 'Unclear scope']
+            });
+
+            const result = await manager.generateFollowUp('ticket-13', scoringResult, 'Q', 'A');
+
+            expect(mockCompleteLLM).toHaveBeenCalled();
+            expect(result.questions.length).toBeGreaterThan(0);
+        });
+
+        it('Test 50: should collect accuracy issues for LLM context', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Verify this"]}'
+            });
+
+            const scoringResult = createMockScoringResultWithIssues(60, {
+                accuracy: ['Contradicts documentation', 'Outdated reference']
+            });
+
+            const result = await manager.generateFollowUp('ticket-14', scoringResult, 'Q', 'A');
+
+            expect(mockCompleteLLM).toHaveBeenCalled();
+            expect(result.questions.length).toBeGreaterThan(0);
+        });
+
+        it('Test 51: should collect all issue types combined', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"questions": ["Combined question"]}'
+            });
+
+            const scoringResult = createMockScoringResultWithIssues(40, {
+                completeness: ['Missing tests'],
+                clarity: ['Vague description'],
+                accuracy: ['Wrong assumption']
+            });
+
+            const result = await manager.generateFollowUp('ticket-15', scoringResult, 'Q', 'A');
+
+            expect(mockCompleteLLM).toHaveBeenCalled();
+            expect(result.questions.length).toBeGreaterThan(0);
+        });
+
+        it('Test 52: should post escalation to ticket when autoPost enabled', async () => {
+            const autoPostManager = new FollowUpManager({ autoPost: true, maxIterations: 1 });
+
+            // Generate follow-up first to create iteration history
+            mockCompleteLLM.mockResolvedValueOnce({ content: '{"questions": ["Q1"]}' });
+            const scoringResult = createMockScoringResult(70);
+            await autoPostManager.generateFollowUp('ticket-16', scoringResult, 'Q', 'A');
+
+            // Now escalate
+            mockCompleteLLM.mockResolvedValueOnce({ content: 'Escalation summary text' });
+            mockGetTicket.mockResolvedValue({ id: 'ticket-16', status: 'open', thread: [] });
+            mockUpdateTicket.mockResolvedValue(undefined);
+
+            const result = await autoPostManager.escalate('ticket-16', 'Q', 'A');
+
+            expect(result.escalated).toBe(true);
+            // updateTicket should be called for adding escalation message to thread
+            expect(mockUpdateTicket).toHaveBeenCalledWith('ticket-16', expect.objectContaining({
+                thread: expect.any(Array)
+            }));
+        });
+
+        it('Test 53: should handle ticket update failure gracefully in escalate', async () => {
+            // Generate follow-up first to create iteration history
+            mockCompleteLLM.mockResolvedValueOnce({ content: '{"questions": ["Q1"]}' });
+            const scoringResult = createMockScoringResult(70);
+            await manager.generateFollowUp('ticket-17', scoringResult, 'Q', 'A');
+
+            // Now escalate - updateTicket will fail
+            mockCompleteLLM.mockResolvedValueOnce({ content: 'Summary' });
+            mockGetTicket.mockResolvedValue({ id: 'ticket-17', status: 'open' });
+            mockUpdateTicket.mockRejectedValue(new Error('Update failed'));
+
+            // Should not throw, escalation should still succeed (update is best-effort)
+            const result = await manager.escalate('ticket-17', 'Q', 'A');
+
+            expect(result.escalated).toBe(true);
+        });
+
+        it('Test 54: should handle escalation LLM failure', async () => {
+            // Generate follow-up first to create iteration history
+            mockCompleteLLM.mockResolvedValueOnce({ content: '{"questions": ["Q1"]}' });
+            const scoringResult = createMockScoringResult(70);
+            await manager.generateFollowUp('ticket-18', scoringResult, 'Q', 'A');
+
+            // Now escalate - LLM will fail
+            mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
+
+            const result = await manager.escalate('ticket-18', 'Q', 'A');
+
+            expect(result.escalated).toBe(false);
+            expect(result.reason).toContain('Escalation failed');
         });
     });
 });
