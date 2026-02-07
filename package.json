@@ -119,6 +119,14 @@
             {
                 "command": "coe.approveTicket",
                 "title": "Approve & Process"
+            },
+            {
+                "command": "coe.openCustomAgentBuilder",
+                "title": "COE: Create Custom Agent"
+            },
+            {
+                "command": "coe.showAgentGallery",
+                "title": "COE: Open Agent Gallery"
             }
         ],
         "configuration": {
@@ -283,6 +291,7 @@
     },
     "dependencies": {
         "sqlite3": "^5.1.7",
+        "uuid": "^13.0.0",
         "zod": "^3.22.0"
     }
 }

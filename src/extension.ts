@@ -14,6 +14,10 @@ import { OrchestratorStatusTreeDataProvider } from './ui/orchestratorStatusTreeP
 import { ConversationWebviewPanel } from './ui/conversationWebview';
 import { agentStatusTracker } from './ui/agentStatusTracker';
 import { openVerificationPanel } from './ui/verificationWebview';
+import { openCustomAgentBuilder } from './ui/customAgentBuilder';
+import { showAgentGallery } from './ui/agentGallery';
+import { openPlanningWizard } from './ui/planningWizard';
+import { initializePlanningService } from './services/planningService';
 import { ResearchAgent } from './agents/researchAgent';
 import {
     initializeAnswerAgent,
@@ -274,6 +278,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialize Orchestrator after TicketDb (depends on it)
     await initializeOrchestrator(context);
+
+    // Initialize Planning Service (for planning wizard)
+    await initializePlanningService(context);
 
     // Initialize periodic ticket cleanup (removes stale resolved/duplicate tickets every 1 hour)
     initializePeriodicCleanup(1, 7); // 1 hour interval, archive resolved tickets after 7 days
@@ -1328,6 +1335,69 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    /**
+     * Command: coe.openCustomAgentBuilder
+     * Opens the Custom Agent Builder panel for creating new agents
+     */
+    const openCustomAgentBuilderCommand = vscode.commands.registerCommand(
+        'coe.openCustomAgentBuilder',
+        async () => {
+            logInfo('User triggered: Open Custom Agent Builder');
+            try {
+                openCustomAgentBuilder(context);
+                logInfo('Custom Agent Builder panel opened');
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`Failed to open Custom Agent Builder: ${message}`);
+                vscode.window.showErrorMessage(
+                    `Failed to open Custom Agent Builder: ${message}`
+                );
+            }
+        }
+    );
+
+    /**
+     * Command: coe.showAgentGallery
+     * Opens the Agent Gallery for browsing and installing agents
+     */
+    const showAgentGalleryCommand = vscode.commands.registerCommand(
+        'coe.showAgentGallery',
+        async () => {
+            logInfo('User triggered: Show Agent Gallery');
+            try {
+                await showAgentGallery(context);
+                logInfo('Agent Gallery panel opened');
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`Failed to open Agent Gallery: ${message}`);
+                vscode.window.showErrorMessage(
+                    `Failed to open Agent Gallery: ${message}`
+                );
+            }
+        }
+    );
+
+    /**
+     * Command: coe.openPlanningWizard
+     * Opens the Planning Wizard for creating comprehensive project plans
+     */
+    const openPlanningWizardCommand = vscode.commands.registerCommand(
+        'coe.openPlanningWizard',
+        async () => {
+            logInfo('User triggered: Open Planning Wizard');
+            try {
+                await openPlanningWizard(context);
+                logInfo('Planning Wizard panel opened');
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                logError(`Failed to open Planning Wizard: ${message}`);
+                vscode.window.showErrorMessage(
+                    `Failed to open Planning Wizard: ${message}`
+                );
+            }
+        }
+    );
+
     // Initialize status bar item at module level
     statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Right,
@@ -1372,6 +1442,9 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(clearConversationHistoryCommand);
     context.subscriptions.push(removeConversationCommand);
     context.subscriptions.push(researchWithAgentCommand);
+    context.subscriptions.push(openCustomAgentBuilderCommand);
+    context.subscriptions.push(showAgentGalleryCommand);
+    context.subscriptions.push(openPlanningWizardCommand);
 
     logInfo('Extension fully activated');
 }
