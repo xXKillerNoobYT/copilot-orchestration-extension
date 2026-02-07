@@ -197,26 +197,37 @@ Tasks for ticket system.
                 mockFs.existsSync.mockReturnValue(true);
             });
 
-            // Note: This test passes in isolation but fails when run with full suite.
-            // The prd-error event emission has been verified manually.
-            // Skipping due to Jest mock isolation issues.
-            it.skip('should emit prd-error event on failure', async () => {
-                // Completely reset the mocks for this test
-                mockFs.existsSync.mockReset();
-                mockFs.readFileSync.mockReset();
+            // Fixed: Using jest.isolateModules to ensure proper mock isolation
+            // between test runs in the full suite.
+            it('should emit prd-error event on failure', async () => {
+                // Reset mocks before the isolated test
+                jest.resetModules();
 
-                mockFs.existsSync.mockReturnValue(true);
-                mockFs.readFileSync.mockImplementation(() => {
-                    throw new Error('Read error');
-                });
+                // Re-setup mocks in isolation
+                const mockFsIsolated = {
+                    existsSync: jest.fn().mockReturnValue(true),
+                    readFileSync: jest.fn().mockImplementation(() => {
+                        throw new Error('Read error');
+                    }),
+                    writeFileSync: jest.fn(),
+                    mkdirSync: jest.fn(),
+                };
 
-                const generator = new PRDGenerator(testWorkspace);
+                jest.doMock('fs', () => mockFsIsolated);
+
+                // Re-import with fresh mocks
+                const { PRDGenerator: IsolatedPRDGenerator } = require('../../../src/agents/planning/prdGenerator');
+
+                const generator = new IsolatedPRDGenerator(testWorkspace);
                 const handler = jest.fn();
                 generator.on('prd-error', handler);
 
                 await generator.generate();
 
                 expect(handler).toHaveBeenCalled();
+
+                // Clean up
+                jest.unmock('fs');
             });
         });
 

@@ -17,7 +17,10 @@ import { openVerificationPanel } from './ui/verificationWebview';
 import { openCustomAgentBuilder } from './ui/customAgentBuilder';
 import { showAgentGallery } from './ui/agentGallery';
 import { PlanningWizardPanel } from './ui/planningWizard';
-import { initializePlanningService } from './services/planningService';
+import { initializePlanningService, getPlanningServiceInstance } from './services/planningService';
+import { registerPlanningCommands, PlanningCommandContext } from './planning/commands';
+import { CompletePlan } from './planning/types';
+import { ExecutionPlan } from './planning/orchestratorIntegration';
 import { ResearchAgent } from './agents/researchAgent';
 import {
     initializeAnswerAgent,
@@ -281,6 +284,25 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialize Planning Service (for planning wizard)
     await initializePlanningService(context);
+
+    // Register planning commands (MT-033 Planning Wizard commands)
+    // These commands require a context object that connects to the PlanningWizardPanel
+    let currentPlan: CompletePlan | undefined;
+    let currentExecutionPlan: ExecutionPlan | undefined;
+    const planningCommandContext: PlanningCommandContext = {
+        getCurrentPlan: () => currentPlan,
+        setCurrentPlan: (plan: CompletePlan) => { currentPlan = plan; },
+        getExecutionPlan: () => currentExecutionPlan,
+        refreshUI: () => {
+            if (PlanningWizardPanel.currentPanel) {
+                // Trigger panel refresh if open
+            }
+        },
+        showWebviewPanel: () => {
+            PlanningWizardPanel.createOrShow(context);
+        }
+    };
+    const planningCommandDisposables = registerPlanningCommands(context, planningCommandContext);
 
     // Initialize periodic ticket cleanup (removes stale resolved/duplicate tickets every 1 hour)
     initializePeriodicCleanup(1, 7); // 1 hour interval, archive resolved tickets after 7 days
@@ -1496,6 +1518,9 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(openCustomAgentBuilderCommand);
     context.subscriptions.push(showAgentGalleryCommand);
     context.subscriptions.push(openPlanningWizardCommand);
+
+    // Register all planning command disposables (from registerPlanningCommands)
+    planningCommandDisposables.forEach(d => context.subscriptions.push(d));
 
     logInfo('Extension fully activated');
 }

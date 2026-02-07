@@ -163,6 +163,18 @@
             {
                 "command": "coe.planning.autoFix",
                 "title": "COE Planning: Auto-fix Issues"
+            },
+            {
+                "command": "coe.planning.openWizard",
+                "title": "COE Planning: Open Wizard"
+            },
+            {
+                "command": "coe.openVerification",
+                "title": "COE: Open Verification Checklist"
+            },
+            {
+                "command": "coe.createNewTicket",
+                "title": "COE: Create New Ticket"
             }
         ],
         "configuration": {
@@ -259,9 +271,81 @@
                     "command": "coe.refreshOrchestratorStatus",
                     "when": "view == coe-agents-status",
                     "group": "navigation@1"
+                },
+                {
+                    "command": "coe.refreshAgents",
+                    "when": "view == coe-agents",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "coe.openCustomAgentBuilder",
+                    "when": "view == coe-agents",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "coe.refreshTickets",
+                    "when": "view == coe-tickets",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "coe.createNewTicket",
+                    "when": "view == coe-tickets",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "coe.toggleAutoProcessing",
+                    "when": "view == coe-tickets",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "coe.refreshConversations",
+                    "when": "view == coe-conversations",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "coe.startNewConversation",
+                    "when": "view == coe-conversations",
+                    "group": "navigation@2"
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "coe-agents",
+                "contents": "Welcome to COE! Get started with agent management.\n[$(add) Create Custom Agent](command:coe.openCustomAgentBuilder)\n[$(library) Agent Gallery](command:coe.showAgentGallery)\n[$(refresh) Refresh Agents](command:coe.refreshAgents)"
+            },
+            {
+                "view": "coe-tickets",
+                "contents": "No tickets yet. Create one to get started!\n[$(add) Create Ticket](command:coe.createNewTicket)\n[$(checklist) Open Verification](command:coe.openVerification)\n[$(lightbulb) Planning Wizard](command:coe.openPlanningWizard)\n[$(sync~spin) Toggle Auto/Manual Mode](command:coe.toggleAutoProcessing)"
+            },
+            {
+                "view": "coe-conversations",
+                "contents": "No conversations yet. Start a new one!\n[$(comment) Ask Answer Agent](command:coe.askAnswerAgent)\n[$(search) Research with Agent](command:coe.researchWithAgent)"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "coe.askAnswerAgent",
+                "key": "ctrl+shift+a",
+                "mac": "cmd+shift+a",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "coe.openVerification",
+                "key": "ctrl+alt+v",
+                "mac": "cmd+alt+v"
+            },
+            {
+                "command": "coe.toggleAutoProcessing",
+                "key": "ctrl+alt+t",
+                "mac": "cmd+alt+t"
+            },
+            {
+                "command": "coe.openPlanningWizard",
+                "key": "ctrl+alt+p",
+                "mac": "cmd+alt+p"
+            }
+        ],
         "viewsContainers": {
             "activitybar": [
                 {

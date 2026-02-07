@@ -37,18 +37,32 @@ function getOutputChannel() {
 
 // Read log level from config once on init
 function initLogger(context: vscode.ExtensionContext) {
-    const configPath = path.join(context.extensionPath, '.coe', 'config.json');
-    try {
-        if (fs.existsSync(configPath)) {
-            const content = fs.readFileSync(configPath, 'utf-8');
-            const config = JSON.parse(content);
-            const levelFromConfig = config.debug?.logLevel?.toLowerCase();
-            if (['info', 'warn', 'error'].includes(levelFromConfig)) {
-                logLevel = levelFromConfig as any;
+    // Try workspace folder first (project-specific config), fall back to extensionPath
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    const configPaths: string[] = [];
+
+    // Priority 1: Workspace folder .coe/config.json
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        configPaths.push(path.join(workspaceFolders[0].uri.fsPath, '.coe', 'config.json'));
+    }
+
+    // Priority 2: Extension path (fallback, shouldn't normally have config)
+    configPaths.push(path.join(context.extensionPath, '.coe', 'config.json'));
+
+    for (const configPath of configPaths) {
+        try {
+            if (fs.existsSync(configPath)) {
+                const content = fs.readFileSync(configPath, 'utf-8');
+                const config = JSON.parse(content);
+                const levelFromConfig = config.debug?.logLevel?.toLowerCase();
+                if (['info', 'warn', 'error'].includes(levelFromConfig)) {
+                    logLevel = levelFromConfig as any;
+                    return; // Found valid config, stop searching
+                }
             }
+        } catch (err) {
+            // silent fail – try next path or use default
         }
-    } catch (err) {
-        // silent fail – use default 'info'
     }
 }
 

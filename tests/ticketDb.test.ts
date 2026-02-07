@@ -1278,13 +1278,10 @@ describe('TicketDb', () => {
     });
 
     // ========== Phase 5: Error Scenarios ==========
-    // NOTE: These tests are skipped due to flaky mock behavior with async callbacks.
-    // The tests correctly mock SQLite errors, but the timing of setTimeout callbacks
-    // in the mocks doesn't always work correctly with Jest's Promise handling.
-    // See: https://jestjs.io/docs/timer-mocks#run-all-timers
-    // TODO: Refactor these tests to use jest.useFakeTimers() or synchronous mocks.
+    // Fixed: Converted setTimeout to process.nextTick for proper Jest async handling.
+    // This ensures callbacks execute in the same microtask queue as Promise resolution.
 
-    describe.skip('Error Handling', () => {
+    describe('Error Handling', () => {
         beforeEach(() => {
             jest.clearAllMocks();
             // Note: Removed jest.resetModules() to preserve config singleton
@@ -1295,21 +1292,23 @@ describe('TicketDb', () => {
         /**
          * Helper: Creates a mock SQLite Database that simulates errors
          * Returns a Database class where specified operations fail
+         * Uses process.nextTick instead of setTimeout for reliable async callback timing
          */
         function mockSQLiteError(operationToFail: 'run' | 'all' | 'get', errorMsg: string, sqlPattern?: string) {
             return class MockErrorDatabase {
                 run: any; all: any; get: any; close: any;
                 constructor(filename: string, callback?: any) {
-                    if (callback) setTimeout(() => callback(null), 0);
+                    // Use process.nextTick for synchronous-like callback execution
+                    if (callback) process.nextTick(() => callback(null));
 
                     this.run = jest.fn((sql: string, paramsOrCallback?: any, callback?: any) => {
                         const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
                         // Only fail if operationToFail matches AND SQL pattern matches (if provided)
                         const shouldFail = operationToFail === 'run' && (!sqlPattern || sql.includes(sqlPattern));
                         if (shouldFail) {
-                            if (cb) setTimeout(() => cb(new Error(errorMsg)), 0);
+                            if (cb) process.nextTick(() => cb(new Error(errorMsg)));
                         } else {
-                            if (cb) setTimeout(() => cb(null), 0);
+                            if (cb) process.nextTick(() => cb(null));
                         }
                     });
 
@@ -1317,11 +1316,11 @@ describe('TicketDb', () => {
                         const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
                         const shouldFail = operationToFail === 'all' && (!sqlPattern || sql.includes(sqlPattern));
                         if (shouldFail) {
-                            if (cb) setTimeout(() => cb(new Error(errorMsg)), 0);
+                            if (cb) process.nextTick(() => cb(new Error(errorMsg)));
                         } else if (sql.includes('PRAGMA')) {
-                            setTimeout(() => cb(null, [{ name: 'id' }, { name: 'title' }, { name: 'type' }]), 0);
+                            process.nextTick(() => cb(null, [{ name: 'id' }, { name: 'title' }, { name: 'type' }]));
                         } else {
-                            setTimeout(() => cb(null, []), 0);
+                            process.nextTick(() => cb(null, []));
                         }
                     });
 
@@ -1329,9 +1328,9 @@ describe('TicketDb', () => {
                         const cb = typeof paramsOrCallback === 'function' ? paramsOrCallback : callback;
                         const shouldFail = operationToFail === 'get' && (!sqlPattern || sql.includes(sqlPattern));
                         if (shouldFail) {
-                            if (cb) setTimeout(() => cb(new Error(errorMsg)), 0);
+                            if (cb) process.nextTick(() => cb(new Error(errorMsg)));
                         } else {
-                            if (cb) setTimeout(() => cb(null, undefined), 0);
+                            if (cb) process.nextTick(() => cb(null, undefined));
                         }
                     });
 

@@ -74,7 +74,22 @@ class PlanningService {
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
-        const basePath = context.globalStoragePath || './tmp';
+        // Store plans in workspace .coe folder (project-specific) instead of globalStoragePath
+        // This ensures all project data lives together and is version-controllable
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        let basePath: string;
+
+        if (workspaceFolders && workspaceFolders.length > 0) {
+            // Use workspace .coe/plans folder (preferred)
+            basePath = path.join(workspaceFolders[0].uri.fsPath, '.coe');
+        } else if (context.globalStoragePath) {
+            // Fallback to globalStoragePath (no workspace open)
+            basePath = context.globalStoragePath;
+        } else {
+            // Last resort fallback (shouldn't happen in normal VS Code)
+            basePath = path.join(context.extensionPath, '.coe-data');
+        }
+
         this.plansFolder = path.join(basePath, 'plans');
         this.draftsFolder = path.join(basePath, 'plans-drafts');
     }
