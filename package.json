@@ -131,6 +131,38 @@
             {
                 "command": "coe.openPlanningWizard",
                 "title": "COE: Open Planning Wizard"
+            },
+            {
+                "command": "coe.planning.newPlan",
+                "title": "COE Planning: Create New Plan"
+            },
+            {
+                "command": "coe.planning.validate",
+                "title": "COE Planning: Validate Plan"
+            },
+            {
+                "command": "coe.planning.export",
+                "title": "COE Planning: Export Plan"
+            },
+            {
+                "command": "coe.planning.import",
+                "title": "COE Planning: Import Plan"
+            },
+            {
+                "command": "coe.planning.submitToOrchestrator",
+                "title": "COE Planning: Submit to Orchestrator"
+            },
+            {
+                "command": "coe.planning.generateDocs",
+                "title": "COE Planning: Generate Documentation"
+            },
+            {
+                "command": "coe.planning.checkDrift",
+                "title": "COE Planning: Check Plan Drift"
+            },
+            {
+                "command": "coe.planning.autoFix",
+                "title": "COE Planning: Auto-fix Issues"
             }
         ],
         "configuration": {

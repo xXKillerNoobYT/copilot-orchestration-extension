@@ -567,15 +567,3 @@ function renderMarkdownPreview(text: string): string {
 
     return html;
 }
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-export {
-    renderDetailedTextBox,
-    getDetailedTextBoxStyles,
-    getDetailedTextBoxScript,
-    escapeHtml,
-    renderMarkdownPreview,
-};

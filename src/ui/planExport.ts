@@ -649,15 +649,3 @@ function getSmartBadges(attrs: SuccessCriterion['smartAttributes']): string {
     if (attrs.timeBound) badges.push('T');
     return badges.length === 5 ? '✅ SMART' : badges.join('');
 }
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-export {
-    exportPlan,
-    exportPlanToFile,
-    renderExportDropdown,
-    getExportDropdownStyles,
-    getExportDropdownScript,
-};
