@@ -119,6 +119,14 @@ jest.mock('../src/ui/orchestratorStatusTreeProvider', () => ({
     })),
 }));
 
+// Mock deduplication service
+const mockCheckAndDeduplicateTicket = jest.fn();
+const mockGenerateDuplicationReport = jest.fn();
+jest.mock('../src/services/deduplication', () => ({
+    checkAndDeduplicateTicket: (...args: unknown[]) => mockCheckAndDeduplicateTicket(...args),
+    generateDuplicationReport: (...args: unknown[]) => mockGenerateDuplicationReport(...args),
+}));
+
 jest.mock('vscode', () => {
     // EventEmitter implementation for testing
     class EventEmitter {
@@ -1372,6 +1380,12 @@ describe('Extension Helpers', () => {
         });
 
         mockOrchestrator.answerQuestion.mockResolvedValue('Mocked answer');
+        
+        // Reset deduplication mock - default to no duplicate
+        mockCheckAndDeduplicateTicket.mockResolvedValue({
+            isDuplicate: false,
+            matches: []
+        });
     });
 
     it('should update the status bar text and tooltip', async () => {
@@ -1503,6 +1517,348 @@ describe('Extension Helpers', () => {
         // Planning agent should NOT be called in Manual mode
         expect(mockRouteToPlanningAgent).not.toHaveBeenCalled();
         expect(mockTicketDb.updateTicket).not.toHaveBeenCalled();
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
+    });
+
+    it('should handle duplicate ticket detection and consolidation', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+        const autoModeState = await import('../src/services/autoModeState');
+
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        // Reset auto mode state and set to Auto mode
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(true);
+
+        const answerAgent = {
+            cleanupInactiveConversations: jest.fn(async () => { })
+        };
+
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+            routeToPlanningAgent: jest.fn(async () => 'Auto-plan result'),
+            getAnswerAgent: jest.fn(() => answerAgent)
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-DUP',
+                title: 'Duplicate task',
+                status: 'open',
+                type: 'ai_to_human',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        // Mock duplicate detection - duplicate found
+        mockCheckAndDeduplicateTicket.mockResolvedValue({
+            isDuplicate: true,
+            matches: [{ ticketId: 'TICKET-MASTER', similarity: 85 }],
+            report: {
+                duplicatesRemoved: ['TICKET-DUP'],
+                mastersPrioritized: ['TICKET-MASTER']
+            }
+        });
+        mockGenerateDuplicationReport.mockReturnValue('Duplicate report');
+
+        await activate(mockContext);
+
+        const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
+        listener();
+
+        await new Promise(resolve => setTimeout(resolve, 700));
+
+        // Should show info message about consolidation
+        expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Duplicate problem consolidated')
+        );
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
+    });
+
+    it('should handle LLM unavailable during auto-planning', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+        const mockLLMService = require('../src/services/llmService');
+        const autoModeState = await import('../src/services/autoModeState');
+
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(true);
+
+        const answerAgent = {
+            cleanupInactiveConversations: jest.fn(async () => { })
+        };
+
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+            routeToPlanningAgent: jest.fn(async () => 'Plan'),
+            getAnswerAgent: jest.fn(() => answerAgent)
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-LLM',
+                title: 'No LLM task',
+                status: 'open',
+                type: 'ai_to_human',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        // Mock no duplicate
+        mockCheckAndDeduplicateTicket.mockResolvedValue({
+            isDuplicate: false,
+            matches: []
+        });
+
+        // Mock LLM unavailable
+        mockLLMService.validateConnection.mockResolvedValue({
+            success: false,
+            error: 'Connection refused'
+        });
+
+        await activate(mockContext);
+
+        const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
+        listener();
+
+        await new Promise(resolve => setTimeout(resolve, 700));
+
+        // Should mark ticket as blocked
+        expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-LLM', {
+            status: 'blocked',
+            description: expect.stringContaining('Auto-planning blocked')
+        });
+
+        // Should show warning message
+        expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+            expect.stringContaining('LLM unavailable')
+        );
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
+    });
+
+    it('should handle planning fallback response', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+        const mockLLMService = require('../src/services/llmService');
+        const autoModeState = await import('../src/services/autoModeState');
+
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(true);
+
+        const answerAgent = {
+            cleanupInactiveConversations: jest.fn(async () => { })
+        };
+
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+            routeToPlanningAgent: jest.fn(async () => 'Planning service is currently unavailable'),
+            getAnswerAgent: jest.fn(() => answerAgent)
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-FALLBACK',
+                title: 'Fallback task',
+                status: 'open',
+                type: 'ai_to_human',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        mockCheckAndDeduplicateTicket.mockResolvedValue({
+            isDuplicate: false,
+            matches: []
+        });
+
+        mockLLMService.validateConnection.mockResolvedValue({ success: true });
+
+        await activate(mockContext);
+
+        const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
+        listener();
+
+        await new Promise(resolve => setTimeout(resolve, 700));
+
+        // Ticket should be blocked with fallback message
+        expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-FALLBACK', {
+            status: 'blocked',
+            description: 'Planning service is currently unavailable'
+        });
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
+    });
+
+    it('should handle auto-planning errors gracefully', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+        const mockLLMService = require('../src/services/llmService');
+        const autoModeState = await import('../src/services/autoModeState');
+
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(true);
+
+        const answerAgent = {
+            cleanupInactiveConversations: jest.fn(async () => { })
+        };
+
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+            routeToPlanningAgent: jest.fn(async () => { throw new Error('Planning crashed'); }),
+            getAnswerAgent: jest.fn(() => answerAgent)
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-ERROR',
+                title: 'Error task',
+                status: 'open',
+                type: 'ai_to_human',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        mockCheckAndDeduplicateTicket.mockResolvedValue({
+            isDuplicate: false,
+            matches: []
+        });
+
+        mockLLMService.validateConnection.mockResolvedValue({ success: true });
+
+        await activate(mockContext);
+
+        const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
+        listener();
+
+        await new Promise(resolve => setTimeout(resolve, 700));
+
+        // Ticket should be blocked after error
+        expect(mockTicketDb.updateTicket).toHaveBeenCalledWith('TICKET-ERROR', {
+            status: 'blocked',
+            description: expect.stringContaining('Auto-planning error')
+        });
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
+    });
+
+    it('should skip ticket when type is not ai_to_human', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+        const autoModeState = await import('../src/services/autoModeState');
+
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(true);
+
+        const mockRouteToPlanningAgent = jest.fn(async () => 'Plan');
+
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+            routeToPlanningAgent: mockRouteToPlanningAgent,
+            getAnswerAgent: jest.fn(() => ({
+                cleanupInactiveConversations: jest.fn(async () => { })
+            }))
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-HUMAN',
+                title: 'Human to AI task',
+                status: 'open',
+                type: 'human_to_ai',  // Not ai_to_human
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        await activate(mockContext);
+
+        const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
+        listener();
+
+        await new Promise(resolve => setTimeout(resolve, 700));
+
+        // Planning should NOT be called
+        expect(mockRouteToPlanningAgent).not.toHaveBeenCalled();
+
+        // Cleanup
+        autoModeState.resetAutoModeState();
+    });
+
+    it('should skip already processed tickets', async () => {
+        const mockTicketDb = require('../src/services/ticketDb');
+        const mockOrchestrator = require('../src/services/orchestrator');
+        const autoModeState = await import('../src/services/autoModeState');
+
+        const mockContext = {
+            extensionPath: '/mock/path',
+            subscriptions: [],
+        } as any;
+
+        autoModeState.resetAutoModeState();
+        autoModeState.setAutoModeOverride(true);
+
+        // Pre-mark ticket as processed
+        autoModeState.markTicketProcessed('TICKET-PROCESSED');
+
+        const mockRouteToPlanningAgent = jest.fn(async () => 'Plan');
+
+        mockOrchestrator.getOrchestratorInstance.mockReturnValue({
+            routeToPlanningAgent: mockRouteToPlanningAgent,
+            getAnswerAgent: jest.fn(() => ({
+                cleanupInactiveConversations: jest.fn(async () => { })
+            }))
+        });
+
+        mockTicketDb.listTickets.mockResolvedValue([
+            {
+                id: 'TICKET-PROCESSED',
+                title: 'Already processed task',
+                status: 'open',
+                type: 'ai_to_human',
+                createdAt: '2026-02-01T00:00:00.000Z',
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ]);
+
+        await activate(mockContext);
+
+        const listener = mockTicketDb.onTicketChange.mock.calls[0][0];
+        listener();
+
+        await new Promise(resolve => setTimeout(resolve, 700));
+
+        // Planning should NOT be called for already processed ticket
+        expect(mockRouteToPlanningAgent).not.toHaveBeenCalled();
 
         // Cleanup
         autoModeState.resetAutoModeState();

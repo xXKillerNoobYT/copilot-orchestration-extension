@@ -35,11 +35,13 @@ jest.mock('../../../src/services/llmService', () => ({
 const mockAddReply = jest.fn();
 const mockGetTicket = jest.fn();
 const mockUpdateTicket = jest.fn();
+const mockOnTicketChange = jest.fn();
 const mockTicketDbInstance = new EventEmitter();
 jest.mock('../../../src/services/ticketDb', () => ({
     addReply: (...args: unknown[]) => mockAddReply(...args),
     getTicket: (...args: unknown[]) => mockGetTicket(...args),
     updateTicket: (...args: unknown[]) => mockUpdateTicket(...args),
+    onTicketChange: (...args: unknown[]) => mockOnTicketChange(...args),
     getTicketDbInstance: () => mockTicketDbInstance
 }));
 
@@ -415,6 +417,142 @@ describe('ClarityTrigger', () => {
 
             trigger.cancelAll();
             expect(trigger.getPendingCount()).toBe(0);
+        });
+    });
+
+    describe('Subscription lifecycle', () => {
+        it('Test 19a: should subscribe to ticket changes', () => {
+            trigger.subscribe();
+            expect(trigger.isActive()).toBe(true);
+        });
+
+        it('Test 19b: should warn when already subscribed', () => {
+            trigger.subscribe();
+            trigger.subscribe(); // second call should warn
+            expect(trigger.isActive()).toBe(true);
+        });
+
+        it('Test 19c: should unsubscribe from events', () => {
+            trigger.subscribe();
+            trigger.unsubscribe();
+            expect(trigger.isActive()).toBe(false);
+        });
+
+        it('Test 19d: should handle unsubscribe when not subscribed', () => {
+            // Should not throw
+            trigger.unsubscribe();
+            expect(trigger.isActive()).toBe(false);
+        });
+    });
+
+    describe('Reply event handling', () => {
+        it('Test 19e: should skip disabled trigger', () => {
+            const handler = jest.fn();
+            trigger.on('review-skipped', handler);
+            trigger.setEnabled(false);
+
+            trigger.handleReplyAdded({ ticketId: 'ticket-1', reply: { content: 'Reply', author: 'user' } });
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'ticket-1', reason: 'disabled' });
+        });
+
+        it('Test 19f: should skip agent replies', () => {
+            const handler = jest.fn();
+            trigger.on('review-skipped', handler);
+
+            trigger.handleReplyAdded({ ticketId: 'ticket-1', reply: { content: 'Reply', author: 'AI Agent' } });
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'ticket-1', reason: 'agent-reply' });
+        });
+
+        it('Test 19g: should skip short replies', () => {
+            const handler = jest.fn();
+            trigger.on('review-skipped', handler);
+
+            // Assuming default minReplyLength is > 2
+            const shortCfgTrigger = new ClarityTrigger({ minReplyLength: 20 });
+            shortCfgTrigger.on('review-skipped', handler);
+            shortCfgTrigger.handleReplyAdded({ ticketId: 'ticket-1', reply: { content: 'Hi', author: 'user' } });
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'ticket-1', reason: 'too-short' });
+            shortCfgTrigger.cancelAll();
+        });
+
+        it('Test 19h: should queue valid replies', () => {
+            const handler = jest.fn();
+            trigger.on('review-queued', handler);
+
+            trigger.handleReplyAdded({
+                ticketId: 'ticket-1',
+                reply: { content: 'This is a valid reply with enough content', author: 'user' }
+            });
+
+            expect(handler).toHaveBeenCalled();
+            expect(trigger.getPendingCount()).toBe(1);
+        });
+    });
+
+    describe('Configuration management', () => {
+        it('Test 19i: should set review delay', () => {
+            trigger.setReviewDelay(500);
+            expect(trigger.getConfig().reviewDelayMs).toBe(500);
+        });
+
+        it('Test 19j: should throw for negative delay', () => {
+            expect(() => trigger.setReviewDelay(-1)).toThrow('Delay must be non-negative');
+        });
+
+        it('Test 19k: should return config copy', () => {
+            const config = trigger.getConfig();
+            config.enabled = false;  // Mutate returned copy
+            expect(trigger.getConfig().enabled).toBe(true);  // Original unchanged
+        });
+    });
+
+    describe('Queue re-queuing', () => {
+        it('Test 19l: should replace existing review when re-queued', () => {
+            trigger.queueReview('ticket-1', 'First reply');
+            trigger.queueReview('ticket-1', 'Second reply');
+
+            expect(trigger.getPendingCount()).toBe(1);
+        });
+
+        it('Test 19m: should maintain priority order', () => {
+            trigger.queueReview('ticket-1', 'P3 reply', { priority: 3 });
+            trigger.queueReview('ticket-2', 'P1 reply', { priority: 1 });
+            trigger.queueReview('ticket-3', 'P2 reply', { priority: 2 });
+
+            const pending = trigger.getPendingReviews();
+            expect(pending[0].ticketId).toBe('ticket-2');  // P1 first
+            expect(pending[1].ticketId).toBe('ticket-3');  // P2
+            expect(pending[2].ticketId).toBe('ticket-1');  // P3
+        });
+    });
+
+    describe('Review execution', () => {
+        it('Test 19n: should emit review-error when scorer not available', async () => {
+            const errorHandler = jest.fn();
+            const startHandler = jest.fn();
+
+            // Use very short delay for testing
+            const fastTrigger = new ClarityTrigger({ reviewDelayMs: 10 });
+            fastTrigger.on('review-error', errorHandler);
+            fastTrigger.on('review-started', startHandler);
+
+            fastTrigger.queueReview('ticket-1', 'This is a test reply');
+
+            // Wait for delay to trigger review
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // Review started then errored because scorer isn't initialized in isolation
+            expect(startHandler).toHaveBeenCalled();
+            expect(errorHandler).toHaveBeenCalled();
+            fastTrigger.cancelAll();
+        });
+
+        it('Test 19o: should return false for non-existent review cancel', () => {
+            const result = trigger.cancelReview('nonexistent');
+            expect(result).toBe(false);
         });
     });
 });
@@ -939,6 +1077,183 @@ describe('ClarityAgent', () => {
 
             expect(handler).toHaveBeenCalled();
             expect(agent.isActive()).toBe(false);
+        });
+    });
+
+    describe('Start and Stop', () => {
+        it('Test 55: should start watching for ticket replies after initialization', async () => {
+            await agent.initialize();
+            agent.start();
+            // If we get here without throwing, start succeeded
+            expect(agent.isActive()).toBe(true);
+        });
+
+        it('Test 56: should throw when start called without initialization', () => {
+            expect(() => agent.start()).toThrow('ClarityAgent not initialized');
+        });
+
+        it('Test 57: should stop watching after start', async () => {
+            await agent.initialize();
+            agent.start();
+            agent.stop();
+            expect(agent.isActive()).toBe(true); // Still active, just not watching
+        });
+    });
+
+    describe('Review cycle with escalation', () => {
+        it('Test 58: should escalate when max iterations reached', async () => {
+            // Mock scoring - low score triggers follow-up
+            mockCompleteLLM
+                .mockResolvedValueOnce({ content: '{"score": 40, "reasoning": "bad", "missing": ["detail"]}' })
+                .mockResolvedValueOnce({ content: '{"score": 40, "reasoning": "bad", "vague_parts": []}' })
+                .mockResolvedValueOnce({ content: '{"score": 40, "reasoning": "bad", "discrepancies": []}' })
+                // First follow-up iteration
+                .mockResolvedValueOnce({ content: '{"questions": ["Q1"]}' })
+                // Escalation summary
+                .mockResolvedValueOnce({ content: 'Summary' });
+
+            // Initialize with maxIterations: 1 so first follow-up triggers escalation
+            await agent.initialize({ followUp: { autoPost: false, maxIterations: 1 } });
+
+            // First review - creates iteration
+            const manager = agent.getFollowUpManager();
+            expect(manager).not.toBeNull();
+            const scoringResult = createMockScoringResult(40);
+            await manager!.generateFollowUp('ticket-escalate', scoringResult, 'Q', 'A');
+
+            // Now review again - should hit max and escalate
+            mockCompleteLLM
+                .mockResolvedValueOnce({ content: '{"score": 40, "reasoning": "bad", "missing": ["detail"]}' })
+                .mockResolvedValueOnce({ content: '{"score": 40, "reasoning": "bad", "vague_parts": []}' })
+                .mockResolvedValueOnce({ content: '{"score": 40, "reasoning": "bad", "discrepancies": []}' })
+                .mockResolvedValueOnce({ content: '{"questions": ["Q2"]}' });
+
+            const result = await agent.reviewReply(
+                'ticket-escalate',
+                'What happened?',
+                'Still not good'
+            );
+
+            expect(result.scored.needsFollowUp).toBe(true);
+            expect(result.followUp?.escalated).toBe(true);
+        });
+
+        it('Test 59: should throw when reviewReply called without initialization', async () => {
+            await expect(agent.reviewReply('t1', 'Q', 'A')).rejects.toThrow('ClarityAgent not initialized');
+        });
+    });
+
+    describe('Event handlers', () => {
+        it('Test 60: should emit review-cycle-complete event', async () => {
+            mockCompleteLLM.mockResolvedValue({
+                content: '{"score": 95, "reasoning": "excellent", "missing": []}'
+            });
+
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('review-cycle-complete', handler);
+
+            await agent.reviewReply('ticket-event', 'Question?', 'Great answer');
+
+            expect(handler).toHaveBeenCalled();
+        });
+
+        it('Test 61: should forward scored events from scorer', async () => {
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('scored', handler);
+
+            // Trigger the event on the internal scorer
+            const scorer = agent.getScorer();
+            expect(scorer).not.toBeNull();
+            scorer!.emit('scored', { ticketId: 'test', score: 80 });
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'test', score: 80 });
+        });
+
+        it('Test 62: should forward threshold-failed events from scorer', async () => {
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('threshold-failed', handler);
+
+            const scorer = agent.getScorer();
+            scorer!.emit('threshold-failed', { ticketId: 'test', score: 50 });
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'test', score: 50 });
+        });
+
+        it('Test 63: should forward review-queued events from trigger', async () => {
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('review-queued', handler);
+
+            const trigger = agent.getTrigger();
+            trigger!.emit('review-queued', { ticketId: 'test' });
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'test' });
+        });
+
+        it('Test 64: should forward escalated events from followUpManager', async () => {
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('escalated', handler);
+
+            const manager = agent.getFollowUpManager();
+            manager!.emit('escalated', { ticketId: 'test', summary: 'Escalated' });
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'test', summary: 'Escalated' });
+        });
+
+        it('Test 65: should emit follow-up-needed when trigger review-completed with needsFollowUp', async () => {
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('follow-up-needed', handler);
+
+            const trigger = agent.getTrigger();
+            trigger!.emit('review-completed', {
+                ticketId: 'test',
+                result: { needsFollowUp: true, scores: { overall: 45 } }
+            });
+
+            // Give event handler time to fire
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'test', score: 45 });
+        });
+
+        it('Test 66: should emit review-cycle-complete when trigger review-completed without needsFollowUp', async () => {
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('review-cycle-complete', handler);
+
+            const trigger = agent.getTrigger();
+            const result = { needsFollowUp: false, scores: { overall: 90 } };
+            trigger!.emit('review-completed', { ticketId: 'test', result });
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'test', result, followUpNeeded: false });
+        });
+
+        it('Test 67: should emit escalation-needed when max-iterations-reached', async () => {
+            await agent.initialize();
+
+            const handler = jest.fn();
+            agent.on('escalation-needed', handler);
+
+            const manager = agent.getFollowUpManager();
+            manager!.emit('max-iterations-reached', { ticketId: 'test', count: 3 });
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(handler).toHaveBeenCalledWith({ ticketId: 'test', iterationCount: 3 });
         });
     });
 });

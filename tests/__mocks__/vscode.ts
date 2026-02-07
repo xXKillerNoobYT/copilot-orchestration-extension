@@ -52,6 +52,8 @@ export const window = {
     return new MockOutputChannel(name);
   },
   createWebviewPanel: jest.fn(),
+  createTerminal: jest.fn(),
+  onDidCloseTerminal: jest.fn().mockReturnValue({ dispose: jest.fn() }),
   setStatusBarMessage: jest.fn().mockReturnValue({
     dispose: jest.fn()
   }),

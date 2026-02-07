@@ -54,7 +54,8 @@ import {
 } from '../../../src/agents/planning/analysis';
 import {
     getVaguenessDetector,
-    resetVaguenessDetectorForTests
+    resetVaguenessDetectorForTests,
+    VaguenessDetector
 } from '../../../src/agents/planning/vagueness';
 import {
     getTaskDecomposer,
@@ -172,6 +173,12 @@ CLARITY_SCORE: 85`,
             expect(detector1).toBe(detector2);
         });
 
+        it('Test 6a: should support legacy constructor with numeric threshold', () => {
+            // Test the legacy constructor path (line 226) by directly instantiating
+            const detector = new VaguenessDetector(50);
+            expect(detector.getThreshold()).toBe(50);
+        });
+
         it('Test 7: should detect vague terms', async () => {
             mockCompleteLLM.mockResolvedValueOnce({
                 content: JSON.stringify({
@@ -243,6 +250,182 @@ CLARITY_SCORE: 85`,
 
             expect(result.requiresClarification).toBe(true);
             // Note: updateTicket would be called to add clarification
+        });
+
+        it('Test 10a: should handle SmartPlan patterns', async () => {
+            const detector = getVaguenessDetector();
+            detector.setSmartPlanEnabled(true);
+            expect(detector.isSmartPlanEnabled()).toBe(true);
+
+            // Test quickDetect with SmartPlan patterns like 'improve' or 'enhance'
+            const result = await detector.detect('Improve the performance');
+            expect(result.items.length).toBeGreaterThan(0);
+        });
+
+        it('Test 10aa: should work without SmartPlan patterns', async () => {
+            const detector = getVaguenessDetector();
+            detector.setSmartPlanEnabled(false);
+            expect(detector.isSmartPlanEnabled()).toBe(false);
+
+            // With SmartPlan disabled, use standard VAGUE_PATTERNS
+            const result = await detector.detect('Make it fast');
+            expect(result.items.length).toBeGreaterThan(0); // 'fast' is in VAGUE_PATTERNS
+        });
+
+        it('Test 10b: should handle strictness levels', async () => {
+            const detector = getVaguenessDetector();
+
+            detector.setStrictness('relaxed');
+            const relaxedResult = await detector.detect('Make it nice');
+
+            detector.setStrictness('strict');
+            const strictResult = await detector.detect('Make it nice');
+
+            // Strict mode should have lower scores (more strict)
+            expect(strictResult.items.length).toBeGreaterThanOrEqual(relaxedResult.items.length);
+        });
+
+        it('Test 10c: should use LLM for longer text with few pattern matches', async () => {
+            mockCompleteLLM.mockResolvedValueOnce({
+                content: `VAGUE: complex system
+SCORE: 40
+CATEGORY: ambiguous
+QUESTION: What complexity are you referring to?
+SUGGESTION: Define specific complexity metrics`,
+                usage: { prompt_tokens: 50, completion_tokens: 100, total_tokens: 150 }
+            });
+
+            const detector = getVaguenessDetector();
+            // Long text with few pattern matches triggers LLM detection
+            const result = await detector.detect(
+                'Build a complex system that handles user data with appropriate security measures and integrates with external services for data processing and storage requirements that meet industry standards.'
+            );
+
+            expect(result).toBeDefined();
+            expect(result.timestamp).toBeInstanceOf(Date);
+        });
+
+        it('Test 10d: should handle LLM detection failure gracefully', async () => {
+            mockCompleteLLM.mockRejectedValueOnce(new Error('LLM error'));
+
+            const detector = getVaguenessDetector();
+            // Long text should try LLM, which will fail
+            const result = await detector.detect(
+                'Build a system that is really good and handles many things efficiently and provides great user experience.'
+            );
+
+            // Should still return a result from pattern matching
+            expect(result).toBeDefined();
+            expect(result.overallScore).toBeDefined();
+        });
+
+        it('Test 10e: should calculate overall score based on items', async () => {
+            mockCompleteLLM.mockResolvedValueOnce({
+                content: JSON.stringify({
+                    overallScore: 60,
+                    items: []
+                }),
+                usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 }
+            });
+
+            const detector = getVaguenessDetector();
+
+            // No vague items should give high score
+            const clearResult = await detector.detect('Response time must be under 200ms for 95th percentile');
+            expect(clearResult.overallScore).toBeGreaterThan(50);
+
+            // Multiple vague items should lower the score
+            mockCompleteLLM.mockResolvedValueOnce({
+                content: JSON.stringify({
+                    overallScore: 20,
+                    items: [
+                        { phrase: 'fast', score: 30, category: 'unmeasurable', clarificationQuestion: 'How fast?', suggestions: [] },
+                        { phrase: 'good', score: 20, category: 'subjective', clarificationQuestion: 'What is good?', suggestions: [] }
+                    ]
+                }),
+                usage: { prompt_tokens: 10, completion_tokens: 30, total_tokens: 40 }
+            });
+            const vagueResult = await detector.detect('Make it fast and good');
+            expect(vagueResult.overallScore).toBeLessThan(60);
+        });
+
+        it('Test 10f: should merge quick and LLM results avoiding duplicates', async () => {
+            mockCompleteLLM.mockResolvedValueOnce({
+                content: `VAGUE: user-friendly
+SCORE: 35
+CATEGORY: subjective
+QUESTION: What makes it user-friendly?
+SUGGESTION: Define UX metrics
+
+VAGUE: complex logic
+SCORE: 45
+CATEGORY: ambiguous
+QUESTION: What logic exactly?
+SUGGESTION: Describe the algorithm`,
+                usage: { prompt_tokens: 80, completion_tokens: 100, total_tokens: 180 }
+            });
+
+            const detector = getVaguenessDetector();
+            const result = await detector.detect(
+                'Create a user-friendly interface with complex logic that processes data efficiently for all use cases.'
+            );
+
+            // Should have items from both pattern matching (user-friendly, efficiently) and LLM (complex logic)
+            expect(result.items.length).toBeGreaterThan(0);
+        });
+
+        it('Test 10g: should update ticket thread with clarification', async () => {
+            mockCompleteLLM.mockResolvedValueOnce({
+                content: JSON.stringify({
+                    overallScore: 20,
+                    items: [
+                        { phrase: 'nice', score: 20, category: 'subjective', clarificationQuestion: 'What is nice?', suggestions: [] }
+                    ]
+                }),
+                usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+            });
+
+            mockGetTicket.mockResolvedValueOnce({
+                id: 'TICKET-003',
+                title: 'Test Ticket',
+                status: 'open',
+                thread: [],
+                priority: 1,
+                creator: 'test',
+                assignee: null,
+                taskId: null,
+                version: 1,
+                resolution: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+
+            const detector = getVaguenessDetector();
+            await detector.detect('Make it nice', 'TICKET-003');
+
+            // Verify updateTicket was called with clarification
+            expect(mockUpdateTicket).toHaveBeenCalled();
+        });
+
+        it('Test 10h: should handle missing ticket gracefully', async () => {
+            mockCompleteLLM.mockResolvedValueOnce({
+                content: JSON.stringify({
+                    overallScore: 20,
+                    items: [
+                        { phrase: 'good', score: 20, category: 'subjective', clarificationQuestion: 'What is good?', suggestions: [] }
+                    ]
+                }),
+                usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+            });
+
+            mockGetTicket.mockResolvedValueOnce(null);
+
+            const detector = getVaguenessDetector();
+            const result = await detector.detect('Make it good', 'NONEXISTENT');
+
+            // Should still return result, just without clarification ticket
+            expect(result.requiresClarification).toBe(true);
+            expect(result.clarificationTicketId).toBeFalsy();
         });
     });
 
@@ -443,6 +626,410 @@ PATTERNS: none`,
             const forPlanning = parser.getFeaturesForPlanning(prd);
             expect(forPlanning).toHaveLength(1);
             expect(forPlanning[0].name).toBe('Planned');
+        });
+
+        it('Test 20a: should parse PRD with alternate field names', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                name: 'Alt Name Project',  // uses 'name' instead of 'projectName'
+                overview: 'Alt description',  // uses 'overview' instead of 'description'
+                users: ['User A', 'User B'],  // uses 'users' instead of 'targetAudience'
+                features: [
+                    { id: 'F001', name: 'Feature', description: 'Test', priority: 'P2', acceptanceCriteria: ['OK'] }
+                ]
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.projectName).toBe('Alt Name Project');
+            expect(result.description).toBe('Alt description');
+            expect(result.targetAudience).toContain('User A');
+        });
+
+        it('Test 20b: should parse PRD with title field', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                title: 'Title Field Project',  // uses 'title' instead
+                description: 'A project',
+                targetAudience: 'Single User',  // string instead of array
+                features: [
+                    { id: 'F001', name: 'Feature', description: 'Test', priority: 'P3', status: 'in-progress' }
+                ],
+                milestones: [
+                    { id: 'M1', name: 'Milestone 1', features: ['F001'] }
+                ]
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.projectName).toBe('Title Field Project');
+            expect(result.targetAudience).toContain('Single User');
+            expect(result.milestones).toHaveLength(1);
+        });
+
+        it('Test 20c: should parse technical requirements from array format', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Tech Project',
+                description: 'Project with tech reqs',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                technicalRequirements: [
+                    { category: 'performance', description: '< 200ms response', criteria: 'p95 latency' },
+                    { type: 'security', description: 'Encrypted data', metric: 'AES-256' },
+                    { category: 'unknown_category', description: 'Test' }  // Should default to 'performance'
+                ]
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.technicalRequirements).toHaveLength(3);
+            expect(result.technicalRequirements[0].category).toBe('performance');
+            expect(result.technicalRequirements[1].category).toBe('security');
+            expect(result.technicalRequirements[2].category).toBe('performance'); // Default
+        });
+
+        it('Test 20d: should parse technical requirements from object format', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Tech Project 2',
+                description: 'Project with tech object',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                technical: {
+                    performance: 'Must be fast',
+                    security: 'Must be secure',
+                    scalability: 'Must scale',
+                    compatibility: 'Must be compatible',
+                    accessibility: 'Must be accessible'
+                }
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.technicalRequirements).toHaveLength(5);
+            const categories = result.technicalRequirements.map(r => r.category);
+            expect(categories).toContain('performance');
+            expect(categories).toContain('security');
+            expect(categories).toContain('accessibility');
+        });
+
+        it('Test 20e: should handle PRD with missing optional fields', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                // Missing: projectName, description
+                features: []  // Empty features
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.parseErrors).toContain('Missing project name (expected: projectName, name, or title)');
+            expect(result.parseErrors).toContain('Missing project description');
+            expect(result.parseErrors).toContain('No features defined in PRD');
+        });
+
+        it('Test 20f: should parse features with various priority values', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Priority Project',
+                description: 'Testing priorities',
+                features: [
+                    { id: 'F001', name: 'P0 Feature', description: 'p0 pri', priority: 'P0' },
+                    { id: 'F002', name: 'P1 Feature', description: 'p1 pri', priority: 'P1' },
+                    { id: 'F003', name: 'P2 Feature', description: 'p2 pri', priority: 'P2' },
+                    { id: 'F004', name: 'P3 Feature', description: 'p3 pri', priority: 'p3' },  // lowercase should normalize
+                    { id: 'F005', name: 'Default', description: 'default', priority: 'unknown' } // Unknown defaults to P1
+                ]
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.features).toHaveLength(5);
+            // Verify all priorities are normalized correctly
+            result.features.forEach(f => {
+                expect(['P0', 'P1', 'P2', 'P3']).toContain(f.priority);
+            });
+        });
+
+        it('Test 20g: should parse milestones with date and target fields', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Milestone Project',
+                description: 'Testing milestones',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                milestones: [
+                    { id: 'M1', name: 'MVP', features: ['F001'], date: '2024-06-01' },
+                    { id: 'M2', name: 'Beta', features: [], targetDate: '2024-09-01' }
+                ]
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.milestones).toHaveLength(2);
+            expect(result.milestones[0].targetDate).toBe('2024-06-01');
+            expect(result.milestones[1].targetDate).toBe('2024-09-01');
+        });
+
+        it('Test 20h: should parse success metrics and out of scope', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Metrics Project',
+                description: 'Testing metrics',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                successMetrics: ['DAU > 1000', 'Retention > 50%'],
+                outOfScope: ['Mobile app', 'Offline mode'],
+                nonGoals: ['Real-time sync']  // alternate field name
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.successMetrics).toContain('DAU > 1000');
+            expect(result.outOfScope).toContain('Mobile app');
+        });
+
+        it('Test 20i: should handle metrics alternate field', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Alt Metrics',
+                description: 'Testing alt metrics field',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                metrics: ['Metric 1', 'Metric 2']  // uses 'metrics' instead of 'successMetrics'
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.successMetrics).toContain('Metric 1');
+        });
+
+        it('Test 20j: should parse version and lastUpdated fields', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Versioned Project',
+                description: 'Testing version',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                version: '2.1.0',
+                lastUpdated: '2024-01-15T10:00:00Z'
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.version).toBe('2.1.0');
+            expect(result.lastUpdated).toBe('2024-01-15T10:00:00Z');
+        });
+
+        it('Test 20k: should use updated field if lastUpdated is missing', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Updated Project',
+                description: 'Testing updated field',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                updated: '2024-02-20'
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.lastUpdated).toBe('2024-02-20');
+        });
+
+        it('Test 20l: should handle file read error', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockImplementation(() => {
+                throw new Error('Permission denied');
+            });
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.parseErrors).toContain('Permission denied');
+        });
+
+        it('Test 20m: should filter features by various status values', async () => {
+            const parser = getPRDParser();
+            const prd = {
+                projectName: 'Test',
+                description: 'Test',
+                targetAudience: [],
+                features: [
+                    { id: 'F001', name: 'Complete', description: '', status: 'complete' as const, priority: 'P1' as const, acceptanceCriteria: [], dependencies: [] },
+                    { id: 'F002', name: 'Planned', description: '', status: 'planned' as const, priority: 'P1' as const, acceptanceCriteria: [], dependencies: [] },
+                    { id: 'F003', name: 'In Progress', description: '', status: 'in_progress' as const, priority: 'P2' as const, acceptanceCriteria: [], dependencies: [] }
+                ],
+                milestones: [],
+                technicalRequirements: [],
+                successMetrics: [],
+                outOfScope: [],
+                version: '1.0',
+                lastUpdated: '',
+                parseErrors: []
+            };
+
+            const forPlanning = parser.getFeaturesForPlanning(prd);
+            // Should include planned, in_progress but not complete
+            expect(forPlanning.map(f => f.name)).toContain('Planned');
+            expect(forPlanning.map(f => f.name)).toContain('In Progress');
+            expect(forPlanning.map(f => f.name)).not.toContain('Complete');
+        });
+
+        it('Test 20n: should validate PRD and return errors', () => {
+            const parser = getPRDParser();
+            const invalidPrd = {
+                projectName: '',
+                description: '',
+                targetAudience: [],
+                features: [],
+                milestones: [],
+                technicalRequirements: [],
+                successMetrics: [],
+                outOfScope: [],
+                version: '1.0',
+                lastUpdated: '',
+                parseErrors: []
+            };
+
+            const errors = parser.validate(invalidPrd);
+            expect(errors).toContain('Project name is required');
+            expect(errors).toContain('Project description is required');
+            expect(errors).toContain('At least one feature is required');
+        });
+
+        it('Test 20o: should validate features within PRD', () => {
+            const parser = getPRDParser();
+            const prd = {
+                projectName: 'Valid Project',
+                description: 'Valid description',
+                targetAudience: [],
+                features: [
+                    { id: 'F001', name: '', description: '', status: 'planned' as const, priority: 'P1' as const, acceptanceCriteria: [], dependencies: [] }
+                ],
+                milestones: [],
+                technicalRequirements: [],
+                successMetrics: [],
+                outOfScope: [],
+                version: '1.0',
+                lastUpdated: '',
+                parseErrors: []
+            };
+
+            const errors = parser.validate(prd);
+            expect(errors).toContain('Feature F001: name is required');
+            expect(errors).toContain('Feature F001: at least one acceptance criterion is required');
+        });
+
+        it('Test 20p: should get current milestone', () => {
+            const parser = getPRDParser();
+            const prd = {
+                projectName: 'Project',
+                description: 'Desc',
+                targetAudience: [],
+                features: [],
+                milestones: [
+                    { id: 'M1', name: 'MVP', features: [], status: 'complete' as const },
+                    { id: 'M2', name: 'Beta', features: [], status: 'current' as const },
+                    { id: 'M3', name: 'Release', features: [], status: 'upcoming' as const }
+                ],
+                technicalRequirements: [],
+                successMetrics: [],
+                outOfScope: [],
+                version: '1.0',
+                lastUpdated: '',
+                parseErrors: []
+            };
+
+            const current = parser.getCurrentMilestone(prd);
+            expect(current).toBeDefined();
+            expect(current?.name).toBe('Beta');
+        });
+
+        it('Test 20q: should return undefined for no current milestone', () => {
+            const parser = getPRDParser();
+            const prd = {
+                projectName: 'Project',
+                description: 'Desc',
+                targetAudience: [],
+                features: [],
+                milestones: [
+                    { id: 'M1', name: 'Release', features: [], status: 'upcoming' as const }
+                ],
+                technicalRequirements: [],
+                successMetrics: [],
+                outOfScope: [],
+                version: '1.0',
+                lastUpdated: '',
+                parseErrors: []
+            };
+
+            const current = parser.getCurrentMilestone(prd);
+            expect(current).toBeUndefined();
+        });
+
+        it('Test 20r: should handle nonGoals alternate for outOfScope', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'NonGoals Project',
+                description: 'Testing nonGoals field',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                nonGoals: ['Not doing this', 'Out of scope item']
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.outOfScope).toContain('Not doing this');
+            expect(result.outOfScope).toContain('Out of scope item');
+        });
+
+        it('Test 20s: should parse milestones with various status values', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Status Project',
+                description: 'Testing milestone status',
+                features: [{ id: 'F001', name: 'Feature', description: 'Test' }],
+                milestones: [
+                    { id: 'M1', name: 'Done', features: [], status: 'completed' },
+                    { id: 'M2', name: 'Active', features: [], status: 'active' },
+                    { id: 'M3', name: 'InProgress', features: [], status: 'in_progress' },
+                    { id: 'M4', name: 'Future', features: [] }
+                ]
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.milestones[0].status).toBe('complete');
+            expect(result.milestones[1].status).toBe('current');
+            expect(result.milestones[2].status).toBe('current');
+            expect(result.milestones[3].status).toBe('upcoming');
+        });
+
+        it('Test 20t: should parse features with various status values', async () => {
+            mockFsExistsSync.mockReturnValue(true);
+            mockFsReadFileSync.mockReturnValue(JSON.stringify({
+                projectName: 'Feature Status Project',
+                description: 'Testing feature status',
+                features: [
+                    { id: 'F001', name: 'Completed', description: 'Test', status: 'completed' },
+                    { id: 'F002', name: 'Done', description: 'Test', status: 'done' },
+                    { id: 'F003', name: 'Started', description: 'Test', status: 'started' },
+                    { id: 'F004', name: 'InProgressDash', description: 'Test', status: 'in-progress' }
+                ]
+            }));
+
+            const parser = getPRDParser();
+            const result = await parser.parse('/test/PRD.json');
+
+            expect(result.features[0].status).toBe('complete');
+            expect(result.features[1].status).toBe('complete');
+            expect(result.features[2].status).toBe('in_progress');
+            expect(result.features[3].status).toBe('in_progress');
         });
     });
 

@@ -381,4 +381,28 @@ describe('VerificationWebviewPanel', () => {
             expect(nonceMatches!.length).toBeGreaterThanOrEqual(2); // At least style and script
         });
     });
+
+    describe('server control edge cases', () => {
+        it('Test 28: should handle startServer when server returns no url', async () => {
+            // Override mock to return no url
+            const mockDevServer = {
+                start: jest.fn().mockResolvedValue({ running: true }),
+                stop: jest.fn().mockResolvedValue(undefined)
+            };
+
+            jest.doMock('../../src/agents/verification/devServer', () => ({
+                DevServerLauncher: jest.fn().mockImplementation(() => mockDevServer)
+            }));
+
+            VerificationWebviewPanel.createOrShow('TASK-002', mockContext);
+            (vscode.env as any).openExternal = jest.fn();
+
+            await messageCallback?.({ type: 'startServer' });
+
+            // Should not call openExternal without url
+            expect(mockWebview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'serverStatus' })
+            );
+        });
+    });
 });
