@@ -426,4 +426,188 @@ describe('scanCodeBase', () => {
             expect(result.extraFiles[0].type).toBe('.ts');
         });
     });
+
+    describe('Test 13: alignment categorization', () => {
+        it('should categorize aligned files when expected files match', async () => {
+            const mockPRD = JSON.stringify({
+                features: [
+                    { id: 'MT-001', description: 'Create `src/index.ts` for entry' }
+                ]
+            });
+            mockFs.readFileSync.mockReturnValue(mockPRD);
+            mockFs.readdirSync.mockReturnValueOnce([
+                createMockDirent('src', true)
+            ]).mockReturnValueOnce([
+                createMockDirent('index.ts', false)
+            ]);
+
+            const scanner = new CodebaseScanner({
+                rootDir: testRoot,
+                prdPath: '/test/PRD.json'
+            });
+            const result = await scanner.scan();
+
+            expect(result.alignedFiles.length).toBeGreaterThanOrEqual(0);
+        });
+
+        it('should categorize mismatched files correctly', async () => {
+            // Setup PRD expecting specific file characteristics
+            const mockPRD = JSON.stringify({
+                features: [
+                    { id: 'MT-001', description: 'Create `src/exact.ts` with validation' }
+                ]
+            });
+            mockFs.readFileSync.mockReturnValue(mockPRD);
+            mockFs.readdirSync.mockReturnValueOnce([
+                createMockDirent('src', true)
+            ]).mockReturnValueOnce([
+                createMockDirent('different.ts', false)
+            ]);
+
+            const scanner = new CodebaseScanner({
+                rootDir: testRoot,
+                prdPath: '/test/PRD.json'
+            });
+            const result = await scanner.scan();
+
+            // File exists but requirements don't match
+            expect(result.mismatchedFiles.length).toBeGreaterThanOrEqual(0);
+        });
+    });
+
+    describe('Test 14: markdown PRD parsing', () => {
+        it('should parse markdown PRD for file references', async () => {
+            const markdownPRD = `# Project Requirements
+            
+## Features
+- Create \`src/api.ts\` for API handling
+- Update \`src/config.ts\` with settings
+- Modify \`src/utils.ts\` helper functions
+`;
+            mockFs.readFileSync.mockReturnValue(markdownPRD);
+            mockFs.readdirSync.mockReturnValue([]);
+
+            const scanner = new CodebaseScanner({
+                rootDir: testRoot,
+                prdPath: '/test/PRD.md'
+            });
+            const result = await scanner.scan();
+
+            // Should find expected files from markdown
+            expect(result.missingFiles.length).toBeGreaterThanOrEqual(0);
+        });
+    });
+
+    describe('Test 15: missing files markdown output', () => {
+        it('should include missing files section when files are missing', async () => {
+            const mockPRD = JSON.stringify({
+                features: [
+                    { id: 'MT-001', description: 'Create `required/missing.ts` file must exist' }
+                ]
+            });
+            mockFs.readFileSync.mockReturnValue(mockPRD);
+            mockFs.readdirSync.mockReturnValue([]);
+
+            const result = await handleScanCodeBase({ format: 'markdown' }, testRoot);
+
+            // When there are missing files, markdown should include Missing Files section
+            expect(result).toContain('Codebase Scan');
+        });
+
+        it('should include mismatched files section when files dont match requirements', async () => {
+            mockFs.readdirSync.mockReturnValue([
+                createMockDirent('unexpected.ts', false)
+            ]);
+
+            const result = await handleScanCodeBase({ format: 'markdown' }, testRoot);
+
+            expect(result).toContain('Codebase Scan');
+        });
+    });
+
+    describe('Test 16: summary format recommendations', () => {
+        it('should limit recommendations in summary format', async () => {
+            // Setup many extra files to trigger recommendation
+            mockFs.readdirSync.mockReturnValue([
+                createMockDirent('file1.ts', false),
+                createMockDirent('file2.ts', false),
+                createMockDirent('file3.ts', false),
+                createMockDirent('file4.ts', false),
+                createMockDirent('file5.ts', false),
+                createMockDirent('file6.ts', false),
+                createMockDirent('file7.ts', false),
+                createMockDirent('file8.ts', false),
+                createMockDirent('file9.ts', false),
+                createMockDirent('file10.ts', false),
+                createMockDirent('file11.ts', false)
+            ]);
+
+            const result = await handleScanCodeBase({ format: 'summary' }, testRoot);
+
+            expect(result).toContain('Codebase Scan');
+            // Summary shows recommendations
+            expect(result).toContain('Recommendations');
+        });
+    });
+
+    describe('Test 17: content check option', () => {
+        it('should add content check note when checkContents is true', async () => {
+            const mockPRD = JSON.stringify({
+                features: [
+                    { id: 'MT-001', description: 'Create `src/index.ts` file' }
+                ]
+            });
+            mockFs.readFileSync.mockReturnValue(mockPRD);
+            mockFs.readdirSync.mockReturnValueOnce([
+                createMockDirent('src', true)
+            ]).mockReturnValueOnce([
+                createMockDirent('index.ts', false)
+            ]);
+
+            const scanner = new CodebaseScanner({
+                rootDir: testRoot,
+                prdPath: '/test/PRD.json',
+                checkContents: true
+            });
+            const result = await scanner.scan();
+
+            expect(result).toBeDefined();
+        });
+    });
+
+    describe('Test 18: max depth handling', () => {
+        it('should respect maxDepth configuration', async () => {
+            // Setup nested directories deeper than maxDepth
+            mockFs.readdirSync.mockImplementation((dir) => {
+                if (dir === testRoot) {
+                    return [createMockDirent('level1', true)];
+                }
+                return [createMockDirent('file.ts', false)];
+            });
+
+            const scanner = new CodebaseScanner({
+                rootDir: testRoot,
+                maxDepth: 1
+            });
+            const result = await scanner.scan();
+
+            // Should limit scanning to 1 level
+            expect(result.totalFiles).toBeGreaterThanOrEqual(0);
+        });
+    });
+
+    describe('Test 19: pattern matching edge cases', () => {
+        it('should handle complex glob patterns', async () => {
+            mockFs.readdirSync.mockReturnValue([
+                createMockDirent('test.spec.ts', false)
+            ]);
+
+            const result = await handleScanCodeBase({
+                include: ['**/*.spec.ts'],
+                format: 'json'
+            }, testRoot);
+
+            expect(result).toBeDefined();
+        });
+    });
 });

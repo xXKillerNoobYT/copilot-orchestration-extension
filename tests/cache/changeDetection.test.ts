@@ -221,4 +221,205 @@ describe('Cache Change Detection', () => {
 
         expect(result).toBe(false);
     });
+
+    it('Test 9: should handle loadHashRegistry parse errors gracefully', () => {
+        const registryPath = path.join(context.extensionPath, '.coe', 'hash-registry.json');
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.readFileSync.mockImplementation(() => {
+            throw new Error('Read error');
+        });
+
+        const registry = changeDetection.loadHashRegistry(context);
+
+        expect(registry.files).toEqual([]);
+        expect(registry.version).toBe('1.0.0');
+    });
+
+    it('Test 10: should handle saveHashRegistry write errors', () => {
+        fsMock.writeFileSync.mockImplementation(() => {
+            throw new Error('Write error');
+        });
+
+        const result = changeDetection.saveHashRegistry(context, {
+            version: '1.0.0',
+            updatedAt: new Date().toISOString(),
+            files: [],
+        });
+
+        expect(result).toBe(false);
+    });
+
+    it('Test 11: should return false when registerFileHash cannot compute hash', () => {
+        // When readFileSync throws, computeFileHash returns null
+        fsMock.readFileSync.mockImplementation(() => {
+            throw new Error('Cannot read file');
+        });
+
+        const result = changeDetection.registerFileHash(context, '/bad-file.txt', ['hash-1']);
+
+        expect(result).toBe(false);
+    });
+
+    it('Test 12: should update existing file in registerFileHash', () => {
+        const registryPath = path.join(context.extensionPath, '.coe', 'hash-registry.json');
+        let calls = 0;
+        fsMock.existsSync.mockImplementation((target) => target === registryPath);
+        // First call for readFileSync reads the registry, second is for hash computation
+        fsMock.readFileSync.mockImplementation((target) => {
+            if (String(target) === registryPath) {
+                return JSON.stringify({
+                    version: '1.0.0',
+                    updatedAt: new Date().toISOString(),
+                    files: [
+                        {
+                            filePath: '/file.txt',
+                            hash: 'old-hash',
+                            computedAt: new Date().toISOString(),
+                            relatedCacheHashes: ['cache-old'],
+                        },
+                    ],
+                });
+            }
+            // File content read for hash
+            return Buffer.from('file content');
+        });
+        fsMock.writeFileSync.mockImplementation(() => undefined);
+
+        const result = changeDetection.registerFileHash(context, '/file.txt', ['cache-new']);
+
+        expect(result).toBe(true);
+        // Verify writeFileSync was called with updated registry
+        expect(fsMock.writeFileSync).toHaveBeenCalled();
+    });
+
+    it('Test 13: should handle registerFileHash exception in registry load', () => {
+        const registryPath = path.join(context.extensionPath, '.coe', 'hash-registry.json');
+        // First call succeeds for the file hash
+        let callCount = 0;
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.readFileSync.mockImplementation((target) => {
+            callCount++;
+            if (callCount === 1) {
+                // First call is in computeFileHash - return valid content
+                return Buffer.from('file content');
+            }
+            // Second call is in loadHashRegistry - throw error
+            throw new Error('Registry load failure');
+        });
+
+        const result = changeDetection.registerFileHash(context, '/file.txt', ['hash-1']);
+
+        // Should still succeed because loadHashRegistry handles errors gracefully
+        expect(result).toBe(true);
+    });
+
+    it('Test 14: should add hash compute failure to errors array in detectAndInvalidateChanges', async () => {
+        const registryPath = path.join(context.extensionPath, '.coe', 'hash-registry.json');
+        let readCount = 0;
+        fsMock.existsSync.mockImplementation((target) => {
+            if (target === registryPath) return true;
+            if (String(target).includes('exists.txt')) return true;
+            return false;
+        });
+        fsMock.readFileSync.mockImplementation((target) => {
+            readCount++;
+            if (String(target) === registryPath || readCount === 1) {
+                return JSON.stringify({
+                    version: '1.0.0',
+                    updatedAt: new Date().toISOString(),
+                    files: [
+                        {
+                            filePath: 'exists.txt',
+                            hash: 'old-hash',
+                            computedAt: new Date().toISOString(),
+                            relatedCacheHashes: [],
+                        },
+                    ],
+                });
+            }
+            // Fail hash computation
+            throw new Error('Cannot read for hash');
+        });
+
+        const result = await changeDetection.detectAndInvalidateChanges(context);
+
+        expect(result.errors).toContain('Failed to compute hash for exists.txt');
+    });
+
+    it('Test 15: should handle cache invalidation errors in detectAndInvalidateChanges', async () => {
+        const registryPath = path.join(context.extensionPath, '.coe', 'hash-registry.json');
+        fsMock.existsSync.mockImplementation((target) => {
+            if (target === registryPath) return true;
+            if (String(target).includes('changed.txt')) return true;
+            return false;
+        });
+        fsMock.readFileSync.mockImplementation((target) => {
+            if (String(target) === registryPath) {
+                return JSON.stringify({
+                    version: '1.0.0',
+                    updatedAt: new Date().toISOString(),
+                    files: [
+                        {
+                            filePath: 'changed.txt',
+                            hash: 'old-hash',
+                            computedAt: new Date().toISOString(),
+                            relatedCacheHashes: ['cache-fail'],
+                        },
+                    ],
+                });
+            }
+            // Return different content for hash computation to trigger "changed" state
+            return Buffer.from('different content');
+        });
+        fsMock.writeFileSync.mockImplementation(() => undefined);
+        deletePayloadMock.mockRejectedValue(new Error('Delete failed'));
+
+        const result = await changeDetection.detectAndInvalidateChanges(context);
+
+        expect(result.errors.some(e => e.includes('Failed to invalidate cache'))).toBe(true);
+        expect(result.success).toBe(false);
+    });
+
+    it('Test 16: should handle main exception in detectAndInvalidateChanges', async () => {
+        // The outer catch in detectAndInvalidateChanges catches errors after loadHashRegistry runs.
+        // loadHashRegistry has its own error handler, so we need to throw after it succeeds.
+        // We'll create a scenario where registry loads but iteration fails.
+        const registryPath = path.join(context.extensionPath, '.coe', 'hash-registry.json');
+        fsMock.existsSync.mockReturnValue(true);
+        
+        // Return a registry whose files property throws on iteration
+        const badRegistry = {
+            version: '1.0.0',
+            updatedAt: new Date().toISOString(),
+            files: null as unknown as Array<unknown>, // Will throw when trying to iterate
+        };
+        fsMock.readFileSync.mockReturnValue(JSON.stringify(badRegistry));
+
+        const result = await changeDetection.detectAndInvalidateChanges(context);
+
+        expect(result.success).toBe(false);
+        expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('Test 17: should return empty array when getTrackedFiles throws', () => {
+        // Make loadHashRegistry throw internally
+        fsMock.existsSync.mockImplementation(() => {
+            throw new Error('Load failure');
+        });
+
+        const tracked = changeDetection.getTrackedFiles(context);
+
+        expect(tracked).toEqual([]);
+    });
+
+    it('Test 18: should handle untrackFile exceptions', () => {
+        // Make loadHashRegistry throw
+        fsMock.existsSync.mockImplementation(() => {
+            throw new Error('Registry error');
+        });
+
+        const result = changeDetection.untrackFile(context, '/file.txt');
+
+        expect(result).toBe(false);
+    });
 });

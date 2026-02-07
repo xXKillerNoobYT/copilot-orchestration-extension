@@ -9,7 +9,8 @@ import {
     TaskQueuePersistence,
     deserializeTask,
     deserializeTasks,
-    getDefaultPersistencePath
+    getDefaultPersistencePath,
+    createDefaultPersistence
 } from '../../../src/services/taskQueue/persistence';
 import { Task, TaskQueueConfig } from '../../../src/services/taskQueue';
 
@@ -284,6 +285,180 @@ describe('persistence', () => {
             persistence.incrementTasksProcessed();
             persistence.incrementTasksProcessed();
             // Internal counter incremented (verified by snapshot if we save)
+        });
+
+        it('Test 15: should clear existing timer when starting new auto-save', () => {
+            jest.useFakeTimers();
+
+            const autoSavePersistence = new TaskQueuePersistence({
+                filePath: mockPath,
+                autoSaveInterval: 1000
+            });
+
+            const callback1 = jest.fn();
+            const callback2 = jest.fn();
+            
+            // Start first auto-save
+            autoSavePersistence.startAutoSave(callback1);
+            
+            // Start second auto-save (should clear first)
+            autoSavePersistence.startAutoSave(callback2);
+
+            jest.advanceTimersByTime(1000);
+            
+            // Only callback2 should be called (callback1's timer was cleared)
+            expect(callback1).not.toHaveBeenCalled();
+            expect(callback2).toHaveBeenCalledTimes(1);
+
+            autoSavePersistence.stopAutoSave();
+            jest.useRealTimers();
+        });
+    });
+
+    describe('version handling', () => {
+        it('Test 16: should warn when loading newer version snapshot', async () => {
+            const snapshot = {
+                version: 99, // Higher than CURRENT_VERSION (1)
+                timestamp: new Date().toISOString(),
+                config: { maxConcurrent: 3, defaultPriority: 3, autoStart: true },
+                tasks: [],
+                runningTasks: [],
+                sessionInfo: {
+                    startedAt: new Date().toISOString(),
+                    lastSaveAt: new Date().toISOString(),
+                    totalTasksProcessed: 0
+                }
+            };
+
+            (mockedFs.existsSync as jest.Mock).mockReturnValue(true);
+            (mockedFs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(snapshot));
+
+            const result = await persistence.load();
+
+            expect(result).toBeDefined();
+            expect(result?.version).toBe(99);
+            // Warning should have been logged
+        });
+    });
+
+    describe('atomic writes', () => {
+        it('Test 17: should use atomic writes when enabled', async () => {
+            const atomicPersistence = new TaskQueuePersistence({
+                filePath: mockPath,
+                atomicWrites: true,
+                maxBackups: 1
+            });
+
+            const tasks: Task[] = [{
+                id: 'task-1',
+                title: 'Test Task',
+                priority: 1,
+                dependencies: [],
+                status: 'pending',
+                createdAt: new Date()
+            }];
+            const config: TaskQueueConfig = {
+                maxConcurrent: 3,
+                defaultPriority: 3,
+                autoStart: true
+            };
+
+            (mockedFs.promises.mkdir as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.existsSync as jest.Mock).mockReturnValue(false); // No existing file
+            (mockedFs.promises.rename as jest.Mock).mockResolvedValue(undefined);
+
+            await atomicPersistence.save(tasks, [], config);
+
+            // Should write to temp file
+            expect(mockedFs.promises.writeFile).toHaveBeenCalledWith(
+                expect.stringContaining('.tmp'),
+                expect.any(String),
+                'utf-8'
+            );
+            // Should rename temp to final
+            expect(mockedFs.promises.rename).toHaveBeenCalled();
+        });
+
+        it('Test 18: should rotate backups when existing file exists', async () => {
+            const atomicPersistence = new TaskQueuePersistence({
+                filePath: mockPath,
+                atomicWrites: true,
+                maxBackups: 2
+            });
+
+            const tasks: Task[] = [{
+                id: 'task-1',
+                title: 'Test Task',
+                priority: 1,
+                dependencies: [],
+                status: 'pending',
+                createdAt: new Date()
+            }];
+            const config: TaskQueueConfig = {
+                maxConcurrent: 3,
+                defaultPriority: 3,
+                autoStart: true
+            };
+
+            (mockedFs.promises.mkdir as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.promises.rename as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.promises.unlink as jest.Mock).mockResolvedValue(undefined);
+            
+            // Mock existing file and backup files
+            (mockedFs.existsSync as jest.Mock).mockImplementation((p: string) => {
+                // File exists for main file and backup.1
+                return p === mockPath || p === `${mockPath}.bak.1` || p === `${mockPath}.bak.2`;
+            });
+
+            await atomicPersistence.save(tasks, [], config);
+
+            // Should have deleted oldest backup (bak.2)
+            expect(mockedFs.promises.unlink).toHaveBeenCalledWith(`${mockPath}.bak.2`);
+            // Should have renamed bak.1 to bak.2
+            expect(mockedFs.promises.rename).toHaveBeenCalledWith(
+                `${mockPath}.bak.1`,
+                `${mockPath}.bak.2`
+            );
+            // Should have renamed main file to bak.1
+            expect(mockedFs.promises.rename).toHaveBeenCalledWith(
+                mockPath,
+                `${mockPath}.bak.1`
+            );
+        });
+
+        it('Test 19: should skip backup rotation when maxBackups is 0', async () => {
+            const noBackupPersistence = new TaskQueuePersistence({
+                filePath: mockPath,
+                atomicWrites: true,
+                maxBackups: 0
+            });
+
+            const tasks: Task[] = [];
+            const config: TaskQueueConfig = {
+                maxConcurrent: 3,
+                defaultPriority: 3,
+                autoStart: true
+            };
+
+            (mockedFs.promises.mkdir as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.promises.rename as jest.Mock).mockResolvedValue(undefined);
+            (mockedFs.existsSync as jest.Mock).mockReturnValue(true); // File exists
+
+            await noBackupPersistence.save(tasks, [], config);
+
+            // Should NOT unlink any backups
+            expect(mockedFs.promises.unlink).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('createDefaultPersistence', () => {
+        it('Test 20: should create persistence with default options', () => {
+            const result = createDefaultPersistence('/workspace');
+
+            expect(result).toBeInstanceOf(TaskQueuePersistence);
         });
     });
 });

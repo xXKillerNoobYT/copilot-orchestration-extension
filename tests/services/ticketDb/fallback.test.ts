@@ -53,6 +53,7 @@ import {
     loadRecoveryTickets,
     hasUsableRecovery,
     resetRecoveryManagerForTests,
+    getRecoveryManager,
 } from '../../../src/services/ticketDb/recovery';
 
 // ─── MT-008.8: Error Tickets Module ──────────────────────────────────────
@@ -831,6 +832,89 @@ describe('Fallback & Persistence (MT-008)', () => {
 
             expect(monitor.isActive()).toBe(true);
             monitor.stop();
+        });
+
+        it('Test 66: should perform final save on stop', async () => {
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.writeFileSync.mockReturnValue(undefined);
+            mockFs.renameSync.mockReturnValue(undefined);
+
+            const manager = new RecoveryManager({
+                autoSaveEnabled: false,
+                recoveryPath: '/path/recovery.json',
+            });
+            const tickets = [{ id: 'TK-0001', title: 'Test' }];
+            manager.start(() => tickets);
+
+            // No saves yet
+            expect(manager.getStats().saveCount).toBe(0);
+
+            // stop() should trigger a final save
+            await manager.stop();
+
+            // Final save should have happened
+            expect(manager.getStats().saveCount).toBe(1);
+        });
+
+        it('Test 67: should return false when saveNow called without starting', async () => {
+            const manager = new RecoveryManager({ autoSaveEnabled: false });
+            // Don't call start()
+
+            const result = await manager.saveNow();
+
+            expect(result).toBe(false);
+        });
+
+        it('Test 68: should handle ticketProvider throwing error', async () => {
+            mockFs.existsSync.mockReturnValue(true);
+
+            const manager = new RecoveryManager({
+                autoSaveEnabled: false,
+                recoveryPath: '/path/recovery.json',
+            });
+            // Provider that throws
+            manager.start(() => {
+                throw new Error('Provider crashed');
+            });
+
+            const result = await manager.saveNow();
+
+            expect(result).toBe(false);
+            await manager.stop();
+        });
+
+        it('Test 69: should return null when loadRecovery has no data', () => {
+            mockFs.existsSync.mockReturnValue(false);
+
+            const manager = new RecoveryManager({ recoveryPath: '/path/recovery.json' });
+            const snapshot = manager.loadRecovery();
+
+            expect(snapshot).toBeNull();
+        });
+
+        it('Test 70: should return singleton from getRecoveryManager', () => {
+            resetRecoveryManagerForTests();
+
+            const manager1 = getRecoveryManager();
+            const manager2 = getRecoveryManager();
+
+            expect(manager1).toBe(manager2);
+        });
+
+        it('Test 71: should allow config on first getRecoveryManager call', () => {
+            resetRecoveryManagerForTests();
+
+            const manager = getRecoveryManager({ recoveryPath: '/custom/path.json' });
+
+            expect(manager.getRecoveryPath()).toBe('/custom/path.json');
+        });
+
+        it('Test 72: should reset singleton with resetRecoveryManagerForTests', () => {
+            const manager1 = getRecoveryManager();
+            resetRecoveryManagerForTests();
+            const manager2 = getRecoveryManager();
+
+            expect(manager1).not.toBe(manager2);
         });
     });
 });

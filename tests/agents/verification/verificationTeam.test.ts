@@ -13,7 +13,9 @@ import {
     MochaParser,
     VitestParser,
     formatTestResults,
-    TestStatus
+    TestStatus,
+    getParser,
+    registerParser
 } from '../../../src/agents/verification/testParsers';
 
 import {
@@ -241,6 +243,108 @@ All files | 85.5 | 80 | 90 | 85
                 expect(formatted).toContain('FAILED');
                 expect(formatted).toContain('Passed: 5');
                 expect(formatted).toContain('Failed: 2');
+            });
+
+            it('shows skipped tests in output', () => {
+                const result = parseTestOutput('PASS src/test.ts\nTests: 5 passed, 7 total\n2 skipped\nTime: 2s');
+                const formatted = formatTestResults(result);
+
+                expect(formatted).toContain('Skipped');
+            });
+
+            it('shows pending tests in output', () => {
+                // Create a custom result with pending tests
+                const result = parseTestOutput('PASS src/test.ts\nTests: 5 passed, 7 total\nTime: 2s');
+                result.summary.pending = 2;
+                const formatted = formatTestResults(result);
+
+                expect(formatted).toContain('Pending');
+            });
+
+            it('shows coverage percentage', () => {
+                const result = parseTestOutput('PASS src/test.ts\nTests: 5 passed, 5 total\nTime: 2s\nAll files | 85.5 | 80 | 90 | 85');
+                const formatted = formatTestResults(result);
+
+                expect(formatted).toContain('Coverage');
+            });
+        });
+
+        describe('VitestParser extended', () => {
+            const parser = new VitestParser();
+
+            it('parses Vitest output correctly', () => {
+                const output = 'VITEST v1.0.0\nTests: 3 passed, 3 total\nTime: 1.5s';
+                const result = parser.parse(output);
+
+                expect(result.framework).toBe('vitest');
+                expect(result.summary.passed).toBe(3);
+            });
+        });
+
+        describe('MochaParser extended', () => {
+            const parser = new MochaParser();
+
+            it('parses pending tests', () => {
+                const output = `
+  MyTest
+    ✓ should work
+    - should be pending
+
+  1 passing
+  1 pending
+`;
+                const result = parser.parse(output);
+                expect(result.summary.pending).toBe(1);
+            });
+
+            it('parses error details for failures', () => {
+                const output = `
+  MyTest
+    ✗ should work
+
+  1 failing
+
+  1) MyTest should work:
+     Expected true to be false
+     at Object.<anonymous> (test/my.test.ts:15:10)
+`;
+                const result = parser.parse(output);
+                // Parser finds failures from both the checkmark pattern and error details
+                expect(result.failures.length).toBeGreaterThanOrEqual(1);
+            });
+        });
+
+        describe('Parser utilities', () => {
+            it('getParser returns parser by name', () => {
+                const jestParser = getParser('jest');
+                expect(jestParser).not.toBeNull();
+                expect(jestParser?.name).toBe('jest');
+            });
+
+            it('getParser returns null for unknown parser', () => {
+                const unknownParser = getParser('unknown-parser');
+                expect(unknownParser).toBeNull();
+            });
+
+            it('registerParser adds custom parser', () => {
+                const customParser = {
+                    name: 'custom',
+                    canParse: (output: string) => output.includes('CUSTOM'),
+                    parse: (output: string) => ({
+                        framework: 'unknown' as const,
+                        success: true,
+                        summary: { total: 0, passed: 0, failed: 0, skipped: 0, pending: 0 },
+                        suites: [],
+                        failures: [],
+                        durationMs: 0,
+                        rawOutput: output
+                    })
+                };
+                registerParser(customParser);
+
+                // After registration, custom parser should match
+                const customResult = getParser('custom');
+                expect(customResult).not.toBeNull();
             });
         });
     });

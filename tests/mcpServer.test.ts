@@ -11,11 +11,19 @@
 
 import { MCPServer } from '../src/mcpServer/server';
 import * as orchestrator from '../src/services/orchestrator';
+import * as reportTaskDoneTool from '../src/mcpServer/tools/reportTaskDone';
+import * as askQuestionTool from '../src/mcpServer/tools/askQuestion';
+import * as getErrorsTool from '../src/mcpServer/tools/getErrors';
 import { Readable, Writable } from 'stream';
 import { EventEmitter } from 'events';
 
 // Mock the orchestrator module
 jest.mock('../src/services/orchestrator');
+
+// Mock the tool modules
+jest.mock('../src/mcpServer/tools/reportTaskDone');
+jest.mock('../src/mcpServer/tools/askQuestion');
+jest.mock('../src/mcpServer/tools/getErrors');
 
 // Mock the logger module
 jest.mock('../src/logger', () => ({
@@ -26,6 +34,9 @@ jest.mock('../src/logger', () => ({
 
 // Cast mocks to typed versions
 const mockOrchestrator = orchestrator as jest.Mocked<typeof orchestrator>;
+const mockReportTaskDone = reportTaskDoneTool as jest.Mocked<typeof reportTaskDoneTool>;
+const mockAskQuestion = askQuestionTool as jest.Mocked<typeof askQuestionTool>;
+const mockGetErrors = getErrorsTool as jest.Mocked<typeof getErrorsTool>;
 
 describe('MCP Server', () => {
     let mockInputStream: Readable;
@@ -557,6 +568,269 @@ describe('MCP Server', () => {
             await new Promise(resolve => setTimeout(resolve, 50));
 
             expect(mockOrchestrator.routeToVerificationAgent).toHaveBeenCalledWith('Verification', '+ test: true');
+        });
+    });
+
+    describe('reportTaskDone Tool', () => {
+        beforeEach(() => {
+            mockReportTaskDone.validateReportTaskDoneParams.mockReturnValue({ isValid: true });
+            mockReportTaskDone.handleReportTaskDone.mockResolvedValue({
+                success: true,
+                taskId: 'TICKET-1',
+                status: 'done',
+                message: 'Task completed successfully'
+            });
+        });
+
+        it('should handle valid reportTaskDone request', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'reportTaskDone',
+                params: {
+                    ticketId: 'TICKET-1',
+                    status: 'done',
+                    summary: 'Task completed successfully'
+                },
+                id: 1
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockReportTaskDone.handleReportTaskDone).toHaveBeenCalledWith(request.params);
+            expect(outputData.length).toBe(1);
+            const response = JSON.parse(outputData[0]);
+            expect(response.result.success).toBe(true);
+        });
+
+        it('should return error for invalid reportTaskDone params', async () => {
+            mockReportTaskDone.validateReportTaskDoneParams.mockReturnValue({
+                isValid: false,
+                error: 'Missing ticketId'
+            });
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'reportTaskDone',
+                params: {},
+                id: 2
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.code).toBe(-32602);
+            expect(response.error.message).toContain('Invalid parameters');
+        });
+
+        it('should return error when reportTaskDone fails', async () => {
+            mockReportTaskDone.handleReportTaskDone.mockResolvedValue({
+                success: false,
+                taskId: 'TICKET-999',
+                status: 'failed',
+                message: 'Failed',
+                error: { code: 'NOT_FOUND', message: 'Ticket not found' }
+            });
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'reportTaskDone',
+                params: {
+                    ticketId: 'TICKET-999',
+                    status: 'done'
+                },
+                id: 3
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.code).toBe(-32603);
+            expect(response.error.message).toContain('Ticket not found');
+        });
+    });
+
+    describe('askQuestion Tool', () => {
+        beforeEach(() => {
+            mockAskQuestion.validateAskQuestionParams.mockReturnValue({ isValid: true });
+            mockAskQuestion.handleAskQuestion.mockResolvedValue({
+                success: true,
+                answer: 'Here is the answer...'
+            });
+        });
+
+        it('should handle valid askQuestion request', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'askQuestion',
+                params: {
+                    question: 'How does deduplication work?'
+                },
+                id: 1
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockAskQuestion.handleAskQuestion).toHaveBeenCalledWith(request.params);
+            const response = JSON.parse(outputData[0]);
+            expect(response.result.success).toBe(true);
+        });
+
+        it('should return error for invalid askQuestion params', async () => {
+            mockAskQuestion.validateAskQuestionParams.mockReturnValue({
+                isValid: false,
+                error: 'Missing question'
+            });
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'askQuestion',
+                params: {},
+                id: 2
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.code).toBe(-32602);
+        });
+
+        it('should return error when askQuestion fails', async () => {
+            mockAskQuestion.handleAskQuestion.mockResolvedValue({
+                success: false,
+                error: { code: 'LLM_ERROR', message: 'LLM unavailable' }
+            });
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'askQuestion',
+                params: { question: 'Test' },
+                id: 3
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.message).toContain('LLM unavailable');
+        });
+    });
+
+    describe('getErrors Tool', () => {
+        beforeEach(() => {
+            mockGetErrors.validateGetErrorsParams.mockReturnValue({ isValid: true });
+            mockGetErrors.handleGetErrors.mockResolvedValue({
+                success: true,
+                diagnostics: {
+                    typeScriptErrors: [],
+                    skippedTests: [],
+                    underCoverageFiles: [],
+                    timestamp: new Date().toISOString(),
+                    source: 'test'
+                }
+            });
+        });
+
+        it('should handle valid getErrors request', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'getErrors',
+                params: {
+                    filePattern: 'src/**/*.ts'
+                },
+                id: 1
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockGetErrors.handleGetErrors).toHaveBeenCalledWith(request.params);
+            const response = JSON.parse(outputData[0]);
+            expect(response.result).toBeDefined();
+        });
+
+        it('should handle getErrors request without params', async () => {
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'getErrors',
+                id: 2
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockGetErrors.handleGetErrors).toHaveBeenCalledWith(undefined);
+        });
+
+        it('should return error for invalid getErrors params', async () => {
+            mockGetErrors.validateGetErrorsParams.mockReturnValue({
+                isValid: false,
+                error: 'Invalid file pattern'
+            });
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'getErrors',
+                params: { invalidField: true },
+                id: 3
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.code).toBe(-32602);
+        });
+
+        it('should return error when getErrors fails', async () => {
+            mockGetErrors.handleGetErrors.mockResolvedValue({
+                success: false,
+                diagnostics: null,
+                error: { code: 'SCAN_ERROR', message: 'Failed to scan files' }
+            });
+
+            mcpServer.start();
+
+            const request = {
+                jsonrpc: '2.0',
+                method: 'getErrors',
+                params: {},
+                id: 4
+            };
+
+            mockInputStream.push(JSON.stringify(request));
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const response = JSON.parse(outputData[0]);
+            expect(response.error).toBeDefined();
+            expect(response.error.message).toContain('Failed to scan files');
         });
     });
 });
