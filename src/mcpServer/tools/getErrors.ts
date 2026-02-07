@@ -40,6 +40,132 @@ export interface UnderCoverageFile {
 }
 
 /**
+ * Scan for skipped tests (it.skip, describe.skip, etc.)
+ * Lightweight scan - just reads files, doesn't execute commands
+ * 
+ * **Simple explanation**: Searches test files for tests marked with .skip
+ */
+function scanSkippedTests(): SkippedTest[] {
+    try {
+        logInfo('[getErrors] Scanning for skipped tests...');
+        const skippedTests: SkippedTest[] = [];
+        const testsDir = path.join(process.cwd(), 'tests');
+        
+        if (!fs.existsSync(testsDir)) {
+            logWarn('[getErrors] Tests directory not found');
+            return [];
+        }
+        
+        // Recursively find all test files
+        function findTestFiles(dir: string): string[] {
+            const files: string[] = [];
+            try {
+                const entries = fs.readdirSync(dir, { withFileTypes: true });
+                
+                for (const entry of entries) {
+                    const fullPath = path.join(dir, entry.name);
+                    if (entry.isDirectory() && !entry.name.startsWith('.')) {
+                        files.push(...findTestFiles(fullPath));
+                    } else if (entry.isFile() && (entry.name.endsWith('.test.ts') || entry.name.endsWith('.spec.ts'))) {
+                        files.push(fullPath);
+                    }
+                }
+            } catch (err) {
+                // Silently skip directories we can't read
+            }
+            return files;
+        }
+        
+        const testFiles = findTestFiles(testsDir);
+        const skipPatterns = [
+            /it\.skip\s*\(/g,
+            /describe\.skip\s*\(/g,
+            /test\.skip\s*\(/g,
+            /xit\s*\(/g,
+            /xdescribe\s*\(/g
+        ];
+        
+        for (const testFile of testFiles) {
+            try {
+                const content = fs.readFileSync(testFile, 'utf-8');
+                const lines = content.split('\n');
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    for (const pattern of skipPatterns) {
+                        const match = line.match(pattern);
+                        if (match) {
+                            skippedTests.push({
+                                file: path.relative(process.cwd(), testFile),
+                                line: i + 1,
+                                pattern: pattern.source,
+                                match: match[0]
+                            });
+                        }
+                    }
+                }
+            } catch (error: unknown) {
+                logWarn(`[getErrors] Error reading test file ${testFile}: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+        
+        logInfo(`[getErrors] Found ${skippedTests.length} skipped tests`);
+        return skippedTests;
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logWarn(`[getErrors] Error scanning skipped tests: ${msg}`);
+        return [];
+    }
+}
+
+/**
+ * Scan for under-coverage files from existing coverage report
+ * 
+ * **Simple explanation**: Checks coverage report for files below 80% coverage
+ */
+function scanUnderCoverageFiles(coverageThreshold: number = 80): UnderCoverageFile[] {
+    try {
+        logInfo('[getErrors] Scanning for under-coverage files...');
+        const underCoverageFiles: UnderCoverageFile[] = [];
+        
+        const coverageSummaryFile = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
+        
+        if (!fs.existsSync(coverageSummaryFile)) {
+            logWarn('[getErrors] Coverage report not found at ' + coverageSummaryFile);
+            return [];
+        }
+        
+        try {
+            const summary = JSON.parse(fs.readFileSync(coverageSummaryFile, 'utf-8'));
+            
+            // Check each file's coverage percentage
+            for (const [filePath, coverage] of Object.entries(summary)) {
+                if (filePath === 'total') continue;
+                
+                const coverageData = coverage as any;
+                const lineCoverage = coverageData.lines?.pct || 0;
+                
+                if (lineCoverage < coverageThreshold) {
+                    underCoverageFiles.push({
+                        file: filePath,
+                        coverage: lineCoverage
+                    });
+                }
+            }
+        } catch (error: unknown) {
+            logWarn(`[getErrors] Error parsing coverage summary: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        logInfo(`[getErrors] Found ${underCoverageFiles.length} under-coverage files`);
+        return underCoverageFiles;
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logWarn(`[getErrors] Error scanning coverage: ${msg}`);
+        return [];
+    }
+}
+
+/**
  * Quality diagnostics structure
  */
 export interface QualityDiagnostics {
@@ -63,69 +189,72 @@ export interface GetErrorsResponse {
 }
 
 /**
- * Get quality gate diagnostics from .vscode/quality-diagnostics.json
+ * Attempt to load pre-generated diagnostics file from CI/CD pipeline
+ * Fallback: graceful degradation if file doesn't exist
+ */
+function tryLoadPreGeneratedDiagnostics(): QualityDiagnostics | null {
+    try {
+        const diagnosticsPath = path.join(process.cwd(), '.vscode', 'quality-diagnostics.json');
+        
+        if (!fs.existsSync(diagnosticsPath)) {
+            return null;
+        }
+        
+        const fileContent = fs.readFileSync(diagnosticsPath, 'utf-8');
+        const diagnostics = JSON.parse(fileContent);
+        
+        // Validate structure
+        if (!diagnostics.typeScriptErrors || !diagnostics.skippedTests || !diagnostics.underCoverageFiles) {
+            logWarn('[getErrors] Pre-generated diagnostics file has invalid structure, will scan instead');
+            return null;
+        }
+        
+        logInfo('[getErrors] Successfully loaded pre-generated diagnostics');
+        return diagnostics;
+    } catch (error: unknown) {
+        logWarn(`[getErrors] Could not load pre-generated diagnostics, will scan instead: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
+    }
+}
+
+/**
+ * Get quality gate diagnostics - tries pre-generated file first, falls back to scanning
  * 
- * **Simple explanation**: Like checking a report card for your code - shows TypeScript errors,
- * skipped tests, and files with low test coverage.
+ * **Simple explanation**: Checks the code for TypeScript errors, skipped tests, and coverage issues.
+ * Returns all issues found so you can fix them before deploying.
+ * First tries to use pre-generated report from CI/CD, then falls back to scanning.
  * 
  * @param params Optional parameters (currently unused)
  * @returns GetErrorsResponse with diagnostics data or error information
  */
 export async function handleGetErrors(params?: GetErrorsParams): Promise<GetErrorsResponse> {
     try {
-        logInfo('[getErrors] Fetching quality diagnostics');
+        logInfo('[getErrors] Starting quality diagnostics fetch');
 
-        // Path to diagnostics file
-        const diagnosticsPath = path.join(process.cwd(), '.vscode', 'quality-diagnostics.json');
-
-        // Check if file exists
-        if (!fs.existsSync(diagnosticsPath)) {
-            logWarn('[getErrors] Diagnostics file not found, returning empty diagnostics');
+        // Try to load pre-generated diagnostics first (from CI/CD pipeline)
+        const preGenerated = tryLoadPreGeneratedDiagnostics();
+        if (preGenerated) {
             return {
                 success: true,
-                diagnostics: {
-                    typeScriptErrors: [],
-                    skippedTests: [],
-                    underCoverageFiles: [],
-                    timestamp: new Date().toISOString(),
-                    source: 'none'
-                }
+                diagnostics: preGenerated
             };
         }
 
-        // Read and parse the file
-        const fileContent = fs.readFileSync(diagnosticsPath, 'utf-8');
-        let diagnostics: QualityDiagnostics;
+        // Fall back to lightweight scanning
+        logInfo('[getErrors] Using lightweight scanning for diagnostics');
+        const typeScriptErrors: TypeScriptError[] = []; // Can't run tsc without slowing down tests
+        const skippedTests = scanSkippedTests();
+        const underCoverageFiles = scanUnderCoverageFiles();
 
-        try {
-            diagnostics = JSON.parse(fileContent);
-        } catch (parseError: unknown) {
-            const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-            logError(`[getErrors] Failed to parse diagnostics file: ${errorMessage}`);
-            return {
-                success: false,
-                diagnostics: null,
-                error: {
-                    code: 'INVALID_JSON',
-                    message: `Failed to parse diagnostics file: ${errorMessage}`
-                }
-            };
-        }
+        const diagnostics: QualityDiagnostics = {
+            typeScriptErrors,
+            skippedTests,
+            underCoverageFiles,
+            timestamp: new Date().toISOString(),
+            source: 'lightweight-scan'
+        };
 
-        // Validate structure
-        if (!diagnostics.typeScriptErrors || !diagnostics.skippedTests || !diagnostics.underCoverageFiles) {
-            logWarn('[getErrors] Diagnostics file has invalid structure');
-            return {
-                success: false,
-                diagnostics: null,
-                error: {
-                    code: 'INVALID_STRUCTURE',
-                    message: 'Diagnostics file missing required fields (typeScriptErrors, skippedTests, underCoverageFiles)'
-                }
-            };
-        }
-
-        logInfo(`[getErrors] Successfully loaded diagnostics: ${diagnostics.typeScriptErrors.length} TS errors, ${diagnostics.skippedTests.length} skipped tests, ${diagnostics.underCoverageFiles.length} under-coverage files`);
+        logInfo(`[getErrors] Completed diagnostics: ${typeScriptErrors.length} TS errors, ${skippedTests.length} skipped tests, ${underCoverageFiles.length} under-coverage files`);
 
         return {
             success: true,

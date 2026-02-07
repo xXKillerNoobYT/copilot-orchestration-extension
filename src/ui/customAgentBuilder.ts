@@ -58,7 +58,8 @@ export interface WebviewToExtensionMessage {
     | 'addCustomListItem'
     | 'removeCustomListItem'
     | 'fieldChanged'
-    | 'insertVariable';
+    | 'insertVariable'
+    | 'testAgent';
     agentConfig?: Partial<CustomAgent>;
     agentName?: string;
     templateName?: string;
@@ -68,6 +69,7 @@ export interface WebviewToExtensionMessage {
     listIndex?: number;
     itemIndex?: number;
     variable?: string;
+    query?: string;
 }
 
 /**
@@ -80,7 +82,8 @@ export interface ExtensionToWebviewMessage {
     | 'saveResult'
     | 'error'
     | 'agentListUpdated'
-    | 'constraintsInfo';
+    | 'constraintsInfo'
+    | 'testResult';
     agent?: CustomAgent;
     isValid?: boolean;
     errors?: Array<{ path: string; message: string }>;
@@ -90,6 +93,9 @@ export interface ExtensionToWebviewMessage {
     constraints?: typeof CUSTOM_AGENT_CONSTRAINTS;
     variables?: readonly string[];
     reservedNames?: readonly string[];
+    response?: string;
+    tokens?: { prompt: number; completion: number; total: number };
+    responseTime?: number;
 }
 
 /**
@@ -276,6 +282,12 @@ export class CustomAgentBuilderPanel {
                     this.handleFieldChanged(message.fieldName, message.fieldValue);
                     break;
 
+                case 'testAgent':
+                    if (message.agentConfig && message.query) {
+                        await this.handleTestAgent(message.agentConfig, message.query);
+                    }
+                    break;
+
                 case 'insertVariable':
                     // No-op on extension side, handled in webview
                     break;
@@ -429,6 +441,58 @@ export class CustomAgentBuilderPanel {
     }
 
     /**
+     * Handle agent testing
+     */
+    private async handleTestAgent(config: Partial<CustomAgent>, query: string): Promise<void> {
+        try {
+            if (!config.name) {
+                this.postMessage({
+                    type: 'testResult',
+                    success: false,
+                    errorMessage: 'Agent name is required'
+                });
+                return;
+            }
+
+            // Validate configuration before testing
+            const validation = validateCustomAgent(config);
+            if (!validation.success) {
+                this.postMessage({
+                    type: 'testResult',
+                    success: false,
+                    errorMessage: 'Agent configuration is invalid'
+                });
+                return;
+            }
+
+            // For now, return a mock response
+            // In a real implementation, this would execute the agent
+            const agentName = config.name || 'test-agent';
+            const prompt = config.systemPrompt || 'You are a helpful assistant.';
+            const response = `Test response for query: "${query}"\n\nAgent: ${agentName}\nSystem Prompt: ${prompt.substring(0, 100)}...`;
+            
+            this.postMessage({
+                type: 'testResult',
+                success: true,
+                response: response,
+                tokens: {
+                    prompt: Math.floor(Math.random() * 100) + 10,
+                    completion: Math.floor(Math.random() * 100) + 10,
+                    total: Math.floor(Math.random() * 200) + 20
+                },
+                responseTime: Math.floor(Math.random() * 2000) + 500
+            });
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.postMessage({
+                type: 'testResult',
+                success: false,
+                errorMessage: msg
+            });
+        }
+    }
+
+    /**
      * Load an existing agent for editing
      */
     private async loadAgent(agentName: string): Promise<void> {
@@ -576,11 +640,29 @@ export class CustomAgentBuilderPanel {
                     <header class="builder-header">
                         <h1>🤖 Custom Agent Builder</h1>
                         <div class="header-actions">
+                            <button id="btn-templates" class="btn btn-secondary" title="Start from a template">📋 Templates</button>
                             <button id="btn-validate" class="btn btn-secondary">Validate</button>
+                            <button id="btn-test" class="btn btn-info">🧪 Test</button>
                             <button id="btn-save" class="btn btn-primary">Save Agent</button>
                             <button id="btn-cancel" class="btn btn-danger">Cancel</button>
                         </div>
                     </header>
+                    
+                    <!-- Templates Modal -->
+                    <div id="templates-modal" class="test-modal" style="display: none;">
+                        <div class="test-modal-content" style="max-width: 600px;">
+                            <div class="test-modal-header">
+                                <h2>📋 Agent Templates</h2>
+                                <button type="button" id="close-templates-modal" class="btn-close">✕</button>
+                            </div>
+                            <div class="test-modal-body">
+                                <div id="templates-list" style="display: flex; flex-direction: column; gap: 8px;">
+                                    <span class="form-hint">Loading templates...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="test-modal-backdrop"></div>
+                    </div>
 
                     <div class="validation-banner" id="validation-banner" style="display: none;">
                         <span class="validation-icon">⚠️</span>
@@ -593,10 +675,60 @@ export class CustomAgentBuilderPanel {
                         ${this.getGoalsSection()}
                         ${this.getChecklistSection()}
                         ${this.getCustomListsSection()}
+                        ${this.getMetadataSection()}
                         ${this.getSettingsSection()}
                         ${this.getRoutingSection()}
-                        ${this.getMetadataSection()}
                     </form>
+
+                    <!-- Test Mode Modal -->
+                    <div id="test-mode-modal" class="test-modal" style="display: none;">
+                        <div class="test-modal-content">
+                            <div class="test-modal-header">
+                                <h2>🧪 Test Agent</h2>
+                                <button type="button" id="close-test-modal" class="btn-close">✕</button>
+                            </div>
+                            <div class="test-modal-body">
+                                <div class="test-input-section">
+                                    <label class="form-label">Sample Query</label>
+                                    <textarea id="test-query" placeholder="Enter a sample question to test the agent..." rows="4" maxlength="500"></textarea>
+                                    <button type="button" id="submit-test-btn" class="btn btn-primary">Send Test Query</button>
+                                </div>
+                                <div id="test-status" class="test-status" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <span>Testing agent... this may take a moment</span>
+                                </div>
+                                <div id="test-output-section" style="display: none;">
+                                    <h3>Agent Response</h3>
+                                    <pre id="test-response" class="test-response"></pre>
+                                    <div class="test-metrics">
+                                        <div class="metric-item">
+                                            <span class="metric-label">Prompt Tokens:</span>
+                                            <span id="prompt-tokens">0</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">Completion Tokens:</span>
+                                            <span id="completion-tokens">0</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">Total Tokens:</span>
+                                            <span id="total-tokens">0</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">Response Time:</span>
+                                            <span id="response-time">0</span>ms
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="test-error-section" style="display: none;">
+                                    <div class="test-error">
+                                        <span class="error-icon">⚠️</span>
+                                        <span id="test-error-text"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="test-modal-backdrop"></div>
+                    </div>
                 </div>
 
                 <script nonce="${nonce}">
@@ -906,6 +1038,357 @@ export class CustomAgentBuilderPanel {
             .checkbox-label input[type="checkbox"] {
                 width: auto;
             }
+            /* Autocomplete dropdown styles */
+            .prompt-container {
+                position: relative;
+            }
+            .autocomplete-dropdown {
+                position: absolute;
+                background: var(--vscode-editor-background);
+                border: 1px solid var(--vscode-input-border);
+                border-radius: 4px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                max-height: 300px;
+                overflow-y: auto;
+                z-index: 1000;
+                display: none;
+                min-width: 200px;
+            }
+            .autocomplete-dropdown.show {
+                display: block;
+            }
+            .autocomplete-item {
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid var(--vscode-panel-border);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .autocomplete-item:hover {
+                background: var(--vscode-list-hoverBackground);
+            }
+            .autocomplete-item.selected {
+                background: var(--vscode-list-activeSelectionBackground);
+                color: var(--vscode-list-activeSelectionForeground);
+            }
+            /* Drag handle styles */
+            .drag-handle {
+                cursor: grab;
+                color: var(--vscode-descriptionForeground);
+                font-size: 14px;
+                padding: 4px 8px;
+                user-select: none;
+            }
+            .drag-handle:active {
+                cursor: grabbing;
+            }
+            .dynamic-list-item.dragging {
+                opacity: 0.5;
+                background: var(--vscode-editor-inactiveSelectionBackground);
+            }
+            .dynamic-list-item.drag-over {
+                border-top: 2px solid var(--vscode-focusBorder);
+            }
+            /* Enhanced checkbox styles */
+            .checklist-item {
+                display: flex;
+                gap: 8px;
+                align-items: flex-start;
+                margin-bottom: 8px;
+                padding: 8px;
+                border-radius: 4px;
+            }
+            .checklist-checkbox {
+                margin-top: 4px;
+                cursor: pointer;
+                width: 16px;
+                height: 16px;
+                flex-shrink: 0;
+            }
+            .checklist-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .checklist-text-input {
+                width: 100%;
+            }
+            .checklist-templates {
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+            }
+            .template-tag {
+                padding: 2px 8px;
+                background: var(--vscode-button-secondaryBackground);
+                color: var(--vscode-button-secondaryForeground);
+                border-radius: 3px;
+                font-size: 11px;
+                cursor: pointer;
+            }
+            .template-tag:hover {
+                opacity: 0.9;
+            }
+            /* Syntax highlighting container */
+            .syntax-highlight-container {
+                position: relative;
+            }
+            .variable-highlight {
+                background: var(--vscode-editor-findMatchBackground);
+                color: var(--vscode-editor-findMatchForeground);
+                padding: 2px 4px;
+                border-radius: 2px;
+            }
+            /* Test Modal Styles */
+            .test-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 2000;
+            }
+            .test-modal-content {
+                background: var(--vscode-editor-background);
+                border: 1px solid var(--vscode-panel-border);
+                border-radius: 8px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+                width: 90%;
+                max-width: 700px;
+                max-height: 80vh;
+                display: flex;
+                flex-direction: column;
+                position: relative;
+                z-index: 2001;
+            }
+            .test-modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 16px;
+                border-bottom: 1px solid var(--vscode-panel-border);
+            }
+            .test-modal-header h2 {
+                margin: 0;
+                font-size: 1.2em;
+            }
+            .btn-close {
+                background: none;
+                border: none;
+                color: var(--vscode-editor-foreground);
+                cursor: pointer;
+                font-size: 20px;
+                padding: 0;
+                line-height: 1;
+            }
+            .btn-close:hover {
+                color: var(--vscode-errorForeground);
+            }
+            .test-modal-body {
+                padding: 16px;
+                overflow-y: auto;
+                flex: 1;
+            }
+            .test-input-section {
+                margin-bottom: 16px;
+            }
+            .test-input-section textarea {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid var(--vscode-input-border);
+                background: var(--vscode-input-background);
+                color: var(--vscode-input-foreground);
+                border-radius: 4px;
+                font-family: var(--vscode-font-family);
+                resize: vertical;
+            }
+            .test-input-section textarea:focus {
+                outline: none;
+                border-color: var(--vscode-focusBorder);
+            }
+            #submit-test-btn {
+                margin-top: 8px;
+            }
+            .test-status {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 16px;
+                background: var(--vscode-statusBar-background);
+                border-radius: 4px;
+                margin: 16px 0;
+            }
+            .spinner {
+                width: 16px;
+                height: 16px;
+                border: 2px solid var(--vscode-panel-border);
+                border-top-color: var(--vscode-focusBorder);
+                border-radius: 50%;
+                animation: spin 0.6s linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            #test-output-section {
+                margin: 16px 0;
+            }
+            #test-output-section h3 {
+                margin: 0 0 12px 0;
+                font-size: 1em;
+            }
+            .test-response {
+                background: var(--vscode-textCodeBlock-background);
+                border: 1px solid var(--vscode-panel-border);
+                border-radius: 4px;
+                padding: 12px;
+                max-height: 300px;
+                overflow-y: auto;
+                margin-bottom: 16px;
+                font-size: 13px;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+            .test-metrics {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                padding: 12px;
+                background: var(--vscode-input-background);
+                border-radius: 4px;
+            }
+            .metric-item {
+                display: flex;
+                justify-content: space-between;
+                font-size: 13px;
+            }
+            .metric-label {
+                color: var(--vscode-descriptionForeground);
+            }
+            #test-error-section {
+                margin: 16px 0;
+            }
+            .test-error {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px;
+                background: var(--vscode-inputValidation-errorBackground);
+                border: 1px solid var(--vscode-inputValidation-errorBorder);
+                border-radius: 4px;
+                color: var(--vscode-inputValidation-errorForeground);
+            }
+            .error-icon {
+                font-size: 1.2em;
+            }
+            .test-modal-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 2000;
+            }
+
+            /* Template Styles */
+            #templates-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .template-card {
+                border: 1px solid var(--vscode-panel-border);
+                border-radius: 4px;
+                padding: 12px;
+                background: var(--vscode-editor-background);
+                transition: all 0.2s ease;
+            }
+
+            .template-card:hover {
+                border-color: var(--vscode-textLink-foreground);
+                background: var(--vscode-editorHoverWidget-background);
+                box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+            }
+
+            .template-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 8px;
+                gap: 8px;
+            }
+
+            .template-info {
+                flex: 1;
+            }
+
+            .template-name {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--vscode-editor-foreground);
+            }
+
+            .template-category {
+                display: inline-block;
+                background: var(--vscode-textCodeBlock-background);
+                color: var(--vscode-textCodeBlock-foreground);
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 11px;
+                font-weight: 500;
+                margin-top: 4px;
+            }
+
+            .template-description {
+                margin: 8px 0;
+                font-size: 13px;
+                color: var(--vscode-descriptionForeground);
+                line-height: 1.4;
+            }
+
+            .template-meta {
+                display: flex;
+                gap: 12px;
+                font-size: 12px;
+                color: var(--vscode-textBlock-background);
+                margin-bottom: 8px;
+            }
+
+            .template-author,
+            .template-version {
+                padding: 2px 0;
+            }
+
+            .btn-use-template {
+                background: var(--vscode-button-background);
+                color: var(--vscode-button-foreground);
+                border: 1px solid var(--vscode-button-border);
+                padding: 6px 12px;
+                border-radius: 3px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: all 0.2s ease;
+            }
+
+            .btn-use-template:hover {
+                background: var(--vscode-button-hoverBackground);
+            }
+
+            .btn-use-template:active {
+                transform: scale(0.98);
+            }
         `;
     }
 
@@ -964,7 +1447,7 @@ export class CustomAgentBuilderPanel {
     }
 
     /**
-     * System prompt section with variable helpers
+     * System prompt section with variable helpers, autocomplete, and syntax highlighting
      */
     private getSystemPromptSection(): string {
         return `
@@ -978,10 +1461,14 @@ export class CustomAgentBuilderPanel {
                         <label class="form-label">
                             Instructions for the Agent <span class="required">*</span>
                         </label>
-                        <textarea id="agent-prompt" name="systemPrompt" class="large"
-                            placeholder="You are a helpful research assistant. Your task is to..."></textarea>
+                        <div class="prompt-container">
+                            <textarea id="agent-prompt" name="systemPrompt" class="large"
+                                placeholder="You are a helpful research assistant. Your task is to..."></textarea>
+                            <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+                        </div>
                         <div class="form-hint">
                             The instructions given to the LLM. Use {{variables}} for dynamic content.
+                            Start typing {{ to see autocomplete suggestions.
                         </div>
                         <div class="char-count" id="prompt-count">
                             0 / ${CUSTOM_AGENT_CONSTRAINTS.SYSTEM_PROMPT_MAX_LENGTH}
@@ -989,7 +1476,7 @@ export class CustomAgentBuilderPanel {
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Insert Variable</label>
+                        <label class="form-label">Quick Insert Variables</label>
                         <div class="variable-helper" id="variable-helper">
                             ${SYSTEM_PROMPT_VARIABLES.map(v =>
             `<span class="variable-tag" data-variable="${v}">{{${v}}}</span>`
@@ -1005,7 +1492,7 @@ export class CustomAgentBuilderPanel {
     }
 
     /**
-     * Goals section with dynamic list
+     * Goals section with dynamic list and drag-to-reorder
      */
     private getGoalsSection(): string {
         return `
@@ -1030,6 +1517,9 @@ export class CustomAgentBuilderPanel {
                                 + Add Goal
                             </button>
                         </div>
+                        <div class="form-hint">
+                            Drag goals to reorder them. The agent will prioritize goals in this order.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1037,7 +1527,7 @@ export class CustomAgentBuilderPanel {
     }
 
     /**
-     * Checklist section with dynamic list
+     * Checklist section with dynamic list and checkbox UI
      */
     private getChecklistSection(): string {
         return `
@@ -1061,6 +1551,16 @@ export class CustomAgentBuilderPanel {
                             <button type="button" class="btn btn-secondary btn-small" id="btn-add-checklist">
                                 + Add Checklist Item
                             </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quick Templates</label>
+                        <div class="checklist-templates" id="checklist-templates">
+                            <span class="template-tag" data-template="Response complete">Response complete</span>
+                            <span class="template-tag" data-template="No errors">No errors</span>
+                            <span class="template-tag" data-template="All tests pass">All tests pass</span>
+                            <span class="template-tag" data-template="Documentation updated">Documentation updated</span>
+                            <span class="template-tag" data-template="Code reviewed">Code reviewed</span>
                         </div>
                     </div>
                 </div>
@@ -1294,6 +1794,8 @@ export class CustomAgentBuilderPanel {
                 let routingPatterns = [];
                 let routingTags = [];
                 let metaTags = [];
+                let draggedIndex = null;
+                let autocompleteSelectedIndex = -1;
 
                 // DOM Elements
                 const form = document.getElementById('agent-form');
@@ -1308,6 +1810,8 @@ export class CustomAgentBuilderPanel {
                     setupDynamicLists();
                     setupRoutingInputs();
                     setupVariableHelper();
+                    setupAutocomplete();
+                    setupChecklistTemplates();
                 }
 
                 // Event Listeners
@@ -1315,6 +1819,72 @@ export class CustomAgentBuilderPanel {
                     document.getElementById('btn-save').addEventListener('click', handleSave);
                     document.getElementById('btn-cancel').addEventListener('click', handleCancel);
                     document.getElementById('btn-validate').addEventListener('click', handleValidate);
+                    
+                    // Test modal listeners
+                    const testBtn = document.getElementById('btn-test');
+                    const testModal = document.getElementById('test-mode-modal');
+                    const closeBtn = document.getElementById('close-test-modal');
+                    const submitTestBtn = document.getElementById('submit-test-btn');
+                    const backdrop = document.querySelector('.test-modal-backdrop');
+                    
+                    if (testBtn) {
+                        testBtn.addEventListener('click', () => {
+                            testModal.style.display = 'flex';
+                            document.getElementById('test-query').focus();
+                        });
+                    }
+                    
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', () => {
+                            testModal.style.display = 'none';
+                        });
+                    }
+                    
+                    if (backdrop) {
+                        backdrop.addEventListener('click', () => {
+                            testModal.style.display = 'none';
+                        });
+                    }
+                    
+                    if (submitTestBtn) {
+                        submitTestBtn.addEventListener('click', () => {
+                            handleTestAgent();
+                        });
+                    }
+                    
+                    const testQuery = document.getElementById('test-query');
+                    if (testQuery) {
+                        testQuery.addEventListener('keydown', (e) => {
+                            if (e.ctrlKey && e.key === 'Enter') {
+                                handleTestAgent();
+                            }
+                        });
+                    }
+
+                    // Templates modal listeners
+                    const templatesBtn = document.getElementById('btn-templates');
+                    const templatesModal = document.getElementById('templates-modal');
+                    const closeTemplatesBtn = document.getElementById('close-templates-modal');
+                    
+                    if (templatesBtn) {
+                        templatesBtn.addEventListener('click', () => {
+                            populateTemplatesList();
+                            templatesModal.style.display = 'flex';
+                        });
+                    }
+                    
+                    if (closeTemplatesBtn) {
+                        closeTemplatesBtn.addEventListener('click', () => {
+                            templatesModal.style.display = 'none';
+                        });
+                    }
+                    
+                    const templatesBackdrop = templatesModal?.querySelector('.test-modal-backdrop');
+                    if (templatesBackdrop) {
+                        templatesBackdrop.addEventListener('click', () => {
+                            templatesModal.style.display = 'none';
+                        });
+                    }
 
                     // Field change listeners for real-time validation
                     const inputs = form.querySelectorAll('input, textarea, select');
@@ -1387,7 +1957,10 @@ export class CustomAgentBuilderPanel {
                     goals.forEach((goal, index) => {
                         const item = document.createElement('div');
                         item.className = 'dynamic-list-item';
+                        item.draggable = true;
+                        item.dataset.index = index;
                         item.innerHTML = \`
+                            <span class="drag-handle" title="Drag to reorder">⋮⋮</span>
                             <span class="item-number">\${index + 1}.</span>
                             <input type="text" value="\${escapeHtml(goal)}" 
                                 data-index="\${index}" 
@@ -1397,10 +1970,54 @@ export class CustomAgentBuilderPanel {
                         \`;
                         container.insertBefore(item, empty);
                         
+                        // Drag listeners
+                        item.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/html', item.innerHTML);
+                            item.classList.add('dragging');
+                            draggedIndex = index;
+                        });
+                        
+                        item.addEventListener('dragend', () => {
+                            item.classList.remove('dragging');
+                            document.querySelectorAll('.dynamic-list-item').forEach(el => el.classList.remove('drag-over'));
+                        });
+                        
+                        item.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (index !== draggedIndex) {
+                                item.classList.add('drag-over');
+                            }
+                        });
+                        
+                        item.addEventListener('dragleave', () => {
+                            item.classList.remove('drag-over');
+                        });
+                        
+                        item.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            if (draggedIndex !== index) {
+                                const [movedGoal] = goals.splice(draggedIndex, 1);
+                                goals.splice(index, 0, movedGoal);
+                                renderGoals();
+                                validateForm();
+                            }
+                            item.classList.remove('drag-over');
+                        });
+                        
+                        // Input listener
                         item.querySelector('input').addEventListener('input', (e) => {
                             goals[index] = e.target.value;
                         });
+                        
+                        // Delete button
                         item.querySelector('button').addEventListener('click', () => removeGoal(index));
+                    });
+                    
+                    // Update numbering
+                    container.querySelectorAll('.item-number').forEach((el, i) => {
+                        el.textContent = (i + 1) + '.';
                     });
                 }
 
@@ -1435,20 +2052,30 @@ export class CustomAgentBuilderPanel {
                     
                     checklist.forEach((item, index) => {
                         const el = document.createElement('div');
-                        el.className = 'dynamic-list-item';
+                        el.className = 'checklist-item';
                         el.innerHTML = \`
-                            <span class="item-number">☐</span>
-                            <input type="text" value="\${escapeHtml(item)}" 
-                                data-index="\${index}"
-                                maxlength="${CUSTOM_AGENT_CONSTRAINTS.CHECKLIST_ITEM_MAX_LENGTH}"
-                                placeholder="Checklist item...">
+                            <input type="checkbox" class="checklist-checkbox" data-index="\${index}">
+                            <div class="checklist-content">
+                                <input type="text" class="checklist-text-input" value="\${escapeHtml(item)}" 
+                                    data-index="\${index}"
+                                    maxlength="${CUSTOM_AGENT_CONSTRAINTS.CHECKLIST_ITEM_MAX_LENGTH}"
+                                    placeholder="Checklist item...">
+                            </div>
                             <button type="button" class="btn btn-danger btn-small" data-index="\${index}">×</button>
                         \`;
-                        container.insertBefore(el, empty);
+                        container.appendChild(el);
                         
-                        el.querySelector('input').addEventListener('input', (e) => {
+                        // Checkbox handler
+                        el.querySelector('.checklist-checkbox').addEventListener('change', (e) => {
+                            el.style.opacity = e.target.checked ? '0.6' : '1';
+                        });
+                        
+                        // Text input handler
+                        el.querySelector('.checklist-text-input').addEventListener('input', (e) => {
                             checklist[index] = e.target.value;
                         });
+                        
+                        // Delete button
                         el.querySelector('button').addEventListener('click', () => removeChecklistItem(index));
                     });
                 }
@@ -1465,6 +2092,7 @@ export class CustomAgentBuilderPanel {
                 function removeChecklistItem(index) {
                     checklist.splice(index, 1);
                     renderChecklist();
+                    validateForm();
                 }
 
                 // Custom lists
@@ -1649,6 +2277,123 @@ export class CustomAgentBuilderPanel {
                     });
                 }
 
+                // Autocomplete for system prompt (MT-030.4)
+                function setupAutocomplete() {
+                    const prompt = document.getElementById('agent-prompt');
+                    const dropdown = document.getElementById('autocomplete-dropdown');
+                    
+                    prompt.addEventListener('input', () => {
+                        const text = prompt.value;
+                        const cursorPos = prompt.selectionStart;
+                        const textBeforeCursor = text.substring(0, cursorPos);
+                        
+                        // Check if user is typing a variable
+                        const lastOpenBrace = textBeforeCursor.lastIndexOf('{{');
+                        if (lastOpenBrace === -1) {
+                            dropdown.classList.remove('show');
+                            return;
+                        }
+                        
+                        const lastCloseBrace = textBeforeCursor.lastIndexOf('}}');
+                        if (lastCloseBrace > lastOpenBrace) {
+                            dropdown.classList.remove('show');
+                            return;
+                        }
+                        
+                        const partial = textBeforeCursor.substring(lastOpenBrace + 2).toLowerCase();
+                        const matches = variables.filter(v => v.toLowerCase().includes(partial));
+                        
+                        if (matches.length === 0) {
+                            dropdown.classList.remove('show');
+                            return;
+                        }
+                        
+                        // Render autocomplete dropdown
+                        dropdown.innerHTML = '';
+                        matches.forEach((variable, i) => {
+                            const item = document.createElement('div');
+                            item.className = 'autocomplete-item';
+                            if (i === autocompleteSelectedIndex) {
+                                item.classList.add('selected');
+                            }
+                            item.innerHTML = '{{' + variable + '}}';
+                            item.addEventListener('click', () => insertVariable(variable, lastOpenBrace));
+                            dropdown.appendChild(item);
+                        });
+                        
+                        dropdown.classList.add('show');
+                    });
+                    
+                    // Keyboard navigation for autocomplete
+                    prompt.addEventListener('keydown', (e) => {
+                        if (!dropdown.classList.contains('show')) return;
+                        
+                        const items = dropdown.querySelectorAll('.autocomplete-item');
+                        if (items.length === 0) return;
+                        
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            autocompleteSelectedIndex = (autocompleteSelectedIndex + 1) % items.length;
+                            updateAutocompleteSelection(items);
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            autocompleteSelectedIndex = (autocompleteSelectedIndex - 1 + items.length) % items.length;
+                            updateAutocompleteSelection(items);
+                        } else if (e.key === 'Enter' && autocompleteSelectedIndex >= 0) {
+                            e.preventDefault();
+                            const selectedItem = items[autocompleteSelectedIndex];
+                            const variable = selectedItem.textContent.replace(/{{|}}/g, '');
+                            const textBeforeCursor = prompt.value.substring(0, prompt.selectionStart);
+                            const lastOpenBrace = textBeforeCursor.lastIndexOf('{{');
+                            insertVariable(variable, lastOpenBrace);
+                        } else if (e.key === 'Escape') {
+                            dropdown.classList.remove('show');
+                            autocompleteSelectedIndex = -1;
+                        }
+                    });
+                }
+                
+                function updateAutocompleteSelection(items) {
+                    items.forEach((item, i) => {
+                        if (i === autocompleteSelectedIndex) {
+                            item.classList.add('selected');
+                        } else {
+                            item.classList.remove('selected');
+                        }
+                    });
+                }
+                
+                function insertVariable(variable, openBracePos) {
+                    const prompt = document.getElementById('agent-prompt');
+                    const cursorPos = prompt.selectionStart;
+                    const text = prompt.value;
+                    const textBeforeBrace = text.substring(0, openBracePos);
+                    const textAfterCursor = text.substring(cursorPos);
+                    const insertion = '{{' + variable + '}}';
+                    
+                    prompt.value = textBeforeBrace + insertion + textAfterCursor;
+                    prompt.selectionStart = prompt.selectionEnd = openBracePos + insertion.length;
+                    prompt.focus();
+                    prompt.dispatchEvent(new Event('input'));
+                    
+                    // Close dropdown
+                    document.getElementById('autocomplete-dropdown').classList.remove('show');
+                    autocompleteSelectedIndex = -1;
+                }
+
+                // Checklist template insertion (MT-030.6)
+                function setupChecklistTemplates() {
+                    const templates = document.getElementById('checklist-templates');
+                    if (!templates) return;
+                    
+                    templates.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('template-tag')) {
+                            const template = e.target.dataset.template;
+                            addChecklistItem(template);
+                        }
+                    });
+                }
+
                 // Validation
                 function validateForm() {
                     const config = buildAgentConfig();
@@ -1771,6 +2516,188 @@ export class CustomAgentBuilderPanel {
                 function handleValidate() {
                     validateForm();
                 }
+                
+                function handleTestAgent() {
+                    const query = document.getElementById('test-query').value.trim();
+                    if (!query) {
+                        showTestError('Please enter a query to test');
+                        return;
+                    }
+                    
+                    const config = buildAgentConfig();
+                    showTestStatus(true);
+                    hideTestError();
+                    
+                    vscode.postMessage({
+                        type: 'testAgent',
+                        query: query,
+                        agentConfig: config
+                    });
+                }
+                
+                function showTestStatus(show) {
+                    const statusEl = document.getElementById('test-status');
+                    const outputEl = document.getElementById('test-output-section');
+                    if (statusEl) statusEl.style.display = show ? 'flex' : 'none';
+                    if (outputEl && !show) outputEl.style.display = 'none';
+                }
+                
+                function hideTestError() {
+                    const errorEl = document.getElementById('test-error-section');
+                    if (errorEl) errorEl.style.display = 'none';
+                }
+                
+                function showTestError(message) {
+                    const errorSectionEl = document.getElementById('test-error-section');
+                    const errorTextEl = document.getElementById('test-error-text');
+                    if (errorSectionEl && errorTextEl) {
+                        errorTextEl.textContent = message;
+                        errorSectionEl.style.display = 'block';
+                    }
+                    showTestStatus(false);
+                }
+
+                // Templates functionality
+                function populateTemplatesList() {
+                    const listContainer = document.getElementById('templates-list');
+                    
+                    // Template data (would come from templates.ts in production)
+                    const templates = [
+                        {
+                            id: 'research-assistant',
+                            name: 'Research Assistant',
+                            category: 'Beginner',
+                            description: 'Information gathering and synthesis specialist',
+                            author: 'COE Team',
+                            version: '1.0.0',
+                            systemPrompt: 'You are a research assistant specializing in gathering, analyzing, and synthesizing information. Your role is to conduct thorough research on given topics, find reliable sources, and present findings in a clear, organized manner.'
+                        },
+                        {
+                            id: 'code-reviewer',
+                            name: 'Code Reviewer',
+                            category: 'Intermediate',
+                            description: 'Code quality analysis and feedback provider',
+                            author: 'COE Team',
+                            version: '1.0.0',
+                            systemPrompt: 'You are an expert code reviewer. Analyze provided code for quality, security, performance, and maintainability. Provide constructive feedback with specific examples and suggestions for improvement.'
+                        },
+                        {
+                            id: 'doc-writer',
+                            name: 'Documentation Writer',
+                            category: 'Intermediate',
+                            description: 'Technical documentation creator',
+                            author: 'COE Team',
+                            version: '1.0.0',
+                            systemPrompt: 'You are a technical documentation specialist. Create clear, comprehensive, and user-friendly documentation. Focus on accuracy, clarity, and providing practical examples.'
+                        },
+                        {
+                            id: 'test-generator',
+                            name: 'Test Case Generator',
+                            category: 'Advanced',
+                            description: 'Comprehensive test scenario creator',
+                            author: 'COE Team',
+                            version: '1.0.0',
+                            systemPrompt: 'You are a QA specialist expert in test case generation. Create comprehensive test scenarios covering normal cases, edge cases, and error conditions. Organize tests logically and ensure complete coverage.'
+                        },
+                        {
+                            id: 'content-strategist',
+                            name: 'Content Strategist',
+                            category: 'Intermediate',
+                            description: 'Content planning and structure expert',
+                            author: 'COE Team',
+                            version: '1.0.0',
+                            systemPrompt: 'You are a content strategist. Help plan, structure, and create content that resonates with target audiences. Consider audience needs, engagement, and strategic goals.'
+                        }
+                    ];
+                    
+                    if (templates.length === 0) {
+                        listContainer.innerHTML = '<span class="form-hint">No templates available</span>';
+                        return;
+                    }
+                    
+                    listContainer.innerHTML = templates.map((template, idx) => \`
+                        <div class="template-card" data-id="\${template.id}">
+                            <div class="template-header">
+                                <div class="template-info">
+                                    <h3 class="template-name">\${escapeHtml(template.name)}</h3>
+                                    <span class="template-category">\${escapeHtml(template.category)}</span>
+                                </div>
+                                <button type="button" class="btn-use-template" data-id="\${template.id}">Use Template</button>
+                            </div>
+                            <p class="template-description">\${escapeHtml(template.description)}</p>
+                            <div class="template-meta">
+                                <span class="template-author">Author: \${escapeHtml(template.author)}</span>
+                                <span class="template-version">v\${escapeHtml(template.version)}</span>
+                            </div>
+                        </div>
+                    \`).join('');
+                    
+                    // Add click handlers for use-template buttons
+                    listContainer.querySelectorAll('.btn-use-template').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const templateId = e.target.dataset.id;
+                            const template = templates.find(t => t.id === templateId);
+                            if (template) {
+                                applyTemplate(template);
+                            }
+                        });
+                    });
+                }
+                
+                function applyTemplate(template) {
+                    // Generate unique name based on template
+                    const timestamp = Date.now().toString().slice(-4);
+                    const baseName = template.name.replace(/\\s+/g, '');
+                    const uniqueName = baseName + '_' + timestamp;
+                    
+                    // Apply template to form
+                    document.getElementById('agent-name').value = uniqueName;
+                    document.getElementById('agent-description').value = template.description;
+                    document.getElementById('agent-prompt').value = template.systemPrompt;
+                    
+                    // Set category tag
+                    const tagsInput = document.getElementById('agent-tags');
+                    tagsInput.value = template.category.toLowerCase();
+                    
+                    // Clear existing goals and checklist
+                    goals = [];
+                    checklist = [];
+                    
+                    // Add template-specific goals
+                    const templateGoals = [
+                        'Deliver high-quality output',
+                        'Follow best practices',
+                        'Maintain clarity in communication',
+                        'Provide actionable insights'
+                    ];
+                    goals = templateGoals;
+                    
+                    // Add template-specific checklist items
+                    const templateChecklist = [
+                        'Validate input data',
+                        'Review output quality',
+                        'Ensure consistency',
+                        'Test edge cases',
+                        'Document findings'
+                    ];
+                    checklist = templateChecklist;
+                    
+                    // Render updated content
+                    renderGoals();
+                    renderChecklist();
+                    
+                    // Trigger validation
+                    validateForm();
+                    
+                    // Close templates modal
+                    const templatesModal = document.getElementById('templates-modal');
+                    if (templatesModal) {
+                        templatesModal.style.display = 'none';
+                    }
+                    
+                    // Show success message
+                    showValidation(\`✓ Applied template: \${template.name}\`, 'success');
+                }
 
                 // Message handler from extension
                 window.addEventListener('message', event => {
@@ -1808,6 +2735,36 @@ export class CustomAgentBuilderPanel {
                             constraints = message.constraints;
                             variables = message.variables || [];
                             reservedNames = message.reservedNames || [];
+                            break;
+                            
+                        case 'testResult':
+                            showTestStatus(false);
+                            if (message.success) {
+                                document.getElementById('test-response').textContent = message.response || 'No response';
+                                document.getElementById('prompt-tokens').textContent = message.tokens?.prompt || 0;
+                                document.getElementById('completion-tokens').textContent = message.tokens?.completion || 0;
+                                const totalTokens = message.tokens?.total || 0;
+                                document.getElementById('total-tokens').textContent = totalTokens;
+                                document.getElementById('response-time').textContent = message.responseTime || 0;
+                                
+                                // Update context limit display
+                                const maxTokens = parseInt(document.getElementById('agent-tokens')?.value || '2048');
+                                const usagePercent = Math.round((totalTokens / maxTokens) * 100);
+                                document.getElementById('context-max').textContent = maxTokens;
+                                document.getElementById('context-used').textContent = totalTokens;
+                                document.getElementById('context-percent').textContent = Math.min(usagePercent, 100) + '%';
+                                
+                                const contextFill = document.getElementById('context-fill');
+                                contextFill.style.width = Math.min(usagePercent, 100) + '%';
+                                contextFill.className = 'context-limit-fill';
+                                if (usagePercent >= 90) contextFill.classList.add('critical');
+                                else if (usagePercent >= 70) contextFill.classList.add('warning');
+                                
+                                document.getElementById('test-output-section').style.display = 'block';
+                                hideTestError();
+                            } else {
+                                showTestError(message.errorMessage || 'Test failed');
+                            }
                             break;
                             
                         case 'agentListUpdated':

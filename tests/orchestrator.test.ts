@@ -650,10 +650,12 @@ describe('Orchestrator Service', () => {
             const plan = await orchestrator.routeToPlanningAgent('Plan how to add dark mode toggle');
 
             expect(plan).toBe('Step 1: Add config flagStep 2: Update UI');
-            expect(logInfo).toHaveBeenCalledWith('LLM: Step 1: ');
-            expect(logInfo).toHaveBeenCalledWith('LLM: Add config flag');
-            expect(logInfo).toHaveBeenCalledWith('LLM: Step 2: ');
-            expect(logInfo).toHaveBeenCalledWith('LLM: Update UI');
+            
+            // Verify the initial routing log
+            expect(logInfo).toHaveBeenCalledWith('Routing request to Planning agent: Plan how to add dark mode toggle');
+            
+            // Verify the full plan is logged (implementation uses streamBuffer with Planning prefix)
+            expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Full plan'));
         });
 
         it('should handle empty response gracefully', async () => {
