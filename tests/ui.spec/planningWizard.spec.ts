@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import * as vscode from 'vscode';
-import { PlanningWizardPanel, getPlanningWizardPanel, openPlanningWizard } from '../../src/ui/planningWizard';
+import { PlanningWizardPanel } from '../../src/ui/planningWizard';
 import { CompletePlan, FeatureBlock, UserStory, SuccessCriterion } from '../../src/planning/types';
 import {
   validatePlan,
@@ -99,8 +99,8 @@ describe('MT-033: Planning Wizard Tests', () => {
 
     it('Test 12: should validate project name min length', () => {
       const overview = { name: 'ab', description: '', goals: [] };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(false);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(false);
     });
 
     it('Test 13: should validate project name max length', () => {
@@ -109,8 +109,8 @@ describe('MT-033: Planning Wizard Tests', () => {
         description: '',
         goals: [],
       };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(false);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(false);
     });
 
     it('Test 14: should validate description length', () => {
@@ -119,8 +119,8 @@ describe('MT-033: Planning Wizard Tests', () => {
         description: 'a'.repeat(PLAN_CONSTRAINTS.DESCRIPTION_MAX + 1),
         goals: [],
       };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(false);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(false);
     });
 
     it('Test 15: should accept valid project overview', () => {
@@ -129,8 +129,8 @@ describe('MT-033: Planning Wizard Tests', () => {
         description: 'A valid description',
         goals: ['Goal 1', 'Goal 2'],
       };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(true);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(true);
     });
 
     it('Test 16: should validate goal count max', () => {
@@ -141,8 +141,8 @@ describe('MT-033: Planning Wizard Tests', () => {
           .fill(null)
           .map((_, i) => `Goal ${i}`),
       };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(false);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(false);
     });
 
     it('Test 17: should validate individual goal length', () => {
@@ -151,8 +151,8 @@ describe('MT-033: Planning Wizard Tests', () => {
         description: '',
         goals: ['a'.repeat(PLAN_CONSTRAINTS.GOAL_MAX + 1)],
       };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(false);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(false);
     });
 
     it('Test 18: should show character counters in real-time', () => {
@@ -187,14 +187,14 @@ describe('MT-033: Planning Wizard Tests', () => {
 
     it('Test 24: should allow empty description', () => {
       const overview = { name: 'Valid', description: '', goals: [] };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(true);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(true);
     });
 
     it('Test 25: should allow empty goals array', () => {
       const overview = { name: 'Valid', description: '', goals: [] };
-      const { isValid } = ProjectOverviewSchema.safeParse(overview);
-      expect(isValid).toBe(true);
+      const result = ProjectOverviewSchema.safeParse(overview);
+      expect(result.success).toBe(true);
     });
   });
 

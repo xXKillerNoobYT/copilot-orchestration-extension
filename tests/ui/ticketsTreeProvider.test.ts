@@ -27,7 +27,7 @@ describe('TicketsTreeDataProvider', () => {
 
         // Default mock: onTicketChange does nothing (prevents errors in constructor)
         mockOnTicketChange.mockImplementation(() => { });
-        
+
         // Default mock: listTickets returns empty array
         mockListTickets.mockResolvedValue([]);
 
@@ -87,9 +87,9 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items).toHaveLength(2);
-            expect(items[0].label).toBe('Test ticket 1');
-            expect(items[1].label).toBe('Test ticket 2');
+            expect(items).toHaveLength(3); // 2 tickets + 1 Create button
+            expect(items[1].label).toBe('Test ticket 1');
+            expect(items[2].label).toBe('Test ticket 2');
         });
 
         it('should filter out done tickets', async () => {
@@ -136,10 +136,10 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            // Should only return 2 items (open and blocked, not done)
-            expect(items).toHaveLength(2);
-            expect(items[0].label).toBe('Open ticket');
-            expect(items[1].label).toBe('Blocked ticket');
+            // Should only return 3 items (open and blocked, not done) + 1 Create button
+            expect(items).toHaveLength(3);
+            expect(items[1].label).toBe('Open ticket');
+            expect(items[2].label).toBe('Blocked ticket');
         });
 
         it('should show placeholder when no open tickets', async () => {
@@ -147,10 +147,10 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items).toHaveLength(1);
-            expect(items[0].label).toBe('No open tickets');
-            expect(items[0].iconPath).toBeInstanceOf(vscode.ThemeIcon);
-            expect((items[0].iconPath as vscode.ThemeIcon).id).toBe('inbox');
+            expect(items).toHaveLength(2); // 1 placeholder + 1 Create button
+            expect(items[1].label).toBe('No open tickets');
+            expect(items[1].iconPath).toBeInstanceOf(vscode.ThemeIcon);
+            expect((items[1].iconPath as vscode.ThemeIcon).id).toBe('inbox');
         });
 
         it('should show placeholder when all tickets are done', async () => {
@@ -179,8 +179,8 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items).toHaveLength(1);
-            expect(items[0].label).toBe('No open tickets');
+            expect(items).toHaveLength(2); // 1 placeholder + 1 Create button
+            expect(items[1].label).toBe('No open tickets');
         });
 
         it('should handle database errors gracefully', async () => {
@@ -195,10 +195,10 @@ describe('TicketsTreeDataProvider', () => {
             // When listTickets fails, getDisplayTickets catches it and returns []
             // So we actually get "No open tickets" instead of error
             // This is the actual behavior of the system
-            expect(items).toHaveLength(1);
+            expect(items).toHaveLength(2); // 1 placeholder + 1 Create button
             // In reality, getDisplayTickets handles the error and returns [], 
             // so the provider shows "No open tickets"
-            expect(items[0].label).toBe('No open tickets');
+            expect(items[1].label).toBe('No open tickets');
         });
 
         it('should return empty array when element is provided (no children)', async () => {
@@ -234,8 +234,8 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].description).toContain('in-progress');
-            expect(items[0].description).toContain('•');
+            expect(items[1].description).toContain('in-progress');
+            expect(items[1].description).toContain('•');
         });
 
         it('should include full ticket description in tooltip for hover-to-read', async () => {
@@ -265,7 +265,7 @@ describe('TicketsTreeDataProvider', () => {
             const items = await provider.getChildren();
 
             // Tooltip should contain full description for hover-to-read functionality
-            expect(items[0].tooltip).toBe('Step 1: Design\nStep 2: Implement\nStep 3: Test');
+            expect(items[1].tooltip).toBe('Step 1: Design\nStep 2: Implement\nStep 3: Test');
         });
 
         it('should use correct icons for different statuses', async () => {
@@ -309,9 +309,9 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect((items[0].iconPath as vscode.ThemeIcon).id).toBe('issue-opened');
-            expect((items[1].iconPath as vscode.ThemeIcon).id).toBe('sync~spin');
-            expect((items[2].iconPath as vscode.ThemeIcon).id).toBe('warning');
+            expect((items[1].iconPath as vscode.ThemeIcon).id).toBe('issue-opened');
+            expect((items[2].iconPath as vscode.ThemeIcon).id).toBe('sync~spin');
+            expect((items[3].iconPath as vscode.ThemeIcon).id).toBe('warning');
         });
     });
 
@@ -351,8 +351,8 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].description).toContain('Plan:');
-            expect(items[0].description).toContain('Step 1: Design component Step 2: Add styles Step 3: Test');
+            expect(items[1].description).toContain('Plan:');
+            expect(items[1].description).toContain('Step 1: Design component Step 2: Add styles Step 3: Test');
         });
 
         it('should truncate plan preview to 200 characters', async () => {
@@ -381,7 +381,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const desc = items[0].description as string;
+            const desc = items[1].description as string;
 
             // Should include "..."
             expect(desc).toContain('...');
@@ -415,7 +415,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const desc = items[0].description as string;
+            const desc = items[1].description as string;
 
             // Should include 200 chars but NOT "..."
             expect(desc).toContain('A'.repeat(200));
@@ -452,7 +452,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const desc = items[0].description as string;
+            const desc = items[1].description as string;
 
             // Newlines, tabs, carriage returns should be replaced with spaces
             expect(desc).not.toContain('\n');
@@ -484,7 +484,7 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].description).toContain('—');
+            expect(items[1].description).toContain('—');
         });
 
         it('should show "—" when description is empty string', async () => {
@@ -509,7 +509,7 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].description).toContain('—');
+            expect(items[1].description).toContain('—');
         });
 
         it('should set tooltip to full description for hover-to-read', async () => {
@@ -540,7 +540,7 @@ describe('TicketsTreeDataProvider', () => {
             const items = await provider.getChildren();
 
             // Tooltip should have full description so users can hover to see complete plan
-            expect(items[0].tooltip).toBe(fullDescription);
+            expect(items[1].tooltip).toBe(fullDescription);
         });
 
         it('should set tooltip to "No plan stored yet" when no description', async () => {
@@ -564,7 +564,7 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].tooltip).toBe('No plan stored yet');
+            expect(items[1].tooltip).toBe('No plan stored yet');
         });
 
         it('should handle multiple tickets with different plan lengths', async () => {
@@ -610,13 +610,13 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items).toHaveLength(3);
+            expect(items).toHaveLength(4); // 3 tickets + 1 Create button
             // Short should be included as-is
-            expect(items[0].description).toContain('Quick task');
+            expect(items[1].description).toContain('Quick task');
             // Long should be truncated with "..."
-            expect(items[1].description).toContain('...');
+            expect(items[2].description).toContain('...');
             // No plan should show "—"
-            expect(items[2].description).toContain('—');
+            expect(items[3].description).toContain('—');
         });
     });
 
@@ -648,10 +648,10 @@ describe('TicketsTreeDataProvider', () => {
             const items = await provider.getChildren();
 
             // Verify command is set
-            expect(items[0].command).toBeDefined();
-            expect(items[0].command?.command).toBe('coe.openTicket');
-            expect(items[0].command?.title).toBe('Open Ticket');
-            expect(items[0].command?.arguments).toEqual(['TICKET-123']);
+            expect(items[1].command).toBeDefined();
+            expect(items[1].command?.command).toBe('coe.openTicket');
+            expect(items[1].command?.title).toBe('Open Ticket');
+            expect(items[1].command?.arguments).toEqual(['TICKET-123']);
         });
 
         it('should pass correct ticket ID to command arguments', async () => {
@@ -689,8 +689,8 @@ describe('TicketsTreeDataProvider', () => {
             const items = await provider.getChildren();
 
             // Verify each item has correct ticket ID in arguments
-            expect(items[0].command?.arguments?.[0]).toBe('TICKET-456');
-            expect(items[1].command?.arguments?.[0]).toBe('TICKET-789');
+            expect(items[1].command?.arguments?.[0]).toBe('TICKET-456');
+            expect(items[2].command?.arguments?.[0]).toBe('TICKET-789');
         });
     });
 
@@ -785,7 +785,7 @@ describe('TicketsTreeDataProvider', () => {
             const items = await provider.getChildren();
 
             // Verify contextValue is set to enable context menu targeting
-            expect(items[0].contextValue).toBe('ticket');
+            expect(items[1].contextValue).toBe('ticket');
         });
 
         it('Test 2: should set contextValue on all ticket items', async () => {
@@ -823,8 +823,8 @@ describe('TicketsTreeDataProvider', () => {
             const items = await provider.getChildren();
 
             // All ticket items should have contextValue
-            expect(items[0].contextValue).toBe('ticket');
             expect(items[1].contextValue).toBe('ticket');
+            expect(items[2].contextValue).toBe('ticket');
         });
 
         it('Test 3: should set pending contextValue on pending tickets', async () => {
@@ -848,7 +848,7 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].contextValue).toBe('coe-pending-ticket');
+            expect(items[1].contextValue).toBe('coe-pending-ticket');
         });
 
         it('Test 4: should not set contextValue on placeholder item when no tickets', async () => {
@@ -857,7 +857,7 @@ describe('TicketsTreeDataProvider', () => {
             const items = await provider.getChildren();
 
             // Placeholder item should NOT have contextValue (no context menu on placeholder)
-            expect(items[0].contextValue).toBeUndefined();
+            expect(items[1].contextValue).toBeUndefined();
         });
     });
 
@@ -887,7 +887,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             expect(icon.color).toBeInstanceOf(vscode.ThemeColor);
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconPassed');
@@ -909,7 +909,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             expect(icon.color).toBeInstanceOf(vscode.ThemeColor);
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconQueued');
@@ -931,7 +931,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             expect(icon.color).toBeInstanceOf(vscode.ThemeColor);
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconFailed');
@@ -952,7 +952,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             // No color when no clarity score
             expect(icon.color).toBeUndefined();
@@ -974,7 +974,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const desc = items[0].description as string;
+            const desc = items[1].description as string;
 
             // Should include green emoji and score
             expect(desc).toContain('🟢');
@@ -997,7 +997,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const desc = items[0].description as string;
+            const desc = items[1].description as string;
 
             expect(desc).toContain('🟡');
             expect(desc).toContain('75');
@@ -1019,7 +1019,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const desc = items[0].description as string;
+            const desc = items[1].description as string;
 
             expect(desc).toContain('🔴');
             expect(desc).toContain('30');
@@ -1040,7 +1040,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const desc = items[0].description as string;
+            const desc = items[1].description as string;
 
             // Should not have any clarity emoji
             expect(desc).not.toContain('🟢');
@@ -1066,9 +1066,9 @@ describe('TicketsTreeDataProvider', () => {
 
             const items = await provider.getChildren();
 
-            expect(items[0].tooltip).toContain('Test plan');
-            expect(items[0].tooltip).toContain('Clarity Score');
-            expect(items[0].tooltip).toContain('85/100');
+            expect(items[1].tooltip).toContain('Test plan');
+            expect(items[1].tooltip).toContain('Clarity Score');
+            expect(items[1].tooltip).toContain('85/100');
         });
 
         it('Test 10: should handle boundary score of 60 as yellow', async () => {
@@ -1087,7 +1087,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             // 60 should be yellow (≥60)
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconQueued');
@@ -1109,7 +1109,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             // 85 should be green (≥85)
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconPassed');
@@ -1131,7 +1131,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             // 59 should be red (<60)
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconFailed');
@@ -1153,7 +1153,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             // 84 should be yellow (<85)
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconQueued');
@@ -1175,7 +1175,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             // 0 should be red
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconFailed');
@@ -1197,7 +1197,7 @@ describe('TicketsTreeDataProvider', () => {
             mockListTickets.mockResolvedValue(mockTickets);
 
             const items = await provider.getChildren();
-            const icon = items[0].iconPath as vscode.ThemeIcon;
+            const icon = items[1].iconPath as vscode.ThemeIcon;
 
             // 100 should be green
             expect((icon.color as vscode.ThemeColor).id).toBe('testing.iconPassed');
@@ -1254,7 +1254,7 @@ describe('TicketsTreeDataProvider', () => {
 
             // Must complete in under 100ms (gate requirement)
             expect(duration).toBeLessThan(100);
-            expect(items).toHaveLength(1000);
+            expect(items).toHaveLength(1001); // 1000 tickets + 1 Create button
         });
 
         it('Test 2: should handle 2000 tickets without exceeding 200ms', async () => {
@@ -1269,7 +1269,7 @@ describe('TicketsTreeDataProvider', () => {
 
             // Linear scaling: should still be reasonably fast
             expect(duration).toBeLessThan(200);
-            expect(items).toHaveLength(2000);
+            expect(items).toHaveLength(2001); // 2000 tickets + 1 Create button
         });
 
         it('Test 3: should correctly format clarity scores for 1000 tickets', async () => {
@@ -1319,8 +1319,8 @@ describe('TicketsTreeDataProvider', () => {
 
             // Filtering should be fast
             expect(duration).toBeLessThan(100);
-            // Only 500 open tickets returned (done filtered out)
-            expect(items).toHaveLength(500);
+            // Only 500 open tickets returned (done filtered out) + 1 Create button
+            expect(items).toHaveLength(501);
         });
 
         it('Test 5: should handle tickets with long descriptions', async () => {
@@ -1347,11 +1347,11 @@ describe('TicketsTreeDataProvider', () => {
 
             // Truncation should be fast
             expect(duration).toBeLessThan(100);
-            expect(items).toHaveLength(500);
+            expect(items).toHaveLength(501); // 1 Create button + 500 tickets
 
-            // Verify all descriptions are truncated
-            for (const item of items) {
-                const desc = item.description as string;
+            // Verify all ticket descriptions are truncated (skip the create button at index 0)
+            for (let i = 1; i < items.length; i++) {
+                const desc = items[i].description as string;
                 expect(desc).toContain('...');
             }
         });

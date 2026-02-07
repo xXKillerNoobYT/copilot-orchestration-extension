@@ -66,8 +66,24 @@ jest.mock('../src/services/llmService', () => ({
     validateConnection: jest.fn(() => Promise.resolve({ success: true })),
 }));
 
+jest.mock('../src/services/planningService', () => ({
+    initializePlanningService: jest.fn(),
+    getPlanningServiceInstance: jest.fn(),
+    resetPlanningServiceForTests: jest.fn(),
+}));
+
 jest.mock('../src/mcpServer', () => ({
     initializeMCPServer: jest.fn(),
+}));
+
+jest.mock('../src/services/planningService', () => ({
+    initializePlanningService: jest.fn(),
+    getPlanningServiceInstance: jest.fn(() => ({
+        onPlanCreatedEvent: { event: jest.fn() },
+        onPlanUpdatedEvent: { event: jest.fn() },
+        onPlanDeletedEvent: { event: jest.fn() },
+    })),
+    resetPlanningServiceForTests: jest.fn(),
 }));
 
 jest.mock('../src/agents/answerAgent', () => ({
@@ -173,6 +189,13 @@ jest.mock('vscode', () => {
 });
 
 describe('Extension Commands', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        // Reset planning service for each test
+        const mockPlanningService = require('../src/services/planningService');
+        mockPlanningService.resetPlanningServiceForTests();
+    });
+
     it('should register the COE: Plan Task command', async () => {
         // Create mock context with subscriptions array
         const mockContext = {

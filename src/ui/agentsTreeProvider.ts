@@ -139,8 +139,33 @@ export class AgentsTreeDataProvider implements vscode.TreeDataProvider<vscode.Tr
             return this.createAgentItem(name, description, tooltip, icon, isEnabled);
         });
 
-        // Return toggle item at top, followed by all agent items
-        return [toggleItem, ...agentItems];
+        // Create separator between built-in agents and custom agents
+        const customAgentsSeparator = new vscode.TreeItem('Custom Agents', vscode.TreeItemCollapsibleState.None);
+        customAgentsSeparator.iconPath = new vscode.ThemeIcon('folder-open');
+        customAgentsSeparator.tooltip = 'Create and manage your own AI agents';
+
+        // Create Custom Agent button
+        const createCustomAgentItem = new vscode.TreeItem('+ Create New Agent', vscode.TreeItemCollapsibleState.None);
+        createCustomAgentItem.iconPath = new vscode.ThemeIcon('add', new vscode.ThemeColor('charts.green'));
+        createCustomAgentItem.tooltip = 'Create a new custom AI agent with your own system prompt, goals, and rules';
+        createCustomAgentItem.command = {
+            command: 'coe.openCustomAgentBuilder',
+            title: 'Create Custom Agent',
+            arguments: []
+        };
+
+        // Open Agent Gallery button
+        const agentGalleryItem = new vscode.TreeItem('📚 Agent Gallery', vscode.TreeItemCollapsibleState.None);
+        agentGalleryItem.iconPath = new vscode.ThemeIcon('library', new vscode.ThemeColor('charts.purple'));
+        agentGalleryItem.tooltip = 'Browse and install pre-built agent templates from the gallery';
+        agentGalleryItem.command = {
+            command: 'coe.showAgentGallery',
+            title: 'Open Agent Gallery',
+            arguments: []
+        };
+
+        // Return: toggle item → built-in agents → custom agents section → create/gallery buttons
+        return [toggleItem, ...agentItems, customAgentsSeparator, createCustomAgentItem, agentGalleryItem];
     }
 
     /**

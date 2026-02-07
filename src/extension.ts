@@ -16,7 +16,7 @@ import { agentStatusTracker } from './ui/agentStatusTracker';
 import { openVerificationPanel } from './ui/verificationWebview';
 import { openCustomAgentBuilder } from './ui/customAgentBuilder';
 import { showAgentGallery } from './ui/agentGallery';
-import { openPlanningWizard } from './ui/planningWizard';
+import { PlanningWizardPanel } from './ui/planningWizard';
 import { initializePlanningService } from './services/planningService';
 import { ResearchAgent } from './agents/researchAgent';
 import {
@@ -116,7 +116,7 @@ async function setupAutoPlanning(): Promise<void> {
                 if (deduplicationResult.isDuplicate && deduplicationResult.matches.length > 0) {
                     logInfo(`[Auto-Plan] Duplicate problem detected! ${deduplicationResult.matches.length} match(es) - consolidated`);
                     logInfo(generateDuplicationReport(deduplicationResult));
-                    
+
                     // Notify user about consolidation
                     vscode.window.showInformationMessage(
                         `COE: Duplicate problem consolidated. ` +
@@ -1226,6 +1226,56 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     /**
+     * Command: coe.createNewTicket
+     * Creates a new ticket by prompting user for title and optional description
+     */
+    const createNewTicketCommand = vscode.commands.registerCommand('coe.createNewTicket', async () => {
+        logInfo('User triggered: Create New Ticket');
+        try {
+            // Prompt for ticket title
+            const title = await vscode.window.showInputBox({
+                prompt: 'Enter ticket title or problem description',
+                placeHolder: 'e.g., Fix login redirect bug',
+                validateInput: (value: string) => {
+                    return value.trim().length === 0 ? 'Title cannot be empty' : '';
+                }
+            });
+
+            if (!title) {
+                logInfo('Create ticket cancelled by user');
+                return;
+            }
+
+            // Optional: prompt for description
+            const description = await vscode.window.showInputBox({
+                prompt: 'Enter ticket description (optional)',
+                placeHolder: 'e.g., Description, steps to reproduce, expected behavior...',
+                validateInput: undefined
+            });
+
+            // Create the ticket
+            const newTicket = await createTicket({
+                title: title.trim(),
+                status: 'pending',
+                type: undefined,
+                description: description?.trim() || 'Created from UI',
+                priority: 2,
+                creator: 'system',
+                assignee: null,
+                taskId: null,
+                version: 1,
+                resolution: null
+            });
+
+            vscode.window.showInformationMessage(`✓ Ticket created: "${title.trim()}"`);
+            logInfo(`Created new ticket: ${newTicket.id}`);
+        } catch (err) {
+            logError(`Failed to create new ticket: ${err}`);
+            vscode.window.showErrorMessage(`Failed to create ticket: ${err}`);
+        }
+    });
+
+    /**
      * Command: coe.openConversation
      * Opens an existing conversation in webview
      */
@@ -1386,7 +1436,7 @@ export async function activate(context: vscode.ExtensionContext) {
         async () => {
             logInfo('User triggered: Open Planning Wizard');
             try {
-                await openPlanningWizard(context);
+                PlanningWizardPanel.createOrShow(context);
                 logInfo('Planning Wizard panel opened');
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error);
@@ -1431,6 +1481,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(askAnswerAgentCommand);
     context.subscriptions.push(askAnswerAgentContinueCommand);
     context.subscriptions.push(startNewConversationCommand);
+    context.subscriptions.push(createNewTicketCommand);
     context.subscriptions.push(openConversationCommand);
     context.subscriptions.push(replyConversationCommand);
     context.subscriptions.push(openTicketCommand);

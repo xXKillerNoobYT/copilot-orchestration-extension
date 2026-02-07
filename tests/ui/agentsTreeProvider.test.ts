@@ -97,9 +97,9 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
     });
 
     describe('getChildren with dynamic status', () => {
-        it('should return 6 items: 1 toggle + 5 agents', () => {
+        it('should return 9 items: 1 toggle + 5 agents + 1 separator + 2 buttons', () => {
             const result = provider.getChildren();
-            expect(result).toHaveLength(6);
+            expect(result).toHaveLength(9);
             // First item is the processing toggle
             expect(result[0].label).toBe('Processing');
             // Then the 5 agents
@@ -108,6 +108,10 @@ describe('AgentsTreeDataProvider (Dynamic Status)', () => {
             expect(result[3].label).toBe('Answer');
             expect(result[4].label).toBe('Verification');
             expect(result[5].label).toBe('Research');
+            // Then the custom agents section (separator), create button, and gallery button
+            expect(result[6].label).toBe('Custom Agents');
+            expect(result[7].label).toContain('Create New Agent');
+            expect(result[8].label).toContain('Agent Gallery');
         });
 
         it('should display Manual mode toggle when getAutoModeEnabled returns false', () => {

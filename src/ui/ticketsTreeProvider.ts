@@ -59,19 +59,29 @@ export class TicketsTreeDataProvider implements vscode.TreeDataProvider<vscode.T
         }
 
         try {
+            // Create "New Ticket" button at top
+            const createTicketItem = new vscode.TreeItem('+ Create New Ticket', vscode.TreeItemCollapsibleState.None);
+            createTicketItem.iconPath = new vscode.ThemeIcon('add', new vscode.ThemeColor('charts.green'));
+            createTicketItem.tooltip = 'Create a new ticket to track a new problem or feature request';
+            createTicketItem.command = {
+                command: 'coe.createNewTicket',
+                title: 'Create New Ticket',
+                arguments: []
+            };
+
             // Get display tickets (filters out resolved/removed using cleanup service)
             const displayTickets = await getDisplayTickets(false); // false = include blocked tickets
 
-            // If no active tickets, show placeholder message
+            // If no active tickets, show placeholder message and the create button
             if (displayTickets.length === 0) {
                 const emptyItem = new vscode.TreeItem('No open tickets', vscode.TreeItemCollapsibleState.None);
                 emptyItem.iconPath = new vscode.ThemeIcon('inbox');
                 emptyItem.tooltip = 'All active problems resolved! Check archive for completed tickets.';
-                return [emptyItem];
+                return [createTicketItem, emptyItem];
             }
 
-            // Map tickets to TreeItems
-            return displayTickets.map(ticket => this.createTicketItem(ticket));
+            // Map tickets to TreeItems and prepend the create button
+            return [createTicketItem, ...displayTickets.map(ticket => this.createTicketItem(ticket))];
         } catch (err) {
             // Error handling: Show error item if database query fails
             logError(`Failed to load tickets: ${err}`);
