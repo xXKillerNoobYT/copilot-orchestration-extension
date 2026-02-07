@@ -168,7 +168,7 @@ export const CustomListSchema = z.object({
     name: z
         .string()
         .min(1, 'List name is required')
-        .max(CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_NAME_MAX_LENGTH, 
+        .max(CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_NAME_MAX_LENGTH,
             `List name must be ${CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_NAME_MAX_LENGTH} characters or less`),
     /** What this list is for */
     description: z
@@ -184,7 +184,7 @@ export const CustomListSchema = z.object({
                 .max(CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_ITEM_MAX_LENGTH,
                     `List item must be ${CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_ITEM_MAX_LENGTH} characters or less`)
         )
-        .min(CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_ITEMS_MIN, 
+        .min(CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_ITEMS_MIN,
             `List must have at least ${CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_ITEMS_MIN} item`)
         .max(CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_ITEMS_MAX,
             `List can have at most ${CUSTOM_AGENT_CONSTRAINTS.CUSTOM_LIST_ITEMS_MAX} items`),
@@ -277,14 +277,14 @@ export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
  */
 export const CustomAgentSchema = z.object({
     // -------------------- Required Fields --------------------
-    
+
     /** Unique agent identifier (no spaces, lowercase, no reserved names) */
     name: z
         .string()
         .min(1, 'Agent name is required')
         .max(CUSTOM_AGENT_CONSTRAINTS.NAME_MAX_LENGTH,
             `Agent name must be ${CUSTOM_AGENT_CONSTRAINTS.NAME_MAX_LENGTH} characters or less`)
-        .regex(/^[a-z][a-z0-9-]*$/, 
+        .regex(/^[a-z][a-z0-9-]*$/,
             'Agent name must start with a letter, contain only lowercase letters, numbers, and hyphens')
         .refine(
             (name) => !RESERVED_AGENT_NAMES.includes(name as ReservedAgentName),
@@ -313,7 +313,7 @@ export const CustomAgentSchema = z.object({
                 .max(CUSTOM_AGENT_CONSTRAINTS.GOAL_MAX_LENGTH,
                     `Each goal must be ${CUSTOM_AGENT_CONSTRAINTS.GOAL_MAX_LENGTH} characters or less`)
         )
-        .min(CUSTOM_AGENT_CONSTRAINTS.GOALS_MIN, 
+        .min(CUSTOM_AGENT_CONSTRAINTS.GOALS_MIN,
             `Agent must have at least ${CUSTOM_AGENT_CONSTRAINTS.GOALS_MIN} goal`)
         .max(CUSTOM_AGENT_CONSTRAINTS.GOALS_MAX,
             `Agent can have at most ${CUSTOM_AGENT_CONSTRAINTS.GOALS_MAX} goals`),
@@ -418,16 +418,16 @@ export function validateAgentName(name: string): {
         return { valid: false, error: 'Agent name is required' };
     }
     if (name.length > CUSTOM_AGENT_CONSTRAINTS.NAME_MAX_LENGTH) {
-        return { 
-            valid: false, 
+        return {
+            valid: false,
             error: `Agent name must be ${CUSTOM_AGENT_CONSTRAINTS.NAME_MAX_LENGTH} characters or less`
         };
     }
 
     // Check format (lowercase, starts with letter, only letters/numbers/hyphens)
     if (!/^[a-z][a-z0-9-]*$/.test(name)) {
-        return { 
-            valid: false, 
+        return {
+            valid: false,
             error: 'Agent name must start with a letter, contain only lowercase letters, numbers, and hyphens'
         };
     }

@@ -469,7 +469,7 @@ export function generateContextualQuery(agent: CustomAgent): string {
     const templates = [
         `Based on your focus on "${firstGoal}", how would you approach a complex problem in this area?`,
         `As ${agent.name}, what would be your first steps when given a new task related to ${firstGoal.toLowerCase()}?`,
-        `Help me understand how you would ${firstGoal.toLowerCase()}.`,
+        `Help me understand how you would ${firstGoal.toLowerCase()}?`,
     ];
 
     return templates[Math.floor(Math.random() * templates.length)];
