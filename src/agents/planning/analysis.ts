@@ -208,23 +208,25 @@ UNCLEAR:
                         });
                         break;
 
-                    case 'constraints':
+                    case 'constraints': {
                         const constraintMatch = content.match(/^\[(technical|business|time|resource)\]\s*(.+)/i);
                         constraints.push({
                             type: (constraintMatch?.[1]?.toLowerCase() as Constraint['type']) || 'technical',
                             description: constraintMatch?.[2] || content
                         });
                         break;
+                    }
 
-                    case 'dependencies':
+                    case 'dependencies': {
                         const depMatch = content.match(/^(.+?)\s*\(external:\s*(yes|no)\)/i);
                         dependencies.push({
                             name: depMatch?.[1]?.trim() || content,
                             isExternal: depMatch?.[2]?.toLowerCase() === 'yes'
                         });
                         break;
+                    }
 
-                    case 'unclear':
+                    case 'unclear': {
                         const unclearMatch = content.match(/^(.+?)\s*→\s*(.+)$/);
                         if (unclearMatch) {
                             unclearItems.push({
@@ -234,6 +236,7 @@ UNCLEAR:
                             });
                         }
                         break;
+                    }
                 }
             }
         }

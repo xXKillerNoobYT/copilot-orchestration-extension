@@ -608,7 +608,7 @@ function generateClassImplementation(
 ): string {
     const pascalName = toPascalCase(feature.name);
 
-    let content = `// ============================================================================
+    const content = `// ============================================================================
 // Class Implementation
 // ============================================================================
 

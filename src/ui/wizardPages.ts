@@ -15,11 +15,11 @@ import { PLAN_CONSTRAINTS } from '../planning/schema';
 // ============================================================================
 
 export function renderPage1Overview(plan: Partial<CompletePlan>): string {
-    const name = plan.overview?.name || '';
-    const description = plan.overview?.description || '';
-    const goals = plan.overview?.goals || [];
+  const name = plan.overview?.name || '';
+  const description = plan.overview?.description || '';
+  const goals = plan.overview?.goals || [];
 
-    return `
+  return `
     <div class="page-content">
       <h2>📋 Project Overview</h2>
       <p class="page-subtitle">Define your project at a high level</p>
@@ -84,9 +84,9 @@ export function renderPage1Overview(plan: Partial<CompletePlan>): string {
 }
 
 function renderGoalsList(goals: string[]): string {
-    return goals
-        .map(
-            (goal, i) => `
+  return goals
+    .map(
+      (goal, i) => `
         <div class="goal-item">
           <div class="goal-number">${i + 1}</div>
           <input
@@ -100,8 +100,8 @@ function renderGoalsList(goals: string[]): string {
           <button type="button" class="btn-icon" onclick="removeGoal(${i})">✕</button>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 // ============================================================================
@@ -109,9 +109,9 @@ function renderGoalsList(goals: string[]): string {
 // ============================================================================
 
 export function renderPage2Features(plan: Partial<CompletePlan>): string {
-    const features = plan.featureBlocks || [];
+  const features = plan.featureBlocks || [];
 
-    return `
+  return `
     <div class="page-content">
       <h2>🎯 Feature Blocks</h2>
       <p class="page-subtitle">Break your project into major features</p>
@@ -132,9 +132,9 @@ export function renderPage2Features(plan: Partial<CompletePlan>): string {
 }
 
 function renderFeaturesList(features: FeatureBlock[]): string {
-    return features
-        .map(
-            (feature) => `
+  return features
+    .map(
+      (feature) => `
         <div class="feature-card" data-id="${feature.id}">
           <div class="feature-header">
             <div class="feature-title">
@@ -189,14 +189,14 @@ function renderFeaturesList(features: FeatureBlock[]): string {
           </div>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 function renderCriteria(criteria: string[], featureId: string): string {
-    return criteria
-        .map(
-            (c, i) => `
+  return criteria
+    .map(
+      (c, i) => `
         <div class="criteria-item">
           <input
             type="text"
@@ -207,8 +207,8 @@ function renderCriteria(criteria: string[], featureId: string): string {
           <button type="button" class="btn-icon" onclick="removeCriteria('${featureId}', ${i})">✕</button>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 // ============================================================================
@@ -216,9 +216,9 @@ function renderCriteria(criteria: string[], featureId: string): string {
 // ============================================================================
 
 export function renderPage3Linking(plan: Partial<CompletePlan>): string {
-    const features = plan.featureBlocks || [];
+  const features = plan.featureBlocks || [];
 
-    return `
+  return `
     <div class="page-content">
       <h2>🔗 Block Dependencies</h2>
       <p class="page-subtitle">Define how features depend on each other</p>
@@ -231,9 +231,9 @@ export function renderPage3Linking(plan: Partial<CompletePlan>): string {
 
         <div class="dependencies-list">
           ${features.length > 1
-            ? renderDependencyPairs(features, plan.blockLinks || [])
-            : '<p class="empty-state">Add at least 2 features to create dependencies</p>'
-        }
+      ? renderDependencyPairs(features, plan.blockLinks || [])
+      : '<p class="empty-state">Add at least 2 features to create dependencies</p>'
+    }
         </div>
       </section>
 
@@ -259,20 +259,20 @@ export function renderPage3Linking(plan: Partial<CompletePlan>): string {
 }
 
 function renderDependencyPairs(
-    features: FeatureBlock[],
-    links: any[]
+  features: FeatureBlock[],
+  links: any[]
 ): string {
-    return features
-        .flatMap((f1, i) =>
-            features.slice(i + 1).map((f2) => ({
-                id: f1.id,
-                name: f1.name,
-                targetId: f2.id,
-                targetName: f2.name,
-            }))
-        )
-        .map(
-            (pair) => `
+  return features
+    .flatMap((f1, i) =>
+      features.slice(i + 1).map((f2) => ({
+        id: f1.id,
+        name: f1.name,
+        targetId: f2.id,
+        targetName: f2.name,
+      }))
+    )
+    .map(
+      (pair) => `
         <div class="dependency-pair">
           <span class="dep-label">${escapeHtml(pair.name)}</span>
           <select onchange="updateDependency('${pair.id}', '${pair.targetId}', this.value)">
@@ -284,14 +284,14 @@ function renderDependencyPairs(
           </select>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 function renderConditionals(features: FeatureBlock[], conditionals: any[]): string {
-    return features
-        .map(
-            (feature, i) => `
+  return features
+    .map(
+      (feature, i) => `
         <div class="conditional-item" data-feature="${feature.id}">
           <div class="conditional-form">
             <span>When</span>
@@ -311,8 +311,8 @@ function renderConditionals(features: FeatureBlock[], conditionals: any[]): stri
           </div>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 // ============================================================================
@@ -320,10 +320,10 @@ function renderConditionals(features: FeatureBlock[], conditionals: any[]): stri
 // ============================================================================
 
 export function renderPage4UserStories(plan: Partial<CompletePlan>): string {
-    const stories = plan.userStories || [];
-    const features = plan.featureBlocks || [];
+  const stories = plan.userStories || [];
+  const features = plan.featureBlocks || [];
 
-    return `
+  return `
     <div class="page-content">
       <h2>👥 User Stories</h2>
       <p class="page-subtitle">Describe requirements from the user's perspective</p>
@@ -351,9 +351,9 @@ export function renderPage4UserStories(plan: Partial<CompletePlan>): string {
 }
 
 function renderUserStoriesList(stories: UserStory[], features: FeatureBlock[]): string {
-    return stories
-        .map(
-            (story) => `
+  return stories
+    .map(
+      (story) => `
         <div class="story-card" data-id="${story.id}">
           <div class="story-form">
             <div class="form-group">
@@ -393,24 +393,48 @@ function renderUserStoriesList(stories: UserStory[], features: FeatureBlock[]): 
               </div>
             </div>
 
+            <div class="form-group">
+              <label>Acceptance Criteria:</label>
+              <div class="criteria-list" id="story-criteria-${story.id}">
+                ${(story.acceptanceCriteria || []).map((c, i) => `
+                  <div class="criterion-item">
+                    <input type="text" value="${escapeHtml(c)}" 
+                      onchange="updateStoryAcceptanceCriteria('${story.id}', ${i}, this.value)"/>
+                    <button onclick="removeStoryCriterion('${story.id}', ${i})">×</button>
+                  </div>
+                `).join('')}
+              </div>
+              <button onclick="addStoryCriterion('${story.id}')">+ Add Criterion</button>
+            </div>
+
+            <div class="form-group">
+              <label>Priority:</label>
+              <select onchange="updateUserStory('${story.id}', 'priority', this.value)">
+                <option value="low" ${story.priority === 'low' ? 'selected' : ''}>Low</option>
+                <option value="medium" ${story.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                <option value="high" ${story.priority === 'high' ? 'selected' : ''}>High</option>
+                <option value="critical" ${story.priority === 'critical' ? 'selected' : ''}>Critical</option>
+              </select>
+            </div>
+
             <button type="button" class="btn-danger btn-small" onclick="removeUserStory('${story.id}')">
               Remove Story
             </button>
           </div>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 function renderFeatureCheckboxes(
-    selectedIds: string[],
-    features: FeatureBlock[],
-    storyId: string
+  selectedIds: string[],
+  features: FeatureBlock[],
+  storyId: string
 ): string {
-    return features
-        .map(
-            (f) => `
+  return features
+    .map(
+      (f) => `
         <label class="checkbox-label">
           <input
             type="checkbox"
@@ -420,8 +444,8 @@ function renderFeatureCheckboxes(
           ${escapeHtml(f.name)}
         </label>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 // ============================================================================
@@ -429,15 +453,16 @@ function renderFeatureCheckboxes(
 // ============================================================================
 
 export function renderPage5DevStories(plan: Partial<CompletePlan>): string {
-    const devStories = plan.developerStories || [];
+  const devStories = plan.developerStories || [];
+  const features = plan.featureBlocks || [];
 
-    return `
+  return `
     <div class="page-content">
       <h2>👨‍💻 Developer Stories</h2>
       <p class="page-subtitle">Technical requirements from developer perspective</p>
 
       <div class="stories-list">
-        ${devStories.length > 0 ? renderDevStoriesList(devStories) : '<p class="empty-state">No developer stories yet</p>'}
+        ${devStories.length > 0 ? renderDevStoriesList(devStories, features) : '<p class="empty-state">No developer stories yet</p>'}
       </div>
 
       <button type="button" class="btn-primary" onclick="addDevStory()">
@@ -451,10 +476,10 @@ export function renderPage5DevStories(plan: Partial<CompletePlan>): string {
   `;
 }
 
-function renderDevStoriesList(stories: DeveloperStory[]): string {
-    return stories
-        .map(
-            (story) => `
+function renderDevStoriesList(stories: DeveloperStory[], features: FeatureBlock[]): string {
+  return stories
+    .map(
+      (story) => `
         <div class="story-card dev-story" data-id="${story.id}">
           <div class="story-form">
             <div class="form-group">
@@ -513,14 +538,28 @@ function renderDevStoriesList(stories: DeveloperStory[]): string {
               >${escapeHtml(story.databaseNotes)}</textarea>
             </div>
 
+            <div class="form-group">
+              <label>Related Features:</label>
+              <div class="checkbox-list">
+                ${features.map(f => `
+                  <label class="checkbox-label">
+                    <input type="checkbox" 
+                      ${(story.relatedBlockIds || []).includes(f.id) ? 'checked' : ''}
+                      onchange="updateDevStoryBlockLink('${story.id}', '${f.id}', this.checked)"/>
+                    ${escapeHtml(f.name)}
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
             <button type="button" class="btn-danger btn-small" onclick="removeDevStory('${story.id}')">
               Remove Story
             </button>
           </div>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 // ============================================================================
@@ -528,9 +567,11 @@ function renderDevStoriesList(stories: DeveloperStory[]): string {
 // ============================================================================
 
 export function renderPage6SuccessCriteria(plan: Partial<CompletePlan>): string {
-    const criteria = plan.successCriteria || [];
+  const criteria = plan.successCriteria || [];
+  const features = plan.featureBlocks || [];
+  const stories = plan.userStories || [];
 
-    return `
+  return `
     <div class="page-content">
       <h2>✅ Success Criteria</h2>
       <p class="page-subtitle">Define measurable success using SMART framework</p>
@@ -557,7 +598,7 @@ export function renderPage6SuccessCriteria(plan: Partial<CompletePlan>): string 
       </section>
 
       <div class="criteria-list">
-        ${criteria.length > 0 ? renderSuccessCriteriaList(criteria) : '<p class="empty-state">No criteria added yet</p>'}
+        ${criteria.length > 0 ? renderSuccessCriteriaList(criteria, features, stories) : '<p class="empty-state">No criteria added yet</p>'}
       </div>
 
       <button type="button" class="btn-primary" onclick="addSuccessCriteria()">
@@ -571,10 +612,10 @@ export function renderPage6SuccessCriteria(plan: Partial<CompletePlan>): string 
   `;
 }
 
-function renderSuccessCriteriaList(criteria: SuccessCriterion[]): string {
-    return criteria
-        .map(
-            (c) => `
+function renderSuccessCriteriaList(criteria: SuccessCriterion[], features: FeatureBlock[], stories: UserStory[]): string {
+  return criteria
+    .map(
+      (c) => `
         <div class="criteria-card" data-id="${c.id}">
           <div class="criteria-form">
             <textarea
@@ -625,14 +666,61 @@ function renderSuccessCriteriaList(criteria: SuccessCriterion[]): string {
               </label>
             </div>
 
+            <div class="form-group">
+              <label>Related Features:</label>
+              <div class="checkbox-list">
+                ${features.map(f => `
+                  <label class="checkbox-label">
+                    <input type="checkbox"
+                      ${(c.relatedFeatureIds || []).includes(f.id) ? 'checked' : ''}
+                      onchange="updateCriterionFeatureLink('${c.id}', '${f.id}', this.checked)"/>
+                    ${escapeHtml(f.name)}
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Related User Stories:</label>
+              <div class="checkbox-list">
+                ${stories.map(s => `
+                  <label class="checkbox-label">
+                    <input type="checkbox"
+                      ${(c.relatedStoryIds || []).includes(s.id) ? 'checked' : ''}
+                      onchange="updateCriterionStoryLink('${c.id}', '${s.id}', this.checked)"/>
+                    As a ${escapeHtml(s.userType)}, I want to ${escapeHtml(s.action)}
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox"
+                  ${c.testable ? 'checked' : ''}
+                  onchange="updateSuccessCriteria('${c.id}', 'testable', this.checked)"/>
+                Testable (can be verified)
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Priority:</label>
+              <select onchange="updateSuccessCriteria('${c.id}', 'priority', this.value)">
+                <option value="low" ${c.priority === 'low' ? 'selected' : ''}>Low</option>
+                <option value="medium" ${c.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                <option value="high" ${c.priority === 'high' ? 'selected' : ''}>High</option>
+                <option value="critical" ${c.priority === 'critical' ? 'selected' : ''}>Critical</option>
+              </select>
+            </div>
+
             <button type="button" class="btn-danger btn-small" onclick="removeSuccessCriteria('${c.id}')">
               Remove Criterion
             </button>
           </div>
         </div>
       `
-        )
-        .join('');
+    )
+    .join('');
 }
 
 // ============================================================================
@@ -640,11 +728,11 @@ function renderSuccessCriteriaList(criteria: SuccessCriterion[]): string {
 // ============================================================================
 
 function escapeHtml(text: string): string {
-    // Simple HTML escape function (no DOM dependency)
-    return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+  // Simple HTML escape function (no DOM dependency)
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

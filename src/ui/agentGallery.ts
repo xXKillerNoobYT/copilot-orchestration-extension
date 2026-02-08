@@ -145,7 +145,7 @@ export async function showAgentGallery(context: vscode.ExtensionContext): Promis
                 );
                 break;
 
-            case 'search':
+            case 'search': {
                 // Filter and re-render based on search term
                 const filtered = filterAgents(builtinWithStatus, message.query);
                 panel.webview.postMessage({
@@ -153,6 +153,7 @@ export async function showAgentGallery(context: vscode.ExtensionContext): Promis
                     agents: filtered
                 });
                 break;
+            }
         }
     });
 }

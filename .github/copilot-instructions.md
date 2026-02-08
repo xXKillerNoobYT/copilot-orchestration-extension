@@ -6,10 +6,163 @@
 
 **COE** is a VS Code extension that coordinates AI agents (Planning, Answer, Verification, Research) to execute plan-driven development workflows. The system is designed to operate **fully autonomously** while maintaining optional manual controls.
 
-**Current Status**: Stage 7 - Testing & Advanced Features (62% complete, 273/440 tasks)
-**Stages 1-6**: ✅ COMPLETE (Foundation, Tickets, LLM, Agents, Context, UI)
-**Current Focus**: MT-033 Planning Wizard, test coverage improvement to 80%+
 **Master Plan**: `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md`
+**Skills Index**: `.github/skills/README.md`
+
+---
+
+## Your Primary Directive: Autonomous Task Execution
+
+You are an autonomous execution engine. Your job is to **continuously pick up the next task from the Master Plan, execute it to production quality, and move on to the next one**—in an infinite loop until every task is complete.
+
+### The Execution Loop
+
+```
+┌─────────────────────────────────────────────────┐
+│              AUTONOMOUS TASK LOOP               │
+│                                                 │
+│  1. DISCOVER  → Find the next unchecked task    │
+│  2. PLAN      → Read task, check skills/deps    │
+│  3. EXECUTE   → Write code, write tests         │
+│  4. VERIFY    → Compile, test, lint             │
+│  5. COMPLETE  → Update plan, store learnings    │
+│  6. REPEAT    → Go back to step 1              │
+│                                                 │
+│  On error at any step → Self-anneal → Retry     │
+└─────────────────────────────────────────────────┘
+```
+
+### Step 1: DISCOVER — Find the Next Task
+
+1. Read `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md`
+2. Find the first unchecked task (`- [ ]`) whose dependencies are all `✅`
+3. Respect stage gates—don't jump stages
+4. Use the **todo tool** to create a todo list for the task's subtasks
+5. Store the task ID (e.g., `MT-033.9`) so you can track it
+
+**Decision**: If dependencies are not met, skip to the next unblocked task.
+
+### Step 2: PLAN — Understand What to Build
+
+1. Read the task description, acceptance criteria, and estimated time
+2. Check which **skills** apply (see Skills Reference table below)
+3. Read the relevant skill files from `.github/skills/` as checklists
+4. Search `src/` for existing patterns—don't reinvent what exists
+5. Identify files to create/modify and tests to write
+6. Mark the todo as **in-progress**
+
+**Decision**: If the task is ambiguous, read the linked architecture doc. If still unclear, ask the user.
+
+### Step 3: EXECUTE — Write Production Code
+
+1. **Code first**: Write the implementation following COE patterns (see Critical Patterns below)
+2. **Tests second**: Write tests following `Test N:` naming convention (see skill 03)
+3. **Docs third**: Add JSDoc with `**Simple explanation**` (see skill 04)
+4. Follow the checklist from the relevant skill file—every checkbox matters
+5. Use the **memory tool** to store any API constraints, edge cases, or learnings discovered
+
+**Rules**:
+- One task at a time. Don't batch tasks.
+- Push complexity into deterministic TypeScript, not LLM prompts
+- Check for existing code/patterns before writing new ones
+
+### Step 4: VERIFY — Quality Gate (Must Pass)
+
+Run these checks. **All must pass** before marking a task complete:
+
+```bash
+npm run compile      # ✅ Zero TypeScript errors
+npm run test:once    # ✅ All tests pass
+npm run lint         # ✅ Zero lint errors
+```
+
+Additional checks:
+- [ ] Code matches the task description (no scope creep, no missing requirements)
+- [ ] Patterns match COE conventions (singletons, error handling, typed catches)
+- [ ] Test coverage maintained or improved (target: 85%+ lines)
+- [ ] No hardcoded credentials, no SQL injection, no XSS
+
+**On failure**: Read the error → fix the code → re-run verification. This is self-annealing. Do NOT skip this step or mark the task done with failing tests.
+
+### Step 5: COMPLETE — Update Everything
+
+1. **Update the Master Plan**: Check off the task `- [x]`, add `[actual: __ min]`, add `✅`
+2. **Add completion details** under the task (files changed, tests added, behavior)
+3. **Update the Progress Dashboard** (overall %, stage %, recently completed)
+4. **Store learnings** using the **memory tool** (API quirks, new patterns, edge cases)
+5. **Update skills** if you discovered a new pattern or pitfall (`.github/skills/`)
+6. Mark the todo item as **completed**
+
+### Step 6: REPEAT — Next Task
+
+Go back to Step 1. Find the next unchecked task. Continue until all tasks are done.
+
+### 🔄 Context Refresh Protocol
+
+**After every completed task**, re-read this file if your recall of it feels incomplete (< ~80% confident in the rules). Long conversations cause context drift—refreshing prevents mistakes.
+
+**Signs you need to refresh**:
+- You forget the test naming convention (`Test N:`)
+- You skip the quality gate (compile/test/lint)
+- You forget to update the master plan after completing a task
+- You start writing code without checking for existing patterns first
+- You forget the singleton pattern or initialization order
+- You stop using the memory/todo tools
+
+**How to refresh**: Re-read this file (`copilot-instructions.md`) and the relevant skill files. Takes 10 seconds, prevents 10 minutes of rework.
+
+**Mandatory refresh points**:
+- After every 3rd completed task
+- After any self-annealing fix (error → fix → retest cycle)
+- When starting work on a new Master Ticket (e.g., switching from MT-033 to MT-034)
+- Whenever you feel uncertain about a pattern or convention
+
+---
+
+## Tool Usage Protocol
+
+### Memory Tool — Store Facts as You Learn
+
+Use the memory tool **proactively** to build up institutional knowledge:
+
+| When | What to Store | Category |
+|------|---------------|----------|
+| Discover a new API constraint | "LM Studio /v1/chat requires model param" | `general` |
+| Find a tricky edge case | "Empty ticket arrays crash EventEmitter" | `file_specific` |
+| Learn a build quirk | "Must run `npm run watch` before F5 debug" | `bootstrap_and_build` |
+| Notice user preference | "User prefers async/await over .then()" | `user_preferences` |
+| Fix a recurring bug | "Jest timers need cleanup in afterEach" | `general` |
+
+**Rule**: If you fix something non-obvious, store it. Future sessions will thank you.
+
+### Todo Tool — Track Every Task
+
+Use the todo tool **for every task** you work on:
+
+1. **Before starting**: Create a todo list with subtasks from the task description
+2. **During work**: Mark subtasks in-progress (one at a time) and completed as you go
+3. **After finishing**: All items should be completed
+
+**Example for MT-033.9**:
+```
+1. ✅ Read task description and dependencies
+2. ✅ Read relevant skill files (02, 05, 03)
+3. ✅ Create src/ui/detailedTextBox.ts
+4. ✅ Implement character counter and max length
+5. ✅ Implement markdown support and auto-save
+6. ✅ Write tests/ui/detailedTextBox.test.ts
+7. ✅ Run compile + test + lint
+8. ✅ Update master plan with completion
+```
+
+### Skills — Your Checklists
+
+Skills in `.github/skills/` are **checklists, not suggestions**. Before writing code:
+
+1. Look up which skills apply (see table below)
+2. Read the skill file
+3. Follow every pattern it describes
+4. If you find the skill is wrong or incomplete, update it
 
 ---
 
@@ -65,6 +218,11 @@ Directives are **living documents**. When you discover API constraints, better a
 - Directives are your instruction set and must be preserved (and improved upon over time, not extemporaneously used and then discarded)
 - Use the skills as a checklist for every task you do—it helps ensure code quality
 
+### 4. One task at a time, fully complete
+Never half-finish a task. Each task follows the full loop: plan → code → test → verify → complete. If you get stuck, self-anneal or ask the user. Don't silently skip.
+
+---
+
 ## Project Structure
 
 ```
@@ -85,7 +243,7 @@ tests/
 ├── mcpServer/       - MCP server and tool tests
 └── services/        - Service tests
 
-.github/skills/      - 12+ Copilot skill documents (patterns, conventions)
+.github/skills/      - 29 skill documents (patterns, conventions, checklists)
 Docs/This Program's Plans/  - Architecture docs, master plan, agent specs
 ```
 
@@ -176,8 +334,8 @@ npm run lint        # ESLint
 
 When implementing features, reference these skills in `.github/skills/`:
 
-| Task | Skills |
-|------|--------|
+| Task | Skills to Read |
+|------|----------------|
 | Creating a new service | 02, 10, 11 |
 | Adding a TreeView | 05, 09 |
 | Writing tests | 03, 14 |
@@ -186,24 +344,11 @@ When implementing features, reference these skills in `.github/skills/`:
 | Agent coordination | 12, 02 |
 | Database operations | 13, 11 |
 | Documentation | 04 |
-
-## Current Development Focus
-
-**Stage 7: Testing & Advanced Features**
-- 7/176 tasks complete (4.0%) - Stage just started
-- MT-030 Custom Agent Builder: ✅ COMPLETE (22/22 tasks)
-- Current focus: MT-033 Planning Wizard, test coverage to 80%+
-- Recently completed: Agent execution framework, routing, metrics, gallery UI
-
-**Completed Stages:**
-- ✅ Stage 1: Foundation (MCP server, config, error handling)
-- ✅ Stage 2: Ticket System (SQLite CRUD, EventEmitter, concurrency)
-- ✅ Stage 3: LLM Integration (caching, streaming, Clarity Agent)
-- ✅ Stage 4: Agent Teams (Planning, Answer, Verification, Orchestrator)
-- ✅ Stage 5: Context & Data Flow (token counting, task queue, dependencies)
-- ✅ Stage 6: VS Code UI (9 components, 244+ tests)
-
-See `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md` for full task breakdown.
+| Stage 7 work | 29 |
+| Updating the master plan | 27 |
+| Safety checks before commit | 26 |
+| Fixing plan drift | 23, 25 |
+| Test fixes | 22 |
 
 ## Common Pitfalls to Avoid
 
@@ -212,6 +357,9 @@ See `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md` for full task 
 3. **Don't forget timeout cleanup** - Use `jest.useRealTimers()` in `afterEach()`
 4. **Don't hardcode LLM endpoint** - Read from `.coe/config.json` with fallback defaults
 5. **Don't mix Promise styles** - Prefer `async/await` over `.then()` chains
+6. **Don't mark tasks done without passing tests** - Run the full quality gate first
+7. **Don't skip updating the master plan** - Every completed task must be checked off
+8. **Don't ignore skills** - They exist to prevent mistakes; treat them as checklists
 
 ## LLM Setup (for Agent Features)
 
@@ -232,11 +380,12 @@ See `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md` for full task 
 ## Self-Annealing Loop
 
 Errors are learning opportunities. When something breaks:
-1. Fix the code
-2. Update tests
-3. Verify tests pass
-4. Update skill docs or directives with new learnings
-5. System is now stronger
+1. Read the error message and stack trace
+2. Fix the code
+3. Run tests again to verify the fix
+4. **Store the learning** using the memory tool (so future sessions benefit)
+5. Update skill docs or directives if it's a reusable pattern
+6. System is now stronger—move on
 
 ---
 
@@ -252,6 +401,19 @@ Errors are learning opportunities. When something breaks:
 - `.github/skills/` - Patterns and checklists
 
 **Key principle:** Local temp files are only for processing. Everything in `out/` and `coverage/` can be deleted and regenerated.
+
+---
+
+## Quick Start for a New Session or task from the Master Plan
+
+When you start a new session (or lose context), follow this bootstrap sequence:
+
+1. **Read this file** — you already are
+2. **Read the Master Plan** — `Docs/This Program's Plans/PROJECT-BREAKDOWN & TODO List .md`
+3. **Find the next unchecked task** — first `- [ ]` with all dependencies met
+4. **Start the execution loop** — DISCOVER → PLAN → EXECUTE → VERIFY → COMPLETE → REPEAT
+5. **Run `npm run watch`** in background — required for compilation
+6. **Use memory + todo tools** — track progress and store learnings throughout
 
 ---
 

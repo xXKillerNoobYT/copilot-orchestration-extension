@@ -465,8 +465,8 @@ export const VALIDATION_RULES: { [key: string]: (plan: CompletePlan) => Validati
         const vagueGoalWords = ['improve', 'better', 'good', 'nice', 'enhance', 'optimize'];
 
         plan.overview.goals.forEach((goal, i) => {
-            let hasNumber = /\d/.test(goal);
-            let hasVagueWord = vagueGoalWords.some(w => goal.toLowerCase().includes(w));
+            const hasNumber = /\d/.test(goal);
+            const hasVagueWord = vagueGoalWords.some(w => goal.toLowerCase().includes(w));
 
             if (hasVagueWord && !hasNumber) {
                 issues.push({

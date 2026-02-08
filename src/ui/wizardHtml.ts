@@ -14,43 +14,43 @@ import { CompletePlan, WizardState } from '../planning/types';
 import * as Pages from './wizardPages';
 
 export function generateWizardHTML(
-    wizardState: WizardState,
-    nonce: string
+  wizardState: WizardState,
+  nonce: string
 ): string {
-    const pageMap = ['overview', 'features', 'linking', 'userStories', 'devStories', 'criteria', 'review'];
-    const pageIndex = pageMap.indexOf(wizardState.currentPage as string);
-    const pageNum = pageIndex + 1;
-    const totalPages = 7;
+  const pageMap = ['overview', 'features', 'linking', 'userStories', 'devStories', 'criteria', 'review'];
+  const pageIndex = pageMap.indexOf(wizardState.currentPage as string);
+  const pageNum = pageIndex + 1;
+  const totalPages = 7;
 
-    // Select which page to render
-    let pageContent = '';
-    switch (pageIndex) {
-        case 0:
-            pageContent = Pages.renderPage1Overview(wizardState.plan);
-            break;
-        case 1:
-            pageContent = Pages.renderPage2Features(wizardState.plan);
-            break;
-        case 2:
-            pageContent = Pages.renderPage3Linking(wizardState.plan);
-            break;
-        case 3:
-            pageContent = Pages.renderPage4UserStories(wizardState.plan);
-            break;
-        case 4:
-            pageContent = Pages.renderPage5DevStories(wizardState.plan);
-            break;
-        case 5:
-            pageContent = Pages.renderPage6SuccessCriteria(wizardState.plan);
-            break;
-        case 6:
-            pageContent = renderPage7Review(wizardState);
-            break;
-        default:
-            pageContent = '<p>Unknown page</p>';
-    }
+  // Select which page to render
+  let pageContent = '';
+  switch (pageIndex) {
+    case 0:
+      pageContent = Pages.renderPage1Overview(wizardState.plan);
+      break;
+    case 1:
+      pageContent = Pages.renderPage2Features(wizardState.plan);
+      break;
+    case 2:
+      pageContent = Pages.renderPage3Linking(wizardState.plan);
+      break;
+    case 3:
+      pageContent = Pages.renderPage4UserStories(wizardState.plan);
+      break;
+    case 4:
+      pageContent = Pages.renderPage5DevStories(wizardState.plan);
+      break;
+    case 5:
+      pageContent = Pages.renderPage6SuccessCriteria(wizardState.plan);
+      break;
+    case 6:
+      pageContent = renderPage7Review(wizardState);
+      break;
+    default:
+      pageContent = '<p>Unknown page</p>';
+  }
 
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -504,10 +504,10 @@ export function generateWizardHTML(
       <div class="wizard-header">
         <div class="progress-bar">
           ${Array.from({ length: totalPages }, (_, i) => {
-        const isCompleted = i < pageIndex;
-        const isActive = i === pageIndex;
-        return `<div class="progress-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}"></div>`;
-    }).join('')}
+    const isCompleted = i < pageIndex;
+    const isActive = i === pageIndex;
+    return `<div class="progress-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}"></div>`;
+  }).join('')}
         </div>
         <div class="page-indicator">
           <span>Step <strong>${pageNum}</strong> of <strong>${totalPages}</strong></span>
@@ -1105,6 +1105,113 @@ export function generateWizardHTML(
       }
 
       // ========================================================================
+      // Page 4: User Stories Handlers (Additional)
+      // ========================================================================
+
+      function updateStoryAcceptanceCriteria(storyId: string, criteriaIndex: number, value: string) {
+        const story = wizardState.plan.userStories?.find(s => s.id === storyId);
+        if (!story) return;
+
+        if (!story.acceptanceCriteria) {
+          story.acceptanceCriteria = [];
+        }
+
+        if (criteriaIndex >= story.acceptanceCriteria.length) {
+          story.acceptanceCriteria.push(value);
+        } else {
+          story.acceptanceCriteria[criteriaIndex] = value;
+        }
+        refreshPage();
+      }
+
+      function addStoryCriterion(storyId: string) {
+        const story = wizardState.plan.userStories?.find(s => s.id === storyId);
+        if (!story) return;
+
+        if (!story.acceptanceCriteria) {
+          story.acceptanceCriteria = [];
+        }
+
+        if (story.acceptanceCriteria.length >= 10) {
+          showError('Maximum 10 acceptance criteria per story');
+          return;
+        }
+
+        story.acceptanceCriteria.push('');
+        refreshPage();
+      }
+
+      function removeStoryCriterion(storyId: string, criteriaIndex: number) {
+        const story = wizardState.plan.userStories?.find(s => s.id === storyId);
+        if (!story || !story.acceptanceCriteria) return;
+
+        story.acceptanceCriteria.splice(criteriaIndex, 1);
+        refreshPage();
+      }
+
+      // ========================================================================
+      // Page 5: Developer Stories Handlers (Additional)
+      // ========================================================================
+
+      function updateDevStoryBlockLink(storyId: string, blockId: string, checked: boolean) {
+        const story = wizardState.plan.developerStories?.find(s => s.id === storyId);
+        if (!story) return;
+
+        if (!story.relatedBlockIds) {
+          story.relatedBlockIds = [];
+        }
+
+        if (checked) {
+          if (!story.relatedBlockIds.includes(blockId)) {
+            story.relatedBlockIds.push(blockId);
+          }
+        } else {
+          story.relatedBlockIds = story.relatedBlockIds.filter(id => id !== blockId);
+        }
+        refreshPage();
+      }
+
+      // ========================================================================
+      // Page 6: Success Criteria Handlers (Additional)
+      // ========================================================================
+
+      function updateCriterionFeatureLink(criterionId: string, featureId: string, checked: boolean) {
+        const criterion = wizardState.plan.successCriteria?.find(c => c.id === criterionId);
+        if (!criterion) return;
+
+        if (!criterion.relatedFeatureIds) {
+          criterion.relatedFeatureIds = [];
+        }
+
+        if (checked) {
+          if (!criterion.relatedFeatureIds.includes(featureId)) {
+            criterion.relatedFeatureIds.push(featureId);
+          }
+        } else {
+          criterion.relatedFeatureIds = criterion.relatedFeatureIds.filter(id => id !== featureId);
+        }
+        refreshPage();
+      }
+
+      function updateCriterionStoryLink(criterionId: string, storyId: string, checked: boolean) {
+        const criterion = wizardState.plan.successCriteria?.find(c => c.id === criterionId);
+        if (!criterion) return;
+
+        if (!criterion.relatedStoryIds) {
+          criterion.relatedStoryIds = [];
+        }
+
+        if (checked) {
+          if (!criterion.relatedStoryIds.includes(storyId)) {
+            criterion.relatedStoryIds.push(storyId);
+          }
+        } else {
+          criterion.relatedStoryIds = criterion.relatedStoryIds.filter(id => id !== storyId);
+        }
+        refreshPage();
+      }
+
+      // ========================================================================
       // Message Handlers
       // ========================================================================
 
@@ -1132,8 +1239,8 @@ export function generateWizardHTML(
 
 // Page 7: Review & Export
 function renderPage7Review(state: WizardState): string {
-    const plan = state.plan;
-    return `
+  const plan = state.plan;
+  return `
     <div class="page-content">
       <h2>📋 Review & Export</h2>
       <p class="page-subtitle">Review your plan and export in your preferred format</p>
@@ -1149,7 +1256,7 @@ function renderPage7Review(state: WizardState): string {
           <div class="review-value">${plan.overview?.description || 'Not specified'}</div>
         </div>
         ${(plan.overview?.goals?.length || 0) > 0
-            ? `
+      ? `
           <div class="review-item">
             <div class="review-label">Goals</div>
             <ul class="review-list">
@@ -1157,8 +1264,8 @@ function renderPage7Review(state: WizardState): string {
             </ul>
           </div>
         `
-            : ''
-        }
+      : ''
+    }
       </section>
 
       <section class="review-section">

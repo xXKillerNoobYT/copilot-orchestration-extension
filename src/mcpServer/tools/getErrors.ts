@@ -8,7 +8,7 @@ import { logInfo, logWarn, logError } from '../../logger';
 /**
  * Request parameters for getErrors tool (no parameters required)
  */
-export interface GetErrorsParams {}
+export interface GetErrorsParams { }
 
 /**
  * TypeScript error entry
@@ -50,18 +50,18 @@ function scanSkippedTests(): SkippedTest[] {
         logInfo('[getErrors] Scanning for skipped tests...');
         const skippedTests: SkippedTest[] = [];
         const testsDir = path.join(process.cwd(), 'tests');
-        
+
         if (!fs.existsSync(testsDir)) {
             logWarn('[getErrors] Tests directory not found');
             return [];
         }
-        
+
         // Recursively find all test files
-        function findTestFiles(dir: string): string[] {
+        const findTestFiles = (dir: string): string[] => {
             const files: string[] = [];
             try {
                 const entries = fs.readdirSync(dir, { withFileTypes: true });
-                
+
                 for (const entry of entries) {
                     const fullPath = path.join(dir, entry.name);
                     if (entry.isDirectory() && !entry.name.startsWith('.')) {
@@ -75,7 +75,7 @@ function scanSkippedTests(): SkippedTest[] {
             }
             return files;
         }
-        
+
         const testFiles = findTestFiles(testsDir);
         const skipPatterns = [
             /it\.skip\s*\(/g,
@@ -84,12 +84,12 @@ function scanSkippedTests(): SkippedTest[] {
             /xit\s*\(/g,
             /xdescribe\s*\(/g
         ];
-        
+
         for (const testFile of testFiles) {
             try {
                 const content = fs.readFileSync(testFile, 'utf-8');
                 const lines = content.split('\n');
-                
+
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];
                     for (const pattern of skipPatterns) {
@@ -108,7 +108,7 @@ function scanSkippedTests(): SkippedTest[] {
                 logWarn(`[getErrors] Error reading test file ${testFile}: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
-        
+
         logInfo(`[getErrors] Found ${skippedTests.length} skipped tests`);
         return skippedTests;
     } catch (error: unknown) {
@@ -127,24 +127,24 @@ function scanUnderCoverageFiles(coverageThreshold: number = 80): UnderCoverageFi
     try {
         logInfo('[getErrors] Scanning for under-coverage files...');
         const underCoverageFiles: UnderCoverageFile[] = [];
-        
+
         const coverageSummaryFile = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
-        
+
         if (!fs.existsSync(coverageSummaryFile)) {
             logWarn('[getErrors] Coverage report not found at ' + coverageSummaryFile);
             return [];
         }
-        
+
         try {
             const summary = JSON.parse(fs.readFileSync(coverageSummaryFile, 'utf-8'));
-            
+
             // Check each file's coverage percentage
             for (const [filePath, coverage] of Object.entries(summary)) {
                 if (filePath === 'total') continue;
-                
+
                 const coverageData = coverage as any;
                 const lineCoverage = coverageData.lines?.pct || 0;
-                
+
                 if (lineCoverage < coverageThreshold) {
                     underCoverageFiles.push({
                         file: filePath,
@@ -155,7 +155,7 @@ function scanUnderCoverageFiles(coverageThreshold: number = 80): UnderCoverageFi
         } catch (error: unknown) {
             logWarn(`[getErrors] Error parsing coverage summary: ${error instanceof Error ? error.message : String(error)}`);
         }
-        
+
         logInfo(`[getErrors] Found ${underCoverageFiles.length} under-coverage files`);
         return underCoverageFiles;
     } catch (error: unknown) {
@@ -195,20 +195,20 @@ export interface GetErrorsResponse {
 function tryLoadPreGeneratedDiagnostics(): QualityDiagnostics | null {
     try {
         const diagnosticsPath = path.join(process.cwd(), '.vscode', 'quality-diagnostics.json');
-        
+
         if (!fs.existsSync(diagnosticsPath)) {
             return null;
         }
-        
+
         const fileContent = fs.readFileSync(diagnosticsPath, 'utf-8');
         const diagnostics = JSON.parse(fileContent);
-        
+
         // Validate structure
         if (!diagnostics.typeScriptErrors || !diagnostics.skippedTests || !diagnostics.underCoverageFiles) {
             logWarn('[getErrors] Pre-generated diagnostics file has invalid structure, will scan instead');
             return null;
         }
-        
+
         logInfo('[getErrors] Successfully loaded pre-generated diagnostics');
         return diagnostics;
     } catch (error: unknown) {

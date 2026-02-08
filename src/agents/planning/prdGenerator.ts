@@ -261,7 +261,7 @@ export class PRDGenerator extends EventEmitter {
                 .replace(/\[depends:[^\]]+\]/gi, '')
                 .replace(/\[actual:[^\]]+\]/gi, '')
                 .replace(/\(\d+\s*min\)/g, '')
-                .replace(/[✅🔒]/g, '')
+                .replace(/[\u2705\uD83D\uDD12]/gu, '')
                 .trim();
 
             features.push({

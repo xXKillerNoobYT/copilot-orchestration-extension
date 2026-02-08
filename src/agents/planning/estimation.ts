@@ -163,8 +163,8 @@ export class EffortEstimator {
 
         // Add breakdown components
         const breakdown = this.calculateBreakdown(baseMinutes, fullFactors);
-        const totalMinutes = breakdown.implementation + breakdown.testing + 
-                            breakdown.documentation + breakdown.review;
+        const totalMinutes = breakdown.implementation + breakdown.testing +
+            breakdown.documentation + breakdown.review;
 
         // Apply calibration from historical data
         const calibratedMinutes = Math.round(totalMinutes * this.calibrationFactor);
@@ -310,8 +310,8 @@ export class EffortEstimator {
         // Base ratios
         let implementationRatio = 0.6;
         let testingRatio = factors.requiresTests ? 0.25 : 0;
-        let documentationRatio = 0.1;
-        let reviewRatio = 0.05;
+        const documentationRatio = 0.1;
+        const reviewRatio = 0.05;
 
         // Adjust for complexity
         if (factors.codeComplexity >= 4) {
@@ -321,7 +321,7 @@ export class EffortEstimator {
 
         // Normalize to 1.0
         const total = implementationRatio + testingRatio + documentationRatio + reviewRatio;
-        
+
         return {
             implementation: Math.round(totalMinutes * (implementationRatio / total)),
             testing: Math.round(totalMinutes * (testingRatio / total)),
@@ -400,7 +400,7 @@ export class EffortEstimator {
 
         // Apply smoothing (don't change too drastically)
         this.calibrationFactor = this.calibrationFactor * 0.7 + avgRatio * 0.3;
-        
+
         // Clamp to reasonable range
         this.calibrationFactor = Math.max(0.5, Math.min(2.0, this.calibrationFactor));
 
@@ -412,7 +412,7 @@ export class EffortEstimator {
      */
     formatEstimate(result: EstimationResult): string {
         const { estimateMinutes, minMinutes, maxMinutes, confidence } = result;
-        
+
         if (minMinutes === maxMinutes) {
             return `${estimateMinutes} minutes`;
         }

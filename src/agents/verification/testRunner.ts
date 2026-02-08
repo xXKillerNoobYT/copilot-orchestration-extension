@@ -207,7 +207,6 @@ export class TestRunner extends EventEmitter {
         let total = 0;
         let failed = 0;
         let skipped = 0;
-        let coverage: CoverageResult | undefined;
 
         // Parse Jest output patterns
         const summaryMatch = stdout.match(/Tests:\s+(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+total/);
@@ -231,7 +230,7 @@ export class TestRunner extends EventEmitter {
         }
 
         // Parse coverage
-        coverage = this.parseCoverage(stdout);
+        const coverage = this.parseCoverage(stdout);
 
         return {
             passed: failed === 0 && total > 0,

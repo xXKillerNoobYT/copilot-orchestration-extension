@@ -66,14 +66,14 @@ class TicketDatabase {
         // Step 2: Resolve absolute path (relative to WORKSPACE folder, not extension path)
         // The .coe directory should be in the user's project, not the extension install location
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        
+
         if (!workspaceFolder) {
             logWarn('No workspace folder found. Ticket database will use in-memory mode.');
             this.isInMemoryMode = true;
             this.inMemoryStore = new Map();
             return;
         }
-        
+
         this.dbPath = path.resolve(workspaceFolder, dbPathFromConfig);
 
         // Step 3: Check if .coe directory exists
@@ -677,7 +677,7 @@ export function onTicketChange(listener: () => void): void {
 // TEST-ONLY: Expose querySQL for migration/schema tests
 export function _test_querySQL(sql: string, params: any[] = []): Promise<any[]> {
     if (!dbInstance) throw new Error('TicketDb not initialized');
-    // @ts-ignore
+    // @ts-expect-error querySQL is private but exposed for test migrations
     return dbInstance.querySQL(sql, params);
 }
 

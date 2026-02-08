@@ -1115,5 +1115,45 @@ describe('wizardHtml', () => {
             expect(html).toContain('case 4: return validatePage5()');
             expect(html).toContain('case 5: return validatePage6()');
         });
+
+        // ========================================================================
+        // Phase 3 Additional Handler Functions Tests
+        // ========================================================================
+
+        it('Test 111: should include updateStoryAcceptanceCriteria function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateStoryAcceptanceCriteria(storyId: string, criteriaIndex: number, value: string)');
+        });
+
+        it('Test 112: should include addStoryCriterion function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function addStoryCriterion(storyId: string)');
+        });
+
+        it('Test 113: should include removeStoryCriterion function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function removeStoryCriterion(storyId: string, criteriaIndex: number)');
+        });
+
+        it('Test 114: should include updateDevStoryBlockLink function', () => {
+            const state = createWizardState('devStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateDevStoryBlockLink(storyId: string, blockId: string, checked: boolean)');
+        });
+
+        it('Test 115: should include updateCriterionFeatureLink function', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateCriterionFeatureLink(criterionId: string, featureId: string, checked: boolean)');
+        });
+
+        it('Test 116: should include updateCriterionStoryLink function', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateCriterionStoryLink(criterionId: string, storyId: string, checked: boolean)');
+        });
     });
 });

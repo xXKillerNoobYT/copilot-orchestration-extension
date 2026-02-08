@@ -194,6 +194,7 @@ export class DevServerLauncher {
             }
 
             // Wait for process to exit
+            // eslint-disable-next-line prefer-const
             let exitTimeout: NodeJS.Timeout | undefined;
 
             const onExit = () => {
