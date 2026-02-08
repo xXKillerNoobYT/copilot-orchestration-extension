@@ -6,5 +6,6 @@
  * @module agents/orchestrator/routing
  */
 
+/* istanbul ignore file -- barrel exports only, no runtime code */
 export * from './codingAI';
 export * from './verification';

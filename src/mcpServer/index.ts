@@ -59,6 +59,7 @@ export { MCPServer } from './server';
  * Standalone mode detection
  * **Simple explanation**: Check if someone ran this file directly (like `node index.js`)
  */
+/* istanbul ignore if -- @preserve Entry point code for CLI usage */
 if (require.main === module) {
     // Running standalone (not imported by another file)
     logInfo('MCP server starting in standalone mode...');

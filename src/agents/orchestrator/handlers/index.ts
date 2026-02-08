@@ -6,5 +6,6 @@
  * @module agents/orchestrator/handlers
  */
 
+/* istanbul ignore file -- barrel exports only, no runtime code */
 export * from './getNextTask';
 export * from './reportTaskDone';
