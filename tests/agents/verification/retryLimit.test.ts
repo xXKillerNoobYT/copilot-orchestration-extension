@@ -53,7 +53,7 @@ describe('RetryLimitManager', () => {
     describe('recordFailure()', () => {
         it('Test 2: should create new state on first failure', () => {
             const result = manager.recordFailure('task-1', 'First failure');
-            
+
             expect(result.currentCount).toBe(1);
             expect(result.canRetry).toBe(true);
             expect(result.remaining).toBe(2);
@@ -62,7 +62,7 @@ describe('RetryLimitManager', () => {
         it('Test 3: should increment retry count', () => {
             manager.recordFailure('task-1', 'First failure');
             const result = manager.recordFailure('task-1', 'Second failure');
-            
+
             expect(result.currentCount).toBe(2);
             expect(result.remaining).toBe(1);
         });
@@ -71,7 +71,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 1');
             manager.recordFailure('task-1', 'Failure 2');
             const result = manager.recordFailure('task-1', 'Failure 3');
-            
+
             expect(result.currentCount).toBe(3);
             expect(result.canRetry).toBe(false);
             expect(result.shouldEscalate).toBe(true);
@@ -79,7 +79,7 @@ describe('RetryLimitManager', () => {
 
         it('Test 5: should log warning on failure', () => {
             manager.recordFailure('task-1', 'Test failure');
-            
+
             expect(logWarn).toHaveBeenCalledWith(
                 expect.stringContaining('task-1 failure #1/3')
             );
@@ -87,14 +87,14 @@ describe('RetryLimitManager', () => {
 
         it('Test 6: should record failed criteria', () => {
             manager.recordFailure('task-1', 'Failure', ['criteria-1', 'criteria-2']);
-            
+
             const state = manager.getState('task-1');
             expect(state?.failureHistory[0].failedCriteria).toEqual(['criteria-1', 'criteria-2']);
         });
 
         it('Test 7: should record failed tests', () => {
             manager.recordFailure('task-1', 'Failure', undefined, ['test-1', 'test-2']);
-            
+
             const state = manager.getState('task-1');
             expect(state?.failureHistory[0].failedTests).toEqual(['test-1', 'test-2']);
         });
@@ -103,7 +103,7 @@ describe('RetryLimitManager', () => {
             const before = Date.now();
             manager.recordFailure('task-1', 'Failure');
             const after = Date.now();
-            
+
             const state = manager.getState('task-1');
             expect(state?.firstFailureAt).toBeGreaterThanOrEqual(before);
             expect(state?.firstFailureAt).toBeLessThanOrEqual(after);
@@ -116,7 +116,7 @@ describe('RetryLimitManager', () => {
     describe('checkRetry()', () => {
         it('Test 9: should return true for unknown task', () => {
             const result = manager.checkRetry('unknown-task');
-            
+
             expect(result.canRetry).toBe(true);
             expect(result.currentCount).toBe(0);
             expect(result.remaining).toBe(3);
@@ -125,7 +125,7 @@ describe('RetryLimitManager', () => {
         it('Test 10: should return false when escalated', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.markEscalated('task-1');
-            
+
             const result = manager.checkRetry('task-1');
             expect(result.canRetry).toBe(false);
         });
@@ -134,7 +134,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 1');
             manager.recordFailure('task-1', 'Failure 2');
             const result = manager.recordFailure('task-1', 'Failure 3');
-            
+
             expect(result.escalationInfo).toBeDefined();
             expect(result.escalationInfo?.taskId).toBe('task-1');
             expect(result.escalationInfo?.totalRetries).toBe(3);
@@ -150,7 +150,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Test failed', ['required: pass tests'], ['same-test']);
             manager.recordFailure('task-1', 'Test failed', ['required: pass tests'], ['same-test']);
             const result = manager.recordFailure('task-1', 'Test failed', ['required: pass tests'], ['same-test']);
-            
+
             expect(result.escalationInfo?.recommendation).toBe('manual-fix');
             expect(result.escalationInfo?.evidence).toEqual(
                 expect.arrayContaining([expect.stringContaining('Same test(s) failing')])
@@ -161,7 +161,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Reason 1');
             manager.recordFailure('task-1', 'Reason 2');
             const result = manager.recordFailure('task-1', 'Reason 3');
-            
+
             expect(result.escalationInfo?.recommendation).toBe('change-approach');
             expect(result.escalationInfo?.evidence).toEqual(
                 expect.arrayContaining([expect.stringContaining('Different failure reasons')])
@@ -172,7 +172,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Same reason', ['nice-to-have']);
             manager.recordFailure('task-1', 'Same reason', ['nice-to-have']);
             const result = manager.recordFailure('task-1', 'Same reason', ['nice-to-have']);
-            
+
             // Should include skip evidence but might be overridden by manual-fix
             expect(result.escalationInfo?.evidence).toEqual(
                 expect.arrayContaining([expect.stringContaining('non-critical')])
@@ -183,9 +183,9 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Same reason', ['REQUIRED: must pass']);
             manager.recordFailure('task-1', 'Same reason', ['REQUIRED: must pass']);
             const result = manager.recordFailure('task-1', 'Same reason', ['REQUIRED: must pass']);
-            
+
             // Should NOT include skip evidence
-            const hasSkipEvidence = result.escalationInfo?.evidence.some(e => 
+            const hasSkipEvidence = result.escalationInfo?.evidence.some(e =>
                 e.toLowerCase().includes('non-critical')
             );
             expect(hasSkipEvidence).toBeFalsy();
@@ -195,7 +195,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 1', ['criteria-1'], ['test-1']);
             manager.recordFailure('task-1', 'Failure 2');
             const result = manager.recordFailure('task-1', 'Failure 3');
-            
+
             expect(result.escalationInfo?.failureSummary).toContain('3 retry attempts');
             expect(result.escalationInfo?.failureSummary).toContain('test-1');
         });
@@ -210,7 +210,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 1');
             manager.recordFailure('task-1', 'Failure 2');
             const result = manager.recordFailure('task-1', 'Failure 3');
-            
+
             expect(result.escalationInfo?.failureSummary).toMatch(/\ds/);
         });
     });
@@ -222,7 +222,7 @@ describe('RetryLimitManager', () => {
         it('Test 18: should mark task as escalated', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.markEscalated('task-1');
-            
+
             const state = manager.getState('task-1');
             expect(state?.escalated).toBe(true);
             expect(state?.escalatedAt).toBeDefined();
@@ -231,7 +231,7 @@ describe('RetryLimitManager', () => {
         it('Test 19: should log info when marking', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.markEscalated('task-1');
-            
+
             expect(logInfo).toHaveBeenCalledWith(
                 expect.stringContaining('task-1 marked as escalated')
             );
@@ -245,7 +245,7 @@ describe('RetryLimitManager', () => {
         it('Test 21: should prevent further retries', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.markEscalated('task-1');
-            
+
             const result = manager.checkRetry('task-1');
             expect(result.canRetry).toBe(false);
             expect(result.shouldEscalate).toBe(false); // Already escalated
@@ -259,14 +259,14 @@ describe('RetryLimitManager', () => {
         it('Test 22: should clear state for task', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.resetRetries('task-1');
-            
+
             expect(manager.getState('task-1')).toBeUndefined();
         });
 
         it('Test 23: should log info when resetting', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.resetRetries('task-1');
-            
+
             expect(logInfo).toHaveBeenCalledWith(
                 expect.stringContaining('Reset retries for task task-1')
             );
@@ -276,7 +276,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.recordFailure('task-2', 'Failure');
             manager.resetRetries('task-1');
-            
+
             expect(manager.getState('task-1')).toBeUndefined();
             expect(manager.getState('task-2')).toBeDefined();
         });
@@ -292,7 +292,7 @@ describe('RetryLimitManager', () => {
 
         it('Test 26: should return state for known task', () => {
             manager.recordFailure('task-1', 'Failure');
-            
+
             const state = manager.getState('task-1');
             expect(state?.taskId).toBe('task-1');
             expect(state?.retryCount).toBe(1);
@@ -311,7 +311,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 1');
             manager.recordFailure('task-1', 'Failure 2');
             manager.recordFailure('task-1', 'Failure 3');
-            
+
             const atLimit = manager.getTasksAtLimit();
             expect(atLimit.length).toBe(1);
             expect(atLimit[0].taskId).toBe('task-1');
@@ -322,13 +322,13 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 2');
             manager.recordFailure('task-1', 'Failure 3');
             manager.markEscalated('task-1');
-            
+
             expect(manager.getTasksAtLimit()).toEqual([]);
         });
 
         it('Test 30: should not include tasks under limit', () => {
             manager.recordFailure('task-1', 'Failure 1');
-            
+
             expect(manager.getTasksAtLimit()).toEqual([]);
         });
     });
@@ -344,7 +344,7 @@ describe('RetryLimitManager', () => {
         it('Test 32: should return escalated tasks', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.markEscalated('task-1');
-            
+
             const escalated = manager.getEscalatedTasks();
             expect(escalated.length).toBe(1);
             expect(escalated[0].taskId).toBe('task-1');
@@ -354,7 +354,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 1');
             manager.recordFailure('task-1', 'Failure 2');
             manager.recordFailure('task-1', 'Failure 3');
-            
+
             expect(manager.getEscalatedTasks()).toEqual([]);
         });
     });
@@ -366,14 +366,14 @@ describe('RetryLimitManager', () => {
         it('Test 34: should set max retries for existing task', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.setMaxRetries('task-1', 5);
-            
+
             const state = manager.getState('task-1');
             expect(state?.maxRetries).toBe(5);
         });
 
         it('Test 35: should create state for new task', () => {
             manager.setMaxRetries('task-1', 5);
-            
+
             const state = manager.getState('task-1');
             expect(state).toBeDefined();
             expect(state?.maxRetries).toBe(5);
@@ -384,7 +384,7 @@ describe('RetryLimitManager', () => {
             manager.setMaxRetries('task-1', 2);
             manager.recordFailure('task-1', 'Failure 1');
             const result = manager.recordFailure('task-1', 'Failure 2');
-            
+
             expect(result.canRetry).toBe(false);
             expect(result.shouldEscalate).toBe(true);
         });
@@ -397,9 +397,9 @@ describe('RetryLimitManager', () => {
         it('Test 37: should clear all states', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.recordFailure('task-2', 'Failure');
-            
+
             manager.clear();
-            
+
             expect(manager.getState('task-1')).toBeUndefined();
             expect(manager.getState('task-2')).toBeUndefined();
         });
@@ -431,7 +431,7 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure');
             manager.recordFailure('task-2', 'Failure');
             manager.recordFailure('task-2', 'Failure');
-            
+
             expect(manager.getState('task-1')?.retryCount).toBe(1);
             expect(manager.getState('task-2')?.retryCount).toBe(2);
         });
@@ -447,13 +447,13 @@ describe('RetryLimitManager', () => {
             manager.recordFailure('task-1', 'Failure 1');
             manager.recordFailure('task-1', 'Failure 2');
             const result = manager.recordFailure('task-1', 'Failure 3');
-            
+
             expect(result.escalationInfo?.failureSummary).toBeDefined();
         });
 
         it('Test 43: should handle special characters in task ID', () => {
             manager.recordFailure('task/with/slashes', 'Failure');
-            
+
             const state = manager.getState('task/with/slashes');
             expect(state?.taskId).toBe('task/with/slashes');
         });

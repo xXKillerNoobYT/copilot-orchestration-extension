@@ -64,20 +64,20 @@ if (require.main === module) {
     // Running standalone (not imported by another file)
     logInfo('MCP server starting in standalone mode...');
     logInfo('Note: In standalone mode, ensure orchestrator services are initialized separately');
-    
+
     initializeMCPServer();
-    
+
     logInfo('MCP server is now listening on stdin for JSON-RPC 2.0 requests');
     logInfo('Send JSON-RPC requests via stdin to interact with the server');
     logInfo('Press Ctrl+C to stop the server');
-    
+
     // Handle graceful shutdown on Ctrl+C
     process.on('SIGINT', () => {
         logInfo('Received SIGINT signal, shutting down gracefully...');
         resetMCPServerForTests();
         process.exit(0);
     });
-    
+
     process.on('SIGTERM', () => {
         logInfo('Received SIGTERM signal, shutting down gracefully...');
         resetMCPServerForTests();

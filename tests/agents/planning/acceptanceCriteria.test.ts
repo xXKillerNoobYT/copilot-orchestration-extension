@@ -42,7 +42,7 @@ import type { AtomicTask } from '../../../src/agents/planning/decomposer';
 
 describe('AcceptanceCriteriaGenerator', () => {
     let generator: AcceptanceCriteriaGenerator;
-    
+
     const createMockTask = (overrides: Partial<AtomicTask> = {}): AtomicTask => ({
         id: 'task-1',
         featureId: 'feature-1',
@@ -95,10 +95,10 @@ AUTOMATABLE: yes
 TEST_METHOD: unit`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             expect(result.taskId).toBe('task-1');
             expect(result.criteria.length).toBeGreaterThanOrEqual(2);
             expect(mockLogInfo).toHaveBeenCalled();
@@ -106,10 +106,10 @@ TEST_METHOD: unit`;
 
         it('Test 4: should use fallback when LLM fails', async () => {
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             expect(result.taskId).toBe('task-1');
             expect(result.criteria.length).toBeGreaterThanOrEqual(3); // min criteria
         });
@@ -117,20 +117,20 @@ TEST_METHOD: unit`;
         it('Test 5: should include edge case when configured', async () => {
             const g = new AcceptanceCriteriaGenerator({ includeEdgeCases: true });
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask();
             const result = await g.generateCriteria(task);
-            
+
             const hasEdgeCase = result.criteria.some((c: GeneratedCriteria) => c.type === 'edge-case');
             expect(hasEdgeCase).toBe(true);
         });
 
         it('Test 6: should calculate coverage score', async () => {
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             expect(result.coverageScore).toBeGreaterThanOrEqual(0);
             expect(result.coverageScore).toBeLessThanOrEqual(100);
         });
@@ -143,7 +143,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['The function should return a valid user object']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].isSpecific).toBe(true);
         });
 
@@ -152,7 +152,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['The feature should be nice and fast']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].isSpecific).toBe(false);
         });
 
@@ -161,7 +161,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['The function should return 200 status code']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].isMeasurable).toBe(true);
         });
 
@@ -170,7 +170,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['Login should work']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].isAchievable).toBe(true);
         });
 
@@ -179,7 +179,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['The system should implement comprehensive user authentication and authorization and session management and token refresh and password reset and two-factor authentication and single sign-on and OAuth integration together']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].isAchievable).toBe(false);
         });
 
@@ -188,7 +188,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['The function should create a new user record']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].isRelevant).toBe(true);
         });
 
@@ -197,7 +197,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['When user logs in, then a session token should be created']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].isTimeBound).toBe(true);
         });
 
@@ -206,7 +206,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['When the function is called with valid data, the method should return a success status']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].score).toBeGreaterThan(0);
             expect(validations[0].score).toBeLessThanOrEqual(1);
         });
@@ -216,7 +216,7 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['Make it better']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations[0].suggestions.length).toBeGreaterThan(0);
         });
     });
@@ -227,14 +227,14 @@ TEST_METHOD: unit`;
                 acceptanceCriteria: ['Criterion 1', 'Criterion 2', 'Criterion 3']
             });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations.length).toBe(3);
         });
 
         it('Test 17: should return empty array for empty criteria', () => {
             const task = createMockTask({ acceptanceCriteria: [] });
             const validations = generator.validateExisting(task);
-            
+
             expect(validations).toEqual([]);
         });
     });
@@ -247,24 +247,24 @@ TEST_METHOD: unit`;
                     'The method should return an error when given invalid input'
                 ]
             });
-            
+
             // High score criteria should not trigger enhancement
             const g = new AcceptanceCriteriaGenerator({ minSmartScore: 0.2 });
             const result = await g.enhanceExisting(task);
-            
+
             expect(result.acceptanceCriteria).toEqual(task.acceptanceCriteria);
         });
 
         it('Test 19: should generate new criteria for low-score items', async () => {
             const g = new AcceptanceCriteriaGenerator({ minSmartScore: 1.0 }); // Very high threshold
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask({
                 acceptanceCriteria: ['Make it work']
             });
-            
+
             const result = await g.enhanceExisting(task);
-            
+
             // Should have enhanced/replaced criteria
             expect(result.acceptanceCriteria.length).toBeGreaterThanOrEqual(3);
         });
@@ -278,10 +278,10 @@ AUTOMATABLE: yes
 TEST_METHOD: unit`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             // First parsed criterion should be functional
             const functional = result.criteria.find((c: GeneratedCriteria) => c.text.includes('validate'));
             expect(functional?.type).toBe('functional');
@@ -294,10 +294,10 @@ AUTOMATABLE: yes
 TEST_METHOD: integration`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             const behavioral = result.criteria.find((c: GeneratedCriteria) => c.text.includes('log'));
             expect(behavioral?.type).toBe('behavioral');
         });
@@ -309,10 +309,10 @@ AUTOMATABLE: yes
 TEST_METHOD: unit`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             const performance = result.criteria.find((c: GeneratedCriteria) => c.text.includes('200ms'));
             expect(performance?.type).toBe('performance');
         });
@@ -324,10 +324,10 @@ AUTOMATABLE: yes
 TEST_METHOD: unit`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             const edgeCase = result.criteria.find((c: GeneratedCriteria) => c.text.includes('null'));
             expect(edgeCase?.type).toBe('edge-case');
         });
@@ -339,10 +339,10 @@ AUTOMATABLE: yes
 TEST_METHOD: unit`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             const quality = result.criteria.find((c: GeneratedCriteria) => c.text.includes('coverage'));
             expect(quality?.type).toBe('quality');
         });
@@ -354,10 +354,10 @@ AUTOMATABLE: no
 TEST_METHOD: manual`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             const criterion = result.criteria.find((c: GeneratedCriteria) => c.text.includes('visual'));
             expect(criterion?.isAutomatable).toBe(false);
         });
@@ -369,10 +369,10 @@ AUTOMATABLE: yes
 TEST_METHOD: visual`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask({ isUI: true });
             const result = await generator.generateCriteria(task);
-            
+
             const criterion = result.criteria.find((c: GeneratedCriteria) => c.text.includes('renders'));
             expect(criterion?.testMethod).toBe('visual');
         });
@@ -384,10 +384,10 @@ AUTOMATABLE: yes
 TEST_METHOD: integration`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             const criterion = result.criteria.find((c: GeneratedCriteria) => c.text.includes('API'));
             expect(criterion?.testMethod).toBe('integration');
         });
@@ -401,21 +401,21 @@ AUTOMATABLE: yes
 TEST_METHOD: unit`;
 
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             expect(result.coverageScore).toBeGreaterThanOrEqual(40);
         });
 
         it('Test 29: should identify missing areas', async () => {
             // With rule-based generation (no edge case initially)
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const g = new AcceptanceCriteriaGenerator({ includeEdgeCases: false });
             const task = createMockTask();
             const result = await g.generateCriteria(task);
-            
+
             // May have missing areas depending on generated criteria
             expect(result.missingAreas).toBeDefined();
         });
@@ -424,12 +424,12 @@ TEST_METHOD: unit`;
     describe('UI task handling', () => {
         it('Test 30: should generate UI-specific criteria for UI tasks', async () => {
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask({ isUI: true });
             const result = await generator.generateCriteria(task);
-            
-            const hasUIRelated = result.criteria.some((c: GeneratedCriteria) => 
-                c.text.toLowerCase().includes('render') || 
+
+            const hasUIRelated = result.criteria.some((c: GeneratedCriteria) =>
+                c.text.toLowerCase().includes('render') ||
                 c.text.toLowerCase().includes('component') ||
                 c.text.toLowerCase().includes('ui')
             );
@@ -438,10 +438,10 @@ TEST_METHOD: unit`;
 
         it('Test 31: should include visual test method for UI tasks', async () => {
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask({ isUI: true });
             const result = await generator.generateCriteria(task);
-            
+
             const hasVisualTest = result.criteria.some((c: GeneratedCriteria) => c.testMethod === 'visual');
             expect(hasVisualTest).toBe(true);
         });
@@ -451,10 +451,10 @@ TEST_METHOD: unit`;
         it('Test 32: should generate edge case for UI tasks', async () => {
             const g = new AcceptanceCriteriaGenerator({ includeEdgeCases: true });
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask({ isUI: true });
             const result = await g.generateCriteria(task);
-            
+
             const edgeCase = result.criteria.find((c: GeneratedCriteria) => c.type === 'edge-case');
             expect(edgeCase?.text).toContain('empty');
         });
@@ -462,10 +462,10 @@ TEST_METHOD: unit`;
         it('Test 33: should generate edge case for non-UI tasks', async () => {
             const g = new AcceptanceCriteriaGenerator({ includeEdgeCases: true });
             mockCompleteLLM.mockRejectedValueOnce(new Error('LLM unavailable'));
-            
+
             const task = createMockTask({ isUI: false });
             const result = await g.generateCriteria(task);
-            
+
             const edgeCase = result.criteria.find((c: GeneratedCriteria) => c.type === 'edge-case');
             expect(edgeCase?.text).toContain('null');
         });
@@ -475,7 +475,7 @@ TEST_METHOD: unit`;
         it('Test 34: getAcceptanceCriteriaGenerator should create instance', () => {
             resetAcceptanceCriteriaGeneratorForTests();
             const g = getAcceptanceCriteriaGenerator();
-            
+
             expect(g).toBeInstanceOf(AcceptanceCriteriaGenerator);
         });
 
@@ -483,7 +483,7 @@ TEST_METHOD: unit`;
             resetAcceptanceCriteriaGeneratorForTests();
             const g1 = getAcceptanceCriteriaGenerator();
             const g2 = getAcceptanceCriteriaGenerator();
-            
+
             expect(g1).toBe(g2);
         });
 
@@ -491,7 +491,7 @@ TEST_METHOD: unit`;
             const g1 = getAcceptanceCriteriaGenerator();
             resetAcceptanceCriteriaGeneratorForTests();
             const g2 = getAcceptanceCriteriaGenerator();
-            
+
             expect(g1).not.toBe(g2);
         });
     });
@@ -500,10 +500,10 @@ TEST_METHOD: unit`;
         it('Test 37: should respect minCriteria', async () => {
             const g = new AcceptanceCriteriaGenerator({ minCriteria: 5 });
             mockCompleteLLM.mockResolvedValueOnce({ content: 'CRITERION: Test\nTYPE: functional\nAUTOMATABLE: yes\nTEST_METHOD: unit' });
-            
+
             const task = createMockTask();
             const result = await g.generateCriteria(task);
-            
+
             expect(result.criteria.length).toBeGreaterThanOrEqual(5);
         });
 
@@ -513,12 +513,12 @@ TEST_METHOD: unit`;
 TYPE: functional
 AUTOMATABLE: yes
 TEST_METHOD: unit`).join('\n\n');
-            
+
             mockCompleteLLM.mockResolvedValueOnce({ content: llmResponse });
-            
+
             const task = createMockTask();
             const result = await g.generateCriteria(task);
-            
+
             expect(result.criteria.length).toBeLessThanOrEqual(3);
         });
     });
@@ -526,10 +526,10 @@ TEST_METHOD: unit`).join('\n\n');
     describe('error handling', () => {
         it('Test 39: should handle complete generation failure', async () => {
             mockCompleteLLM.mockRejectedValueOnce(new Error('Network error'));
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             // Should return fallback result with rule-based criteria
             expect(result.taskId).toBe('task-1');
             expect(result.criteria.length).toBeGreaterThan(0);
@@ -539,10 +539,10 @@ TEST_METHOD: unit`).join('\n\n');
 
         it('Test 40: should handle malformed LLM response', async () => {
             mockCompleteLLM.mockResolvedValueOnce({ content: 'Invalid response format' });
-            
+
             const task = createMockTask();
             const result = await generator.generateCriteria(task);
-            
+
             // Should still return valid result with defaults
             expect(result.criteria.length).toBeGreaterThanOrEqual(3);
         });

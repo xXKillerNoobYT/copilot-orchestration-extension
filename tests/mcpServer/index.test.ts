@@ -44,19 +44,19 @@ describe('MCP Server Index', () => {
     describe('initializeMCPServer()', () => {
         it('Test 1: should create MCPServer instance', () => {
             initializeMCPServer();
-            
+
             expect(MCPServer).toHaveBeenCalledTimes(1);
         });
 
         it('Test 2: should start the server', () => {
             initializeMCPServer();
-            
+
             expect(mockStart).toHaveBeenCalledTimes(1);
         });
 
         it('Test 3: should log initialization messages', () => {
             initializeMCPServer();
-            
+
             expect(logInfo).toHaveBeenCalledWith('Initializing MCP server...');
             expect(logInfo).toHaveBeenCalledWith('MCP server initialized and started');
         });
@@ -64,7 +64,7 @@ describe('MCP Server Index', () => {
         it('Test 4: should not create second instance', () => {
             initializeMCPServer();
             initializeMCPServer(); // Second call
-            
+
             expect(MCPServer).toHaveBeenCalledTimes(1);
             expect(logWarn).toHaveBeenCalledWith('MCP server already exists, not creating a new instance');
         });
@@ -73,14 +73,14 @@ describe('MCP Server Index', () => {
     describe('getMCPServerInstance()', () => {
         it('Test 5: should return null before initialization', () => {
             const instance = getMCPServerInstance();
-            
+
             expect(instance).toBeNull();
         });
 
         it('Test 6: should return instance after initialization', () => {
             initializeMCPServer();
             const instance = getMCPServerInstance();
-            
+
             expect(instance).not.toBeNull();
             expect(instance).toHaveProperty('start');
             expect(instance).toHaveProperty('stop');
@@ -91,14 +91,14 @@ describe('MCP Server Index', () => {
         it('Test 7: should stop running server', () => {
             initializeMCPServer();
             resetMCPServerForTests();
-            
+
             expect(mockStop).toHaveBeenCalledTimes(1);
         });
 
         it('Test 8: should clear the instance', () => {
             initializeMCPServer();
             resetMCPServerForTests();
-            
+
             expect(getMCPServerInstance()).toBeNull();
         });
 
@@ -111,7 +111,7 @@ describe('MCP Server Index', () => {
             initializeMCPServer();
             resetMCPServerForTests();
             initializeMCPServer();
-            
+
             expect(MCPServer).toHaveBeenCalledTimes(2);
             expect(getMCPServerInstance()).not.toBeNull();
         });
@@ -122,7 +122,7 @@ describe('MCP Server Index', () => {
             initializeMCPServer();
             const instance1 = getMCPServerInstance();
             const instance2 = getMCPServerInstance();
-            
+
             expect(instance1).toBe(instance2);
         });
     });

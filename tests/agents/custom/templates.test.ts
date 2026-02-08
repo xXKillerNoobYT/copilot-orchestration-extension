@@ -145,7 +145,7 @@ describe('Agent Templates', () => {
             const allTemplates = getAllTemplates();
             const unusedCategory = (['research', 'writing', 'code', 'analysis', 'testing', 'docs'] as TemplateCategory[])
                 .find(cat => !allTemplates.some(t => t.category === cat));
-            
+
             if (unusedCategory) {
                 const templates = getTemplatesByCategory(unusedCategory);
                 expect(templates).toEqual([]);
@@ -210,7 +210,7 @@ describe('Agent Templates', () => {
             const lowerResults = searchTemplates('research');
             const upperResults = searchTemplates('RESEARCH');
             const mixedResults = searchTemplates('ReSeArCh');
-            
+
             expect(lowerResults.length).toBe(upperResults.length);
             expect(lowerResults.length).toBe(mixedResults.length);
         });
@@ -251,7 +251,7 @@ describe('Agent Templates', () => {
         it('Test 32: should copy baseAgent properties', () => {
             const template = getTemplate('research-assistant');
             const agent = createFromTemplate('research-assistant', 'Test Agent');
-            
+
             expect(agent).not.toBeNull();
             expect(agent?.systemPrompt).toBe(template?.baseAgent.systemPrompt);
             expect(agent?.goals).toEqual(template?.baseAgent.goals);
@@ -260,7 +260,7 @@ describe('Agent Templates', () => {
         it('Test 33: should use custom name', () => {
             const customName = 'My Custom Agent Name';
             const agent = createFromTemplate('code-reviewer', customName);
-            
+
             expect(agent?.name).toBe(customName);
         });
 
@@ -277,28 +277,28 @@ describe('Agent Templates', () => {
         it('Test 36: should preserve template timeout', () => {
             const template = getTemplate('research-assistant');
             const agent = createFromTemplate('research-assistant', 'Test');
-            
+
             expect(agent?.timeoutSeconds).toBe(template?.baseAgent.timeoutSeconds);
         });
 
         it('Test 37: should preserve template maxTokens', () => {
             const template = getTemplate('code-reviewer');
             const agent = createFromTemplate('code-reviewer', 'Test');
-            
+
             expect(agent?.maxTokens).toBe(template?.baseAgent.maxTokens);
         });
 
         it('Test 38: should preserve template temperature', () => {
             const template = getTemplate('research-assistant');
             const agent = createFromTemplate('research-assistant', 'Test');
-            
+
             expect(agent?.temperature).toBe(template?.baseAgent.temperature);
         });
 
         it('Test 39: should copy checklist from template', () => {
             const template = getTemplate('code-reviewer');
             const agent = createFromTemplate('code-reviewer', 'Test');
-            
+
             expect(agent?.checklist).toEqual(template?.baseAgent.checklist);
         });
 
@@ -336,13 +336,13 @@ describe('Agent Templates', () => {
             const categories = getCategoriesWithCounts();
             const allTemplates = getAllTemplates();
             const uniqueCategories = new Set(allTemplates.map(t => t.category));
-            
+
             expect(categories.length).toBe(uniqueCategories.size);
         });
 
         it('Test 45: should correctly count templates per category', () => {
             const categories = getCategoriesWithCounts();
-            
+
             categories.forEach(({ category, count }) => {
                 const actual = getTemplatesByCategory(category).length;
                 expect(count).toBe(actual);
@@ -353,7 +353,7 @@ describe('Agent Templates', () => {
             const categories = getCategoriesWithCounts();
             const totalFromCategories = categories.reduce((sum, cat) => sum + cat.count, 0);
             const totalTemplates = getAllTemplates().length;
-            
+
             expect(totalFromCategories).toBe(totalTemplates);
         });
     });

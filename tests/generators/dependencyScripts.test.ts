@@ -176,8 +176,8 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, includeVerification: true };
             const scripts = generateDependencyScripts(plan, config);
 
-            const verifyScript = scripts.find(s => 
-                s.name.toLowerCase().includes('verify') || 
+            const verifyScript = scripts.find(s =>
+                s.name.toLowerCase().includes('verify') ||
                 s.description.toLowerCase().includes('verif')
             );
             expect(verifyScript).toBeDefined();
@@ -188,7 +188,7 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, includeRollback: true };
             const scripts = generateDependencyScripts(plan, config);
 
-            const rollbackScript = scripts.find(s => 
+            const rollbackScript = scripts.find(s =>
                 s.name.toLowerCase().includes('rollback')
             );
             expect(rollbackScript).toBeDefined();
@@ -199,7 +199,7 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, includeRollback: false };
             const scripts = generateDependencyScripts(plan, config);
 
-            const rollbackScript = scripts.find(s => 
+            const rollbackScript = scripts.find(s =>
                 s.name.toLowerCase().includes('rollback')
             );
             expect(rollbackScript).toBeUndefined();
@@ -210,7 +210,7 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, format: 'npm' };
             const scripts = generateDependencyScripts(plan, config);
 
-            const npmScript = scripts.find(s => 
+            const npmScript = scripts.find(s =>
                 s.path.includes('package') || s.content.includes('"scripts"')
             );
             expect(npmScript).toBeDefined();
@@ -238,7 +238,7 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, format: 'bash' };
             const scripts = generateDependencyScripts(plan, config);
 
-            const hasShellScript = scripts.some(s => 
+            const hasShellScript = scripts.some(s =>
                 s.content.includes('#!/bin/bash') || s.path.endsWith('.sh')
             );
             expect(hasShellScript).toBe(true);
@@ -249,7 +249,7 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, format: 'powershell' };
             const scripts = generateDependencyScripts(plan, config);
 
-            const hasPsScript = scripts.some(s => 
+            const hasPsScript = scripts.some(s =>
                 s.path.endsWith('.ps1') || s.content.includes('Write-')
             );
             expect(hasPsScript).toBe(true);
@@ -260,7 +260,7 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, format: 'makefile' };
             const scripts = generateDependencyScripts(plan, config);
 
-            const hasMakefile = scripts.some(s => 
+            const hasMakefile = scripts.some(s =>
                 s.path.toLowerCase().includes('makefile') || s.name.toLowerCase().includes('make')
             );
             expect(hasMakefile).toBe(true);
@@ -275,7 +275,7 @@ describe('Dependency Script Generator', () => {
             const plan = createPlanWithDependencies();
             const scripts = generateDependencyScripts(plan);
 
-            const depCheck = scripts.find(s => 
+            const depCheck = scripts.find(s =>
                 s.name.toLowerCase().includes('depend') ||
                 s.description.toLowerCase().includes('depend')
             );
@@ -291,8 +291,8 @@ describe('Dependency Script Generator', () => {
             const plan = createPlanWithDependencies();
             const scripts = generateDependencyScripts(plan);
 
-            const featureScripts = scripts.filter(s => 
-                s.path.includes('feature') || 
+            const featureScripts = scripts.filter(s =>
+                s.path.includes('feature') ||
                 plan.featureBlocks.some(f => s.name.toLowerCase().includes(f.name.toLowerCase()))
             );
             // At least some feature-related scripts
@@ -318,8 +318,8 @@ describe('Dependency Script Generator', () => {
             const config: DependencyScriptConfig = { ...DEFAULT_SCRIPT_CONFIG, verbose: true };
             const scripts = generateDependencyScripts(plan, config);
 
-            const hasVerbose = scripts.some(s => 
-                s.content.includes('echo') || 
+            const hasVerbose = scripts.some(s =>
+                s.content.includes('echo') ||
                 s.content.includes('log') ||
                 s.content.includes('Write-')
             );

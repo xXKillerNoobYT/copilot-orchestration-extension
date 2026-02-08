@@ -66,7 +66,7 @@ describe('ReVerifyManager', () => {
                 maxRetries: 5,
                 retryTimeLimitSeconds: 600
             });
-            
+
             // Test that config is applied by making decision
             const decision = manager.decide(createRequest({ attemptNumber: 4 }));
             expect(decision.action).toBe('retry'); // Still within 5 max retries
@@ -79,30 +79,30 @@ describe('ReVerifyManager', () => {
     describe('recordFailure()', () => {
         it('Test 3: should record failure', () => {
             const failure = createFailure();
-            
+
             manager.recordFailure('task-1', failure);
-            
+
             expect(manager.getFailureCount('task-1')).toBe(1);
         });
 
         it('Test 4: should accumulate failures', () => {
             manager.recordFailure('task-1', createFailure());
             manager.recordFailure('task-1', createFailure());
-            
+
             expect(manager.getFailureCount('task-1')).toBe(2);
         });
 
         it('Test 5: should separate failures by task', () => {
             manager.recordFailure('task-1', createFailure());
             manager.recordFailure('task-2', createFailure());
-            
+
             expect(manager.getFailureCount('task-1')).toBe(1);
             expect(manager.getFailureCount('task-2')).toBe(1);
         });
 
         it('Test 6: should log recording', () => {
             manager.recordFailure('task-1', createFailure());
-            
+
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Recorded failure #1'));
         });
     });
@@ -116,7 +116,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure()],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.action).toBe('retry');
         });
 
@@ -124,7 +124,7 @@ describe('ReVerifyManager', () => {
             const decision = manager.decide(createRequest({
                 attemptNumber: 3 // Default maxRetries is 3
             }));
-            
+
             expect(decision.action).toBe('abort');
             expect(decision.reason).toContain('Maximum retries');
         });
@@ -134,7 +134,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure()],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.reason).toContain('Attempt 2 of 3');
         });
 
@@ -143,7 +143,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure()],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.timeLimitSeconds).toBe(300);
         });
 
@@ -152,7 +152,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure()],
                 attemptNumber: 2
             }));
-            
+
             expect(decision.priorityBoost).toBe(2);
         });
     });
@@ -163,23 +163,23 @@ describe('ReVerifyManager', () => {
     describe('decide() - repeated errors', () => {
         it('Test 12: should escalate on repeated same error', () => {
             const sameFailure = createFailure({ type: 'test-failure', details: 'Same error' });
-            
+
             const decision = manager.decide(createRequest({
                 previousFailures: [sameFailure, sameFailure],
                 attemptNumber: 2
             }));
-            
+
             expect(decision.action).toBe('escalate');
         });
 
         it('Test 13: should abort after 3 same errors', () => {
             const sameFailure = createFailure({ type: 'test-failure', details: 'Same error' });
-            
+
             const decision = manager.decide(createRequest({
                 previousFailures: [sameFailure, sameFailure, sameFailure],
                 attemptNumber: 2
             }));
-            
+
             expect(decision.action).toBe('abort');
             expect(decision.reason).toContain('Same error repeated 3 times');
         });
@@ -192,7 +192,7 @@ describe('ReVerifyManager', () => {
                 ],
                 attemptNumber: 2
             }));
-            
+
             expect(decision.action).toBe('retry');
         });
 
@@ -200,14 +200,14 @@ describe('ReVerifyManager', () => {
             const customManager = new ReVerifyManager({
                 escalateOnRepeatedError: false
             });
-            
+
             const sameFailure = createFailure({ type: 'test-failure', details: 'Same error' });
-            
+
             const decision = customManager.decide(createRequest({
                 previousFailures: [sameFailure, sameFailure],
                 attemptNumber: 2
             }));
-            
+
             expect(decision.action).toBe('retry');
         });
     });
@@ -221,14 +221,14 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ type: 'regression' })],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.action).toBe('manual-review');
             expect(decision.reason).toContain('Regression');
         });
 
         it('Test 17: should log decision', () => {
             manager.decide(createRequest());
-            
+
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Deciding for task-1'));
         });
     });
@@ -242,7 +242,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ type: 'test-failure', files: ['app.ts'] })],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.hints).toContain('Check the failing test assertions carefully');
             expect(decision.hints.some(h => h.includes('app.ts'))).toBe(true);
         });
@@ -252,7 +252,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ type: 'lint-error' })],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.hints.some(h => h.includes('npm run lint'))).toBe(true);
         });
 
@@ -261,7 +261,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ type: 'type-error' })],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.hints.some(h => h.includes('npm run compile'))).toBe(true);
         });
 
@@ -270,7 +270,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ type: 'coverage-drop' })],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.hints.some(h => h.includes('Add tests'))).toBe(true);
         });
 
@@ -279,7 +279,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ type: 'regression' })],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.hints.some(h => h.includes('side effects'))).toBe(true);
         });
 
@@ -291,7 +291,7 @@ describe('ReVerifyManager', () => {
                 ],
                 attemptNumber: 1
             }));
-            
+
             const testHints = decision.hints.filter(h => h.includes('assertions'));
             expect(testHints.length).toBe(1);
         });
@@ -303,7 +303,7 @@ describe('ReVerifyManager', () => {
     describe('formatHistory()', () => {
         it('Test 24: should return message for empty history', () => {
             const text = manager.formatHistory('unknown-task');
-            
+
             expect(text).toContain('No failure history');
         });
 
@@ -312,9 +312,9 @@ describe('ReVerifyManager', () => {
                 type: 'test-failure',
                 details: 'Test X failed'
             }));
-            
+
             const text = manager.formatHistory('task-1');
-            
+
             expect(text).toContain('Failure history for task-1');
             expect(text).toContain('Attempt 1');
             expect(text).toContain('test-failure');
@@ -323,9 +323,9 @@ describe('ReVerifyManager', () => {
 
         it('Test 26: should include timestamp', () => {
             manager.recordFailure('task-1', createFailure());
-            
+
             const text = manager.formatHistory('task-1');
-            
+
             expect(text).toContain('Time:');
         });
 
@@ -333,9 +333,9 @@ describe('ReVerifyManager', () => {
             manager.recordFailure('task-1', createFailure({
                 errors: ['Error 1', 'Error 2']
             }));
-            
+
             const text = manager.formatHistory('task-1');
-            
+
             expect(text).toContain('Errors:');
             expect(text).toContain('Error 1');
             expect(text).toContain('Error 2');
@@ -344,9 +344,9 @@ describe('ReVerifyManager', () => {
         it('Test 28: should format multiple attempts', () => {
             manager.recordFailure('task-1', createFailure({ details: 'First failure' }));
             manager.recordFailure('task-1', createFailure({ details: 'Second failure' }));
-            
+
             const text = manager.formatHistory('task-1');
-            
+
             expect(text).toContain('Attempt 1');
             expect(text).toContain('Attempt 2');
         });
@@ -358,18 +358,18 @@ describe('ReVerifyManager', () => {
     describe('clearHistory()', () => {
         it('Test 29: should clear history for task', () => {
             manager.recordFailure('task-1', createFailure());
-            
+
             manager.clearHistory('task-1');
-            
+
             expect(manager.getFailureCount('task-1')).toBe(0);
         });
 
         it('Test 30: should not affect other tasks', () => {
             manager.recordFailure('task-1', createFailure());
             manager.recordFailure('task-2', createFailure());
-            
+
             manager.clearHistory('task-1');
-            
+
             expect(manager.getFailureCount('task-2')).toBe(1);
         });
     });
@@ -386,7 +386,7 @@ describe('ReVerifyManager', () => {
             manager.recordFailure('task-1', createFailure());
             manager.recordFailure('task-1', createFailure());
             manager.recordFailure('task-1', createFailure());
-            
+
             expect(manager.getFailureCount('task-1')).toBe(3);
         });
     });
@@ -398,13 +398,13 @@ describe('ReVerifyManager', () => {
         it('Test 33: getReVerifyManager should return singleton', () => {
             const instance1 = getReVerifyManager();
             const instance2 = getReVerifyManager();
-            
+
             expect(instance1).toBe(instance2);
         });
 
         it('Test 34: initializeReVerifyManager should create with config', () => {
             const instance = initializeReVerifyManager({ maxRetries: 10 });
-            
+
             // Test that config is applied
             const decision = instance.decide(createRequest({ attemptNumber: 9 }));
             expect(decision.action).toBe('retry');
@@ -414,7 +414,7 @@ describe('ReVerifyManager', () => {
             const instance1 = getReVerifyManager();
             resetReVerifyManager();
             const instance2 = getReVerifyManager();
-            
+
             expect(instance1).not.toBe(instance2);
         });
     });
@@ -428,7 +428,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.action).toBe('retry');
         });
 
@@ -437,7 +437,7 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ files: [] })],
                 attemptNumber: 1
             }));
-            
+
             const focusHint = decision.hints.find(h => h.includes('Focus on'));
             expect(focusHint).toBeUndefined();
         });
@@ -448,28 +448,28 @@ describe('ReVerifyManager', () => {
                 previousFailures: [createFailure({ details: longDetails })],
                 attemptNumber: 1
             }));
-            
+
             expect(decision.action).toBe('retry');
         });
 
         it('Test 39: should handle failures with empty errors array', () => {
             manager.recordFailure('task-1', createFailure({ errors: [] }));
-            
+
             const text = manager.formatHistory('task-1');
-            
+
             expect(text).not.toContain('Errors:');
         });
 
         it('Test 40: should handle custom abortOnSameError config', () => {
             const customManager = new ReVerifyManager({ abortOnSameError: 5 });
-            
+
             const sameFailure = createFailure({ type: 'test-failure', details: 'Same error' });
-            
+
             const decision = customManager.decide(createRequest({
                 previousFailures: [sameFailure, sameFailure, sameFailure, sameFailure],
                 attemptNumber: 2
             }));
-            
+
             // Should escalate, not abort, since count is 4 < 5
             expect(decision.action).toBe('escalate');
         });

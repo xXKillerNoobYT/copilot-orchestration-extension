@@ -207,7 +207,7 @@ describe('Feature Stub Generator', () => {
             const feature = createFeature('f1', 'Feature');
             plan.featureBlocks = [feature];
             plan.developerStories = [createDevStory('s1', 'f1')];
-            
+
             const stub = generateFeatureStub(feature, plan);
             expect(stub.mainFile.content.length).toBeGreaterThan(0);
         });
@@ -218,7 +218,7 @@ describe('Feature Stub Generator', () => {
             const featureB = createFeature('b', 'Feature B');
             plan.featureBlocks = [featureA, featureB];
             plan.blockLinks = [createLink('a', 'b')];
-            
+
             const stub = generateFeatureStub(featureA, plan);
             expect(stub.mainFile.content.length).toBeGreaterThan(0);
         });
@@ -252,9 +252,9 @@ describe('Feature Stub Generator', () => {
             const config: StubConfig = { ...DEFAULT_STUB_CONFIG, includeErrorHandling: true };
             const stub = generateFeatureStub(feature, plan, config);
 
-            const hasErrorHandling = stub.mainFile.content.includes('try') || 
-                                      stub.mainFile.content.includes('catch') ||
-                                      stub.mainFile.content.includes('error');
+            const hasErrorHandling = stub.mainFile.content.includes('try') ||
+                stub.mainFile.content.includes('catch') ||
+                stub.mainFile.content.includes('error');
             expect(hasErrorHandling).toBe(true);
         });
 
@@ -264,8 +264,8 @@ describe('Feature Stub Generator', () => {
             const config: StubConfig = { ...DEFAULT_STUB_CONFIG, includeLogging: true };
             const stub = generateFeatureStub(feature, plan, config);
 
-            const hasLogging = stub.mainFile.content.includes('log') || 
-                               stub.mainFile.content.includes('console');
+            const hasLogging = stub.mainFile.content.includes('log') ||
+                stub.mainFile.content.includes('console');
             expect(hasLogging).toBe(true);
         });
     });
@@ -317,7 +317,7 @@ describe('Feature Stub Generator', () => {
         it('Test 28: should handle special characters in names', () => {
             const plan = createMinimalPlan();
             const feature = createFeature('id', 'Feature (v2)');
-            
+
             // Should not throw
             expect(() => generateFeatureStub(feature, plan)).not.toThrow();
         });
@@ -396,7 +396,7 @@ describe('Feature Stub Generator', () => {
             const plan = createMinimalPlan();
             const longName = 'A'.repeat(100);
             const feature = createFeature('id', longName);
-            
+
             expect(() => generateFeatureStub(feature, plan)).not.toThrow();
         });
 
@@ -404,7 +404,7 @@ describe('Feature Stub Generator', () => {
             const plan = createMinimalPlan();
             const feature = createFeature('id', 'Feature');
             feature.acceptanceCriteria = [];
-            
+
             const stub = generateFeatureStub(feature, plan);
             expect(stub.mainFile.content.length).toBeGreaterThan(0);
         });
@@ -416,7 +416,7 @@ describe('Feature Stub Generator', () => {
             for (let i = 0; i < 10; i++) {
                 plan.developerStories.push(createDevStory(`s${i}`, 'f1'));
             }
-            
+
             const stub = generateFeatureStub(feature, plan);
             expect(stub.mainFile.content.length).toBeGreaterThan(0);
         });
@@ -424,7 +424,7 @@ describe('Feature Stub Generator', () => {
         it('Test 38: should handle feature with all priorities', () => {
             const plan = createMinimalPlan();
             const priorities: PriorityLevel[] = ['low', 'medium', 'high', 'critical'];
-            
+
             priorities.forEach(p => {
                 const feature = createFeature(`id-${p}`, `Feature ${p}`, p);
                 const stub = generateFeatureStub(feature, plan);
@@ -435,7 +435,7 @@ describe('Feature Stub Generator', () => {
         it('Test 39: should handle unicode in feature name', () => {
             const plan = createMinimalPlan();
             const feature = createFeature('id', '用户認証 Feature');
-            
+
             expect(() => generateFeatureStub(feature, plan)).not.toThrow();
         });
 
@@ -447,9 +447,9 @@ describe('Feature Stub Generator', () => {
             feature.technicalNotes = 'Lots of technical notes here';
             plan.featureBlocks = [feature];
             plan.developerStories = [createDevStory('s1', 'complex')];
-            
+
             const stub = generateFeatureStub(feature, plan);
-            
+
             expect(stub.mainFile).toBeDefined();
             expect(stub.typesFile).toBeDefined();
             expect(stub.indexFile).toBeDefined();

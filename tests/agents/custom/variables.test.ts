@@ -86,7 +86,7 @@ Current time: {{timestamp}}`;
                 age: '30'
             };
             const result = validateVariables('{{name}} is {{age}}', context);
-            
+
             expect(result.valid).toBe(true);
             expect(result.missing).toEqual([]);
         });
@@ -96,7 +96,7 @@ Current time: {{timestamp}}`;
                 name: 'John'
             };
             const result = validateVariables('{{name}} {{missing}}', context);
-            
+
             expect(result.valid).toBe(false);
             expect(result.missing).toEqual(['missing']);
         });
@@ -104,7 +104,7 @@ Current time: {{timestamp}}`;
         it('Test 12: should detect multiple missing variables', () => {
             const context: SubstitutionContext = {};
             const result = validateVariables('{{a}} {{b}} {{c}}', context);
-            
+
             expect(result.valid).toBe(false);
             expect(result.missing).toContain('a');
             expect(result.missing).toContain('b');
@@ -113,14 +113,14 @@ Current time: {{timestamp}}`;
 
         it('Test 13: should be valid for text without variables', () => {
             const result = validateVariables('No variables here', {});
-            
+
             expect(result.valid).toBe(true);
             expect(result.missing).toEqual([]);
         });
 
         it('Test 14: should handle empty context', () => {
             const result = validateVariables('{{required}}', {});
-            
+
             expect(result.valid).toBe(false);
             expect(result.missing).toEqual(['required']);
         });
@@ -131,7 +131,7 @@ Current time: {{timestamp}}`;
                 undef: undefined
             };
             const result = validateVariables('{{defined}} {{undef}}', context);
-            
+
             expect(result.valid).toBe(false);
             expect(result.missing).toEqual(['undef']);
         });
@@ -144,7 +144,7 @@ Current time: {{timestamp}}`;
         it('Test 16: should substitute single variable', () => {
             const context: SubstitutionContext = { name: 'World' };
             const result = substituteVariables('Hello {{name}}!', context);
-            
+
             expect(result).toBe('Hello World!');
         });
 
@@ -154,14 +154,14 @@ Current time: {{timestamp}}`;
                 user_id: 'user123'
             };
             const result = substituteVariables('Task {{task_id}} by {{user_id}}', context);
-            
+
             expect(result).toBe('Task TASK-001 by user123');
         });
 
         it('Test 18: should keep placeholder when variable missing', () => {
             const context: SubstitutionContext = { defined: 'yes' };
             const result = substituteVariables('{{defined}} {{missing}}', context);
-            
+
             expect(result).toBe('yes {{missing}}');
         });
 
@@ -178,7 +178,7 @@ Current time: {{timestamp}}`;
         it('Test 21: should substitute same variable multiple times', () => {
             const context: SubstitutionContext = { x: 'X' };
             const result = substituteVariables('{{x}} + {{x}} = 2{{x}}', context);
-            
+
             expect(result).toBe('X + X = 2X');
         });
 
@@ -186,7 +186,7 @@ Current time: {{timestamp}}`;
             const context: SubstitutionContext = { a: 'A', b: 'B' };
             const text = 'Line 1: {{a}}\nLine 2: {{b}}';
             const result = substituteVariables(text, context);
-            
+
             expect(result).toBe('Line 1: A\nLine 2: B');
         });
     });
@@ -282,7 +282,7 @@ Current time: {{timestamp}}`;
     describe('createMockContext', () => {
         it('Test 39: should create context with default values', () => {
             const context = createMockContext();
-            
+
             expect(context.task_id).toBeTruthy();
             expect(context.ticket_id).toBeTruthy();
             expect(context.query).toBeTruthy();
@@ -292,7 +292,7 @@ Current time: {{timestamp}}`;
 
         it('Test 40: should allow overriding values', () => {
             const context = createMockContext({ task_id: 'CUSTOM-123' });
-            
+
             expect(context.task_id).toBe('CUSTOM-123');
             // Other values should still be defaults
             expect(context.ticket_id).toBeTruthy();
@@ -303,7 +303,7 @@ Current time: {{timestamp}}`;
                 task_id: 'TASK-1',
                 user_id: 'USER-1'
             });
-            
+
             expect(context.task_id).toBe('TASK-1');
             expect(context.user_id).toBe('USER-1');
         });
@@ -311,7 +311,7 @@ Current time: {{timestamp}}`;
         it('Test 42: should generate valid ISO timestamp', () => {
             const context = createMockContext();
             const timestamp = context.timestamp!;
-            
+
             // Should be valid ISO date
             expect(() => new Date(timestamp)).not.toThrow();
         });
@@ -328,7 +328,7 @@ Current time: {{timestamp}}`;
                 userQuery: 'How?',
                 userId: 'U1'
             });
-            
+
             expect(context.task_id).toBe('T1');
             expect(context.ticket_id).toBe('TK1');
             expect(context.query).toBe('How?');
@@ -345,14 +345,14 @@ Current time: {{timestamp}}`;
                 agentName: 'test-agent',
                 agentVersion: '2.0.0'
             });
-            
+
             expect(context.agent_name).toBe('test-agent');
             expect(context.agent_version).toBe('2.0.0');
         });
 
         it('Test 46: should handle empty params', () => {
             const context = createContextFromExecution({});
-            
+
             // Should not throw, should have timestamp
             expect(context.timestamp).toBeTruthy();
         });
@@ -361,7 +361,7 @@ Current time: {{timestamp}}`;
             const context = createContextFromExecution({
                 taskId: 'T1'
             });
-            
+
             expect(context.task_id).toBe('T1');
             expect(context.ticket_id).toBeUndefined();
             expect(context.user_id).toBeUndefined();
@@ -378,7 +378,7 @@ Current time: {{timestamp}}`;
                 age: '30'
             };
             const { result, warnings } = safeSubstitute('{{name}} is {{age}}', context);
-            
+
             expect(result).toBe('John is 30');
             expect(warnings).toEqual([]);
         });
@@ -386,7 +386,7 @@ Current time: {{timestamp}}`;
         it('Test 49: should return warnings for missing variables', () => {
             const context: SubstitutionContext = { name: 'John' };
             const { result, warnings } = safeSubstitute('{{name}} {{missing}}', context);
-            
+
             expect(result).toBe('John {{missing}}');
             expect(warnings.length).toBeGreaterThan(0);
             expect(warnings[0]).toContain('missing');
@@ -395,14 +395,14 @@ Current time: {{timestamp}}`;
         it('Test 50: should list all missing variables in warning', () => {
             const context: SubstitutionContext = {};
             const { result, warnings } = safeSubstitute('{{a}} {{b}}', context);
-            
+
             expect(warnings[0]).toContain('a');
             expect(warnings[0]).toContain('b');
         });
 
         it('Test 51: should handle text without variables', () => {
             const { result, warnings } = safeSubstitute('Plain text', {});
-            
+
             expect(result).toBe('Plain text');
             expect(warnings).toEqual([]);
         });
@@ -411,7 +411,7 @@ Current time: {{timestamp}}`;
             const context = createMockContext();
             const text = 'Task {{task_id}} query: {{query}}';
             const { result, warnings } = safeSubstitute(text, context);
-            
+
             expect(result).not.toContain('{{task_id}}');
             expect(result).not.toContain('{{query}}');
             expect(warnings).toEqual([]);

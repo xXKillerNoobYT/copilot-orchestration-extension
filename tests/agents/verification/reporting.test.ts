@@ -72,7 +72,7 @@ describe('VerificationReporter', () => {
                 ['file.ts'],
                 1000
             );
-            
+
             expect(report.passed).toBe(true);
         });
 
@@ -84,7 +84,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.passed).toBe(false);
         });
 
@@ -100,7 +100,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.criteriaPassed).toBe(2);
             expect(report.criteriaTotal).toBe(3);
         });
@@ -118,7 +118,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.testsPassed).toBe(2);
             expect(report.testsFailed).toBe(1);
             expect(report.testsSkipped).toBe(1);
@@ -132,7 +132,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.blockingIssues).toContainEqual(expect.stringContaining('Must work'));
         });
 
@@ -144,7 +144,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.blockingIssues).toContainEqual(expect.stringContaining('myTest'));
         });
 
@@ -157,7 +157,7 @@ describe('VerificationReporter', () => {
                 1000,
                 [createCoverage({ met: false, metric: 'branches', percentage: 50, threshold: 80 })]
             );
-            
+
             expect(report.blockingIssues).toContainEqual(expect.stringContaining('branches'));
         });
 
@@ -169,7 +169,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.warnings).toContainEqual(expect.stringContaining('skipped'));
         });
 
@@ -177,7 +177,7 @@ describe('VerificationReporter', () => {
             const before = Date.now();
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const after = Date.now();
-            
+
             expect(report.timestamp).toBeGreaterThanOrEqual(before);
             expect(report.timestamp).toBeLessThanOrEqual(after);
         });
@@ -190,7 +190,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.summary).toContain('✅');
             expect(report.summary).toContain('1 criteria met');
         });
@@ -203,20 +203,20 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.summary).toContain('❌');
             expect(report.summary).toContain('blocking issues');
         });
 
         it('Test 12: should store report', () => {
             reporter.createReport('task-1', [], [], [], 1000);
-            
+
             expect(reporter.getReport('task-1')).toBeDefined();
         });
 
         it('Test 13: should log creation', () => {
             reporter.createReport('task-1', [], [], [], 1000);
-            
+
             expect(logInfo).toHaveBeenCalledWith(expect.stringContaining('Created report'));
         });
 
@@ -229,7 +229,7 @@ describe('VerificationReporter', () => {
                 1000,
                 [createCoverage()]
             );
-            
+
             expect(report.coverage).toBeDefined();
             expect(report.coverage?.length).toBe(1);
         });
@@ -242,7 +242,7 @@ describe('VerificationReporter', () => {
                 ['file1.ts', 'file2.ts'],
                 1000
             );
-            
+
             expect(report.modifiedFiles).toEqual(['file1.ts', 'file2.ts']);
         });
     });
@@ -254,14 +254,14 @@ describe('VerificationReporter', () => {
         it('Test 16: should include task ID', () => {
             const report = reporter.createReport('my-task', [], [], [], 1000);
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('my-task');
         });
 
         it('Test 17: should show pass/fail status', () => {
             const passingReport = reporter.createReport('task-1', [], [], [], 1000);
             expect(reporter.formatAsText(passingReport)).toContain('PASSED ✅');
-            
+
             const failingReport = reporter.createReport('task-2', [createCriterion({ passed: false })], [], [], 1000);
             expect(reporter.formatAsText(failingReport)).toContain('FAILED ❌');
         });
@@ -269,7 +269,7 @@ describe('VerificationReporter', () => {
         it('Test 18: should format duration', () => {
             const report = reporter.createReport('task-1', [], [], [], 2500);
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('2.5s');
         });
 
@@ -285,7 +285,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('✓ Criterion A');
             expect(text).toContain('✗ Criterion B');
             expect(text).toContain('Not found');
@@ -303,7 +303,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('Passed: 1');
             expect(text).toContain('Failed: 1');
         });
@@ -312,16 +312,16 @@ describe('VerificationReporter', () => {
             const report = reporter.createReport(
                 'task-1',
                 [],
-                [createTestResult({ 
+                [createTestResult({
                     name: 'testX',
-                    status: 'failed', 
-                    error: 'Expected true' 
+                    status: 'failed',
+                    error: 'Expected true'
                 })],
                 [],
                 1000
             );
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('testX');
             expect(text).toContain('Expected true');
         });
@@ -336,7 +336,7 @@ describe('VerificationReporter', () => {
                 [createCoverage({ metric: 'statements', percentage: 90, threshold: 80 })]
             );
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('statements');
             expect(text).toContain('90.0%');
         });
@@ -350,7 +350,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('BLOCKING ISSUES');
         });
 
@@ -363,7 +363,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('WARNINGS');
             expect(text).toContain('skipped');
         });
@@ -376,7 +376,7 @@ describe('VerificationReporter', () => {
         it('Test 25: should include markdown headers', () => {
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const md = reporter.formatAsMarkdown(report);
-            
+
             expect(md).toContain('# Verification Report');
         });
 
@@ -389,7 +389,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const md = reporter.formatAsMarkdown(report);
-            
+
             expect(md).toContain('| Status | Criterion |');
             expect(md).toContain('|--------|-----------|');
         });
@@ -403,7 +403,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const md = reporter.formatAsMarkdown(report);
-            
+
             expect(md).toContain('Has \\| pipe');
         });
 
@@ -422,7 +422,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const md = reporter.formatAsMarkdown(report);
-            
+
             expect(md).toContain('Expected: `true`');
             expect(md).toContain('Actual: `false`');
         });
@@ -437,7 +437,7 @@ describe('VerificationReporter', () => {
                 [createCoverage()]
             );
             const md = reporter.formatAsMarkdown(report);
-            
+
             expect(md).toContain('| Metric | Coverage | Threshold | Status |');
         });
 
@@ -450,7 +450,7 @@ describe('VerificationReporter', () => {
                 1000
             );
             const md = reporter.formatAsMarkdown(report);
-            
+
             expect(md).toContain('## ⛔ Blocking Issues');
         });
     });
@@ -462,7 +462,7 @@ describe('VerificationReporter', () => {
         it('Test 31: should return valid JSON', () => {
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const json = reporter.formatAsJson(report);
-            
+
             expect(() => JSON.parse(json)).not.toThrow();
         });
 
@@ -470,7 +470,7 @@ describe('VerificationReporter', () => {
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const json = reporter.formatAsJson(report);
             const parsed = JSON.parse(json);
-            
+
             expect(parsed.taskId).toBe('task-1');
             expect(parsed.passed).toBeDefined();
             expect(parsed.timestamp).toBeDefined();
@@ -484,28 +484,28 @@ describe('VerificationReporter', () => {
         it('Test 33: should format as text by default', () => {
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const output = reporter.format(report, 'text');
-            
+
             expect(output).toContain('VERIFICATION REPORT');
         });
 
         it('Test 34: should format as markdown', () => {
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const output = reporter.format(report, 'markdown');
-            
+
             expect(output).toContain('# Verification Report');
         });
 
         it('Test 35: should format as JSON', () => {
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const output = reporter.format(report, 'json');
-            
+
             expect(() => JSON.parse(output)).not.toThrow();
         });
 
         it('Test 36: should format as HTML', () => {
             const report = reporter.createReport('task-1', [], [], [], 1000);
             const output = reporter.format(report, 'html');
-            
+
             expect(output).toContain('<html>');
             expect(output).toContain('</body>');
         });
@@ -521,7 +521,7 @@ describe('VerificationReporter', () => {
 
         it('Test 38: should return existing report', () => {
             reporter.createReport('task-1', [], [], [], 1000);
-            
+
             const report = reporter.getReport('task-1');
             expect(report).toBeDefined();
             expect(report?.taskId).toBe('task-1');
@@ -539,7 +539,7 @@ describe('VerificationReporter', () => {
         it('Test 40: should return all reports', () => {
             reporter.createReport('task-1', [], [], [], 1000);
             reporter.createReport('task-2', [], [], [], 1000);
-            
+
             const reports = reporter.getAllReports();
             expect(reports.length).toBe(2);
         });
@@ -552,9 +552,9 @@ describe('VerificationReporter', () => {
         it('Test 41: should clear all reports', () => {
             reporter.createReport('task-1', [], [], [], 1000);
             reporter.createReport('task-2', [], [], [], 1000);
-            
+
             reporter.clear();
-            
+
             expect(reporter.getAllReports()).toEqual([]);
         });
     });
@@ -566,7 +566,7 @@ describe('VerificationReporter', () => {
         it('Test 42: getVerificationReporter should return singleton', () => {
             const instance1 = getVerificationReporter();
             const instance2 = getVerificationReporter();
-            
+
             expect(instance1).toBe(instance2);
         });
 
@@ -574,7 +574,7 @@ describe('VerificationReporter', () => {
             const instance1 = getVerificationReporter();
             resetVerificationReporterForTests();
             const instance2 = getVerificationReporter();
-            
+
             expect(instance1).not.toBe(instance2);
         });
     });
@@ -592,7 +592,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             // Should truncate in formatting
             const text = reporter.formatAsText(report);
             expect(text.length).toBeLessThan(longCriterion.length * 3);
@@ -606,7 +606,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             const json = reporter.formatAsJson(report);
             expect(() => JSON.parse(json)).not.toThrow();
         });
@@ -614,7 +614,7 @@ describe('VerificationReporter', () => {
         it('Test 46: should handle zero duration', () => {
             const report = reporter.createReport('task-1', [], [], [], 0);
             const text = reporter.formatAsText(report);
-            
+
             expect(text).toContain('0.0s');
         });
 
@@ -626,7 +626,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.blockingIssues).toContainEqual(expect.stringContaining('Unknown error'));
         });
 
@@ -638,7 +638,7 @@ describe('VerificationReporter', () => {
                 [],
                 1000
             );
-            
+
             expect(report.warnings.length).toBe(0);
             const text = reporter.formatAsText(report);
             expect(text).not.toContain('WARNINGS');

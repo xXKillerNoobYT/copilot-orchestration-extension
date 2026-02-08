@@ -306,7 +306,7 @@ describe('PlanningService', () => {
         it('Test 15: should save plan to file', async () => {
             const service = getPlanningServiceInstance();
 
-            await service.createPlan({ metadata: { name: 'Test' } });
+            await service.createPlan({ metadata: { name: 'Test' } } as unknown as Partial<CompletePlan>);
 
             expect(mockFs.writeFileSync).toHaveBeenCalledWith(
                 expect.stringContaining('generated-uuid-12345.json'),
@@ -318,7 +318,7 @@ describe('PlanningService', () => {
             mockFs.existsSync.mockReturnValue(true);
             const service = getPlanningServiceInstance();
 
-            await service.createPlan({ metadata: { name: 'Test' } });
+            await service.createPlan({ metadata: { name: 'Test' } } as unknown as Partial<CompletePlan>);
 
             expect(mockFs.unlinkSync).toHaveBeenCalledWith(
                 expect.stringContaining('.draft.json')
@@ -328,7 +328,7 @@ describe('PlanningService', () => {
         it('Test 17: should fire onPlanCreated event', async () => {
             const service = getPlanningServiceInstance();
 
-            await service.createPlan({ metadata: { name: 'Test' } });
+            await service.createPlan({ metadata: { name: 'Test' } } as unknown as Partial<CompletePlan>);
 
             // Event emitter is created per service, check logInfo as proxy
             expect(logInfo).toHaveBeenCalledWith(
@@ -347,7 +347,7 @@ describe('PlanningService', () => {
         it('Test 19: should default empty arrays for optional fields', async () => {
             const service = getPlanningServiceInstance();
 
-            const result = await service.createPlan({ metadata: { name: 'Test' } });
+            const result = await service.createPlan({ metadata: { name: 'Test' } } as unknown as Partial<CompletePlan>);
 
             expect(result.featureBlocks).toEqual([]);
             expect(result.blockLinks).toEqual([]);
@@ -360,7 +360,7 @@ describe('PlanningService', () => {
             });
             const service = getPlanningServiceInstance();
 
-            await expect(service.createPlan({ metadata: { name: 'Test' } })).rejects.toThrow('Disk full');
+            await expect(service.createPlan({ metadata: { name: 'Test' } } as unknown as Partial<CompletePlan>)).rejects.toThrow('Disk full');
             expect(logError).toHaveBeenCalledWith(
                 expect.stringContaining('[PlanningService] Create plan failed')
             );
@@ -578,7 +578,8 @@ describe('PlanningService', () => {
         });
 
         it('Test 37: should list all plans', async () => {
-            mockFs.readdirSync.mockReturnValue(['plan1.json', 'plan2.json'] as unknown as fs.Dirent[]);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mockFs.readdirSync as jest.Mock).mockReturnValue(['plan1.json', 'plan2.json']);
             mockFs.readFileSync.mockReturnValue(JSON.stringify(samplePlan));
             const service = getPlanningServiceInstance();
 
@@ -597,7 +598,8 @@ describe('PlanningService', () => {
         });
 
         it('Test 39: should filter only .json files', async () => {
-            mockFs.readdirSync.mockReturnValue(['plan.json', 'readme.txt', 'other.md'] as unknown as fs.Dirent[]);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mockFs.readdirSync as jest.Mock).mockReturnValue(['plan.json', 'readme.txt', 'other.md']);
             mockFs.readFileSync.mockReturnValue(JSON.stringify(samplePlan));
             const service = getPlanningServiceInstance();
 
@@ -616,7 +618,8 @@ describe('PlanningService', () => {
                 metadata: { ...samplePlan.metadata, updatedAt: new Date('2024-01-01') },
             };
 
-            mockFs.readdirSync.mockReturnValue(['old.json', 'new.json'] as unknown as fs.Dirent[]);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mockFs.readdirSync as jest.Mock).mockReturnValue(['old.json', 'new.json']);
             mockFs.readFileSync
                 .mockReturnValueOnce(JSON.stringify(oldPlan))
                 .mockReturnValueOnce(JSON.stringify(newPlan));
@@ -629,7 +632,8 @@ describe('PlanningService', () => {
         });
 
         it('Test 41: should skip invalid plan files and log warning', async () => {
-            mockFs.readdirSync.mockReturnValue(['valid.json', 'invalid.json'] as unknown as fs.Dirent[]);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mockFs.readdirSync as jest.Mock).mockReturnValue(['valid.json', 'invalid.json']);
             mockFs.readFileSync
                 .mockReturnValueOnce(JSON.stringify(samplePlan))
                 .mockReturnValueOnce('not valid json');
@@ -671,7 +675,7 @@ describe('PlanningService', () => {
         describe('saveDraft', () => {
             it('Test 43: should save draft to file', async () => {
                 const service = getPlanningServiceInstance();
-                const draft = { metadata: { name: 'Draft Plan' } };
+                const draft = { metadata: { name: 'Draft Plan' } } as unknown as Partial<CompletePlan>;
 
                 await service.saveDraft('draft-id', draft);
 

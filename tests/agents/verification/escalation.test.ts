@@ -87,9 +87,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 2: should trigger escalation', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
-            
+
             await handler.escalate(info);
-            
+
             expect(logInfo).toHaveBeenCalledWith(
                 expect.stringContaining('Escalating task task-123')
             );
@@ -99,18 +99,18 @@ describe('HumanEscalationHandler', () => {
             const info = createMockEscalationInfo();
             const mockBoss = { notifyRetryLimitExceeded: jest.fn() };
             (getBossNotificationManager as jest.Mock).mockReturnValue(mockBoss);
-            
+
             await handler.escalate(info);
-            
+
             expect(mockBoss.notifyRetryLimitExceeded).toHaveBeenCalledWith('task-123', 3);
         });
 
         it('Test 4: should return dismissed when dialog closed', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
-            
+
             const result = await handler.escalate(info);
-            
+
             expect(result.action).toBe('dismissed');
             expect(result.handled).toBe(false);
         });
@@ -119,9 +119,9 @@ describe('HumanEscalationHandler', () => {
             const info = createMockEscalationInfo({ recommendation: 'manual-fix' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('🔧 Manual Fix (Recommended)');
             (vscode.window.showInputBox as jest.Mock).mockResolvedValue('will fix manually');
-            
+
             const result = await handler.escalate(info);
-            
+
             expect(result.action).toBe('manual-fix');
             expect(result.note).toBe('will fix manually');
             expect(result.handled).toBe(true);
@@ -130,9 +130,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 6: should handle skip selection', async () => {
             const info = createMockEscalationInfo({ recommendation: 'skip' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('⏭️ Skip Task (Recommended)');
-            
+
             const result = await handler.escalate(info);
-            
+
             expect(result.action).toBe('skip');
             expect(result.handled).toBe(true);
         });
@@ -141,9 +141,9 @@ describe('HumanEscalationHandler', () => {
             const info = createMockEscalationInfo({ recommendation: 'change-approach' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('🔄 Change Approach (Recommended)');
             (vscode.window.showInputBox as jest.Mock).mockResolvedValue('trying different approach');
-            
+
             const result = await handler.escalate(info);
-            
+
             expect(result.action).toBe('change-approach');
             expect(result.note).toBe('trying different approach');
         });
@@ -151,9 +151,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 8: should handle retry-once selection', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Retry Once More');
-            
+
             const result = await handler.escalate(info);
-            
+
             expect(result.action).toBe('retry-once');
         });
 
@@ -162,9 +162,9 @@ describe('HumanEscalationHandler', () => {
             const mockRetryManager = { markEscalated: jest.fn() };
             (getRetryLimitManager as jest.Mock).mockReturnValue(mockRetryManager);
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info);
-            
+
             expect(mockRetryManager.markEscalated).toHaveBeenCalledWith('task-123');
         });
 
@@ -173,18 +173,18 @@ describe('HumanEscalationHandler', () => {
             const mockRetryManager = { markEscalated: jest.fn() };
             (getRetryLimitManager as jest.Mock).mockReturnValue(mockRetryManager);
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Retry Once More');
-            
+
             await handler.escalate(info);
-            
+
             expect(mockRetryManager.markEscalated).not.toHaveBeenCalled();
         });
 
         it('Test 11: should store result', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info);
-            
+
             const result = handler.getResult('task-123');
             expect(result).toBeDefined();
             expect(result?.action).toBe('skip');
@@ -198,19 +198,19 @@ describe('HumanEscalationHandler', () => {
         it('Test 12: should register callback', async () => {
             const callback = jest.fn();
             handler.onEscalation(callback);
-            
+
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info);
-            
+
             expect(callback).toHaveBeenCalled();
         });
 
         it('Test 13: should return disposable', () => {
             const callback = jest.fn();
             const disposable = handler.onEscalation(callback);
-            
+
             expect(disposable.dispose).toBeDefined();
         });
 
@@ -218,12 +218,12 @@ describe('HumanEscalationHandler', () => {
             const callback = jest.fn();
             const disposable = handler.onEscalation(callback);
             disposable.dispose();
-            
+
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info);
-            
+
             expect(callback).not.toHaveBeenCalled();
         });
 
@@ -232,13 +232,13 @@ describe('HumanEscalationHandler', () => {
                 throw new Error('Callback error');
             });
             handler.onEscalation(errorCallback);
-            
+
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             // Should not throw
             await handler.escalate(info);
-            
+
             expect(logError).toHaveBeenCalledWith(
                 expect.stringContaining('Callback error')
             );
@@ -256,9 +256,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 17: should return result for known task', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info);
-            
+
             const result = handler.getResult('task-123');
             expect(result).toBeDefined();
         });
@@ -275,9 +275,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 19: should return true for escalated task', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info);
-            
+
             expect(handler.isEscalated('task-123')).toBe(true);
         });
     });
@@ -308,10 +308,10 @@ describe('HumanEscalationHandler', () => {
             const info1 = createMockEscalationInfo({ taskId: 'task-1' });
             const info2 = createMockEscalationInfo({ taskId: 'task-2' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info1);
             await handler.escalate(info2);
-            
+
             const results = handler.getAllResults();
             expect(results.length).toBe(2);
         });
@@ -324,9 +324,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 23: should show warning message', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Dismiss');
-            
+
             await handler.showQuietNotification(info);
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalled();
         });
 
@@ -334,18 +334,18 @@ describe('HumanEscalationHandler', () => {
             const info = createMockEscalationInfo();
             (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('View Details');
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.showQuietNotification(info);
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalled();
         });
 
         it('Test 25: should not escalate when dismissed', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Dismiss');
-            
+
             await handler.showQuietNotification(info);
-            
+
             expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
         });
     });
@@ -357,11 +357,11 @@ describe('HumanEscalationHandler', () => {
         it('Test 26: should clear all state', async () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             await handler.escalate(info);
-            
+
             handler.clear();
-            
+
             expect(handler.getAllResults()).toEqual([]);
             expect(handler.getPendingEscalations()).toEqual([]);
         });
@@ -392,9 +392,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 29: should show manual-fix recommendation', async () => {
             const info = createMockEscalationInfo({ recommendation: 'manual-fix' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
-            
+
             await handler.escalate(info);
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
                 expect.stringContaining('Manual intervention required'),
                 expect.anything(),
@@ -408,9 +408,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 30: should show skip recommendation', async () => {
             const info = createMockEscalationInfo({ recommendation: 'skip' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
-            
+
             await handler.escalate(info);
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
                 expect.stringContaining('Consider skipping'),
                 expect.anything(),
@@ -424,9 +424,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 31: should show change-approach recommendation', async () => {
             const info = createMockEscalationInfo({ recommendation: 'change-approach' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
-            
+
             await handler.escalate(info);
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
                 expect.stringContaining('Try a different approach'),
                 expect.anything(),
@@ -440,9 +440,9 @@ describe('HumanEscalationHandler', () => {
         it('Test 32: should show default recommendation for unknown type', async () => {
             const info = createMockEscalationInfo({ recommendation: 'unknown-type' as any });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
-            
+
             await handler.escalate(info);
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
                 expect.stringContaining('Review and decide'),
                 expect.anything(),
@@ -461,7 +461,7 @@ describe('HumanEscalationHandler', () => {
         it('Test 33: should handle empty evidence array', async () => {
             const info = createMockEscalationInfo({ evidence: [] });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             const result = await handler.escalate(info);
             expect(result).toBeDefined();
         });
@@ -470,7 +470,7 @@ describe('HumanEscalationHandler', () => {
             const info = createMockEscalationInfo();
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Manual Fix');
             (vscode.window.showInputBox as jest.Mock).mockResolvedValue(undefined);
-            
+
             const result = await handler.escalate(info);
             expect(result.note).toBeUndefined();
         });
@@ -478,7 +478,7 @@ describe('HumanEscalationHandler', () => {
         it('Test 35: should handle special characters in task ID', async () => {
             const info = createMockEscalationInfo({ taskId: 'task/with/special#chars' });
             (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Skip Task');
-            
+
             const result = await handler.escalate(info);
             expect(result.taskId).toBe('task/with/special#chars');
         });

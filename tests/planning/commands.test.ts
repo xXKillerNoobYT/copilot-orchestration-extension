@@ -37,8 +37,8 @@ jest.mock('vscode', () => ({
     },
     Uri: {
         file: (path: string) => ({ fsPath: path }),
-        joinPath: (base: { fsPath: string }, ...segments: string[]) => ({ 
-            fsPath: base.fsPath + '/' + segments.join('/') 
+        joinPath: (base: { fsPath: string }, ...segments: string[]) => ({
+            fsPath: base.fsPath + '/' + segments.join('/')
         }),
     },
 }));
@@ -142,14 +142,14 @@ describe('Planning Commands', () => {
     describe('registerPlanningCommands()', () => {
         it('Test 1: should register all commands', () => {
             const disposables = registerPlanningCommands(mockContext, commandContext);
-            
+
             expect(disposables.length).toBe(9);
             expect(vscode.commands.registerCommand).toHaveBeenCalledTimes(9);
         });
 
         it('Test 2: should return disposables', () => {
             const disposables = registerPlanningCommands(mockContext, commandContext);
-            
+
             disposables.forEach(d => {
                 expect(d).toHaveProperty('dispose');
             });
@@ -157,7 +157,7 @@ describe('Planning Commands', () => {
 
         it('Test 3: should register openWizard command', () => {
             registerPlanningCommands(mockContext, commandContext);
-            
+
             expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
                 'coe.planning.openWizard',
                 expect.any(Function)
@@ -166,7 +166,7 @@ describe('Planning Commands', () => {
 
         it('Test 4: should register newPlan command', () => {
             registerPlanningCommands(mockContext, commandContext);
-            
+
             expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
                 'coe.planning.newPlan',
                 expect.any(Function)
@@ -175,7 +175,7 @@ describe('Planning Commands', () => {
 
         it('Test 5: should register validate command', () => {
             registerPlanningCommands(mockContext, commandContext);
-            
+
             expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
                 'coe.planning.validate',
                 expect.any(Function)
@@ -190,9 +190,9 @@ describe('Planning Commands', () => {
         it('Test 6: should show webview panel', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.openWizard');
-            
+
             await handler?.();
-            
+
             expect(commandContext.showWebviewPanel).toHaveBeenCalled();
         });
     });
@@ -204,9 +204,9 @@ describe('Planning Commands', () => {
         it('Test 7: should create new plan', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.newPlan');
-            
+
             await handler?.();
-            
+
             expect(commandContext.setCurrentPlan).toHaveBeenCalled();
             expect(commandContext.showWebviewPanel).toHaveBeenCalled();
         });
@@ -214,9 +214,9 @@ describe('Planning Commands', () => {
         it('Test 8: should create plan with UUID', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.newPlan');
-            
+
             await handler?.();
-            
+
             expect(commandContext.setCurrentPlan).toHaveBeenCalledWith(
                 expect.objectContaining({
                     metadata: expect.objectContaining({ id: 'test-uuid-123' }),
@@ -232,9 +232,9 @@ describe('Planning Commands', () => {
         it('Test 9: should warn if no plan', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.validate');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No plan is currently open');
         });
 
@@ -242,9 +242,9 @@ describe('Planning Commands', () => {
             currentPlan = createMockPlan();
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.validate');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('✓ Plan is valid!');
         });
 
@@ -256,9 +256,9 @@ describe('Planning Commands', () => {
             ]);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.validate');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
                 expect.stringContaining('1 error(s) and 1 warning(s)')
             );
@@ -272,9 +272,9 @@ describe('Planning Commands', () => {
         it('Test 12: should warn if no plan', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.export');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No plan is currently open');
         });
 
@@ -283,9 +283,9 @@ describe('Planning Commands', () => {
             (vscode.window.showQuickPick as jest.Mock).mockResolvedValueOnce(undefined);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.export');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showQuickPick).toHaveBeenCalled();
         });
 
@@ -295,9 +295,9 @@ describe('Planning Commands', () => {
             (vscode.window.showSaveDialog as jest.Mock).mockResolvedValueOnce({ fsPath: '/test/plan.json' });
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.export');
-            
+
             await handler?.();
-            
+
             expect(exportPlan).toHaveBeenCalled();
             expect(vscode.workspace.fs.writeFile).toHaveBeenCalled();
         });
@@ -307,9 +307,9 @@ describe('Planning Commands', () => {
             (vscode.window.showQuickPick as jest.Mock).mockResolvedValueOnce(undefined);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.export');
-            
+
             await handler?.();
-            
+
             expect(exportPlan).not.toHaveBeenCalled();
         });
     });
@@ -322,9 +322,9 @@ describe('Planning Commands', () => {
             (vscode.window.showOpenDialog as jest.Mock).mockResolvedValueOnce(undefined);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.import');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showOpenDialog).toHaveBeenCalled();
         });
 
@@ -332,9 +332,9 @@ describe('Planning Commands', () => {
             (vscode.window.showOpenDialog as jest.Mock).mockResolvedValueOnce(undefined);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.import');
-            
+
             await handler?.();
-            
+
             expect(vscode.workspace.fs.readFile).not.toHaveBeenCalled();
         });
 
@@ -344,9 +344,9 @@ describe('Planning Commands', () => {
             (vscode.workspace.fs.readFile as jest.Mock).mockResolvedValueOnce(Buffer.from(planJson));
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.import');
-            
+
             await handler?.();
-            
+
             expect(commandContext.setCurrentPlan).toHaveBeenCalled();
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Plan imported successfully');
         });
@@ -357,9 +357,9 @@ describe('Planning Commands', () => {
             (validatePlan as jest.Mock).mockReturnValueOnce({ isValid: false, errors: ['Missing metadata'] });
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.import');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining('Invalid plan file'));
         });
 
@@ -368,9 +368,9 @@ describe('Planning Commands', () => {
             (vscode.workspace.fs.readFile as jest.Mock).mockResolvedValueOnce(Buffer.from('not json'));
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.import');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining('Failed to import'));
         });
     });
@@ -382,9 +382,9 @@ describe('Planning Commands', () => {
         it('Test 21: should warn if no plan', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.submitToOrchestrator');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No plan is currently open');
         });
 
@@ -393,9 +393,9 @@ describe('Planning Commands', () => {
             (vscode.window.showQuickPick as jest.Mock).mockResolvedValueOnce(undefined);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.submitToOrchestrator');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showQuickPick).toHaveBeenCalled();
         });
 
@@ -404,9 +404,9 @@ describe('Planning Commands', () => {
             (vscode.window.showQuickPick as jest.Mock).mockResolvedValueOnce({ label: 'Yes', value: true });
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.submitToOrchestrator');
-            
+
             await handler?.();
-            
+
             expect(submitPlanToOrchestrator).toHaveBeenCalledWith(
                 currentPlan,
                 expect.objectContaining({ autoStart: true })
@@ -418,9 +418,9 @@ describe('Planning Commands', () => {
             (vscode.window.showQuickPick as jest.Mock).mockResolvedValueOnce({ value: false });
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.submitToOrchestrator');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
                 expect.stringContaining('Created 5 tasks')
             );
@@ -436,9 +436,9 @@ describe('Planning Commands', () => {
             });
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.submitToOrchestrator');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining('Failed'));
         });
 
@@ -448,9 +448,9 @@ describe('Planning Commands', () => {
             (vscode.window.showWarningMessage as jest.Mock).mockResolvedValueOnce('Cancel');
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.submitToOrchestrator');
-            
+
             await handler?.();
-            
+
             expect(submitPlanToOrchestrator).not.toHaveBeenCalled();
         });
     });
@@ -462,9 +462,9 @@ describe('Planning Commands', () => {
         it('Test 27: should warn if no plan', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.generateDocs');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No plan is currently open');
         });
 
@@ -473,9 +473,9 @@ describe('Planning Commands', () => {
             (vscode.window.showOpenDialog as jest.Mock).mockResolvedValueOnce(undefined);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.generateDocs');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showOpenDialog).toHaveBeenCalledWith(
                 expect.objectContaining({ canSelectFolders: true })
             );
@@ -486,9 +486,9 @@ describe('Planning Commands', () => {
             (vscode.window.showOpenDialog as jest.Mock).mockResolvedValueOnce([{ fsPath: '/docs' }]);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.generateDocs');
-            
+
             await handler?.();
-            
+
             expect(generateDocumentation).toHaveBeenCalledWith(currentPlan);
             expect(vscode.workspace.fs.writeFile).toHaveBeenCalled();
         });
@@ -498,9 +498,9 @@ describe('Planning Commands', () => {
             (vscode.window.showOpenDialog as jest.Mock).mockResolvedValueOnce([{ fsPath: '/docs' }]);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.generateDocs');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
                 expect.stringContaining('Generated')
             );
@@ -514,9 +514,9 @@ describe('Planning Commands', () => {
         it('Test 31: should warn if no plan', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.checkDrift');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No plan is currently open');
         });
 
@@ -524,9 +524,9 @@ describe('Planning Commands', () => {
             currentPlan = createMockPlan();
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.checkDrift');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showInformationMessage).toHaveBeenCalled();
         });
     });
@@ -538,9 +538,9 @@ describe('Planning Commands', () => {
         it('Test 33: should warn if no plan', async () => {
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.autoFix');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No plan is currently open');
         });
 
@@ -548,9 +548,9 @@ describe('Planning Commands', () => {
             currentPlan = createMockPlan();
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.autoFix');
-            
+
             await handler?.();
-            
+
             const errorHandler = getErrorHandler();
             expect(errorHandler.attemptAutoFixAll).toHaveBeenCalledWith(currentPlan);
         });
@@ -561,9 +561,9 @@ describe('Planning Commands', () => {
             mockErrorHandler.attemptAutoFixAll.mockReturnValueOnce([{ success: true }]);
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.autoFix');
-            
+
             await handler?.();
-            
+
             expect(commandContext.refreshUI).toHaveBeenCalled();
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
                 expect.stringContaining('Auto-fixed 1 issue')
@@ -574,9 +574,9 @@ describe('Planning Commands', () => {
             currentPlan = createMockPlan();
             registerPlanningCommands(mockContext, commandContext);
             const handler = mockCommands.get('coe.planning.autoFix');
-            
+
             await handler?.();
-            
+
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('No issues could be auto-fixed');
         });
     });
@@ -587,14 +587,14 @@ describe('Planning Commands', () => {
     describe('getCommandMetadata()', () => {
         it('Test 37: should return all 9 commands', () => {
             const metadata = getCommandMetadata();
-            
+
             expect(metadata.length).toBe(9);
         });
 
         it('Test 38: should include command IDs', () => {
             const metadata = getCommandMetadata();
             const commands = metadata.map(m => m.command);
-            
+
             expect(commands).toContain('coe.planning.openWizard');
             expect(commands).toContain('coe.planning.newPlan');
             expect(commands).toContain('coe.planning.validate');
@@ -602,7 +602,7 @@ describe('Planning Commands', () => {
 
         it('Test 39: should include titles', () => {
             const metadata = getCommandMetadata();
-            
+
             metadata.forEach(m => {
                 expect(m.title).toBeTruthy();
             });
@@ -610,7 +610,7 @@ describe('Planning Commands', () => {
 
         it('Test 40: should use COE Planning category', () => {
             const metadata = getCommandMetadata();
-            
+
             metadata.forEach(m => {
                 expect(m.category).toBe('COE Planning');
             });

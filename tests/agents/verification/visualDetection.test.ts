@@ -68,7 +68,7 @@ describe('VisualDetector', () => {
     describe('setBaseline()', () => {
         it('Test 4: should set a baseline', () => {
             detector.setBaseline('homepage', '/path/to/baseline.png');
-            
+
             expect(detector.getBaselines().has('homepage')).toBe(true);
             expect(logInfo).toHaveBeenCalledWith(
                 expect.stringContaining('Set baseline for homepage')
@@ -78,7 +78,7 @@ describe('VisualDetector', () => {
         it('Test 5: should overwrite existing baseline', () => {
             detector.setBaseline('homepage', '/path/old.png');
             detector.setBaseline('homepage', '/path/new.png');
-            
+
             expect(detector.getBaselines().get('homepage')).toBe('/path/new.png');
         });
 
@@ -86,7 +86,7 @@ describe('VisualDetector', () => {
             detector.setBaseline('homepage', '/path/home.png');
             detector.setBaseline('settings', '/path/settings.png');
             detector.setBaseline('profile', '/path/profile.png');
-            
+
             expect(detector.getBaselines().size).toBe(3);
         });
     });
@@ -97,7 +97,7 @@ describe('VisualDetector', () => {
     describe('compare()', () => {
         it('Test 7: should create baseline when none exists', async () => {
             const result = await detector.compare('newView', '/path/current.png');
-            
+
             expect(result.matches).toBe(true);
             expect(result.differencePercent).toBe(0);
             expect(detector.getBaselines().has('newView')).toBe(true);
@@ -108,9 +108,9 @@ describe('VisualDetector', () => {
 
         it('Test 8: should compare against existing baseline', async () => {
             detector.setBaseline('homepage', '/path/baseline.png');
-            
+
             const result = await detector.compare('homepage', '/path/current.png');
-            
+
             expect(result.screenshots?.baseline).toBe('/path/baseline.png');
             expect(result.screenshots?.current).toBe('/path/current.png');
             expect(logInfo).toHaveBeenCalledWith(
@@ -121,14 +121,14 @@ describe('VisualDetector', () => {
         it('Test 9: should return pixel method by default', async () => {
             detector.setBaseline('page', '/path/base.png');
             const result = await detector.compare('page', '/path/current.png');
-            
+
             expect(result.method).toBe('pixel');
         });
 
         it('Test 10: should include changed regions', async () => {
             detector.setBaseline('page', '/path/base.png');
             const result = await detector.compare('page', '/path/current.png');
-            
+
             expect(result.changedRegions).toBeDefined();
             expect(Array.isArray(result.changedRegions)).toBe(true);
         });
@@ -136,7 +136,7 @@ describe('VisualDetector', () => {
         it('Test 11: should not create diff path when no difference', async () => {
             detector.setBaseline('page', '/path/base.png');
             const result = await detector.compare('page', '/path/current.png');
-            
+
             // Placeholder returns 0 difference
             expect(result.differencePercent).toBe(0);
             expect(result.screenshots?.diff).toBeUndefined();
@@ -149,7 +149,7 @@ describe('VisualDetector', () => {
     describe('detectLayoutChanges()', () => {
         it('Test 12: should return array of changes', async () => {
             const result = await detector.detectLayoutChanges('<html></html>', '<html></html>');
-            
+
             expect(Array.isArray(result)).toBe(true);
             expect(logInfo).toHaveBeenCalledWith(
                 expect.stringContaining('Layout comparison complete')
@@ -164,7 +164,7 @@ describe('VisualDetector', () => {
         it('Test 14: should handle complex DOM', async () => {
             const baselineDOM = '<div class="container"><span>Hello</span></div>';
             const currentDOM = '<div class="container"><span>World</span></div>';
-            
+
             const result = await detector.detectLayoutChanges(baselineDOM, currentDOM);
             expect(result).toBeDefined();
         });
@@ -180,9 +180,9 @@ describe('VisualDetector', () => {
                 { width: 768, height: 1024, name: 'tablet' },
                 { width: 375, height: 667, name: 'mobile' },
             ];
-            
+
             const results = await detector.checkResponsive('http://test.com', viewports);
-            
+
             expect(results.size).toBe(3);
             expect(results.has('desktop')).toBe(true);
             expect(results.has('tablet')).toBe(true);
@@ -191,9 +191,9 @@ describe('VisualDetector', () => {
 
         it('Test 16: should log each viewport check', async () => {
             const viewports = [{ width: 1280, height: 720, name: 'default' }];
-            
+
             await detector.checkResponsive('http://test.com', viewports);
-            
+
             expect(logInfo).toHaveBeenCalledWith(
                 expect.stringContaining('Checking responsive at 1280x720')
             );
@@ -201,10 +201,10 @@ describe('VisualDetector', () => {
 
         it('Test 17: should return structural method for responsive', async () => {
             const viewports = [{ width: 1280, height: 720, name: 'default' }];
-            
+
             const results = await detector.checkResponsive('http://test.com', viewports);
             const result = results.get('default');
-            
+
             expect(result?.method).toBe('structural');
         });
 
@@ -224,10 +224,10 @@ describe('VisualDetector', () => {
 
         it('Test 20: should return copy of baselines', () => {
             detector.setBaseline('test', '/path.png');
-            
+
             const baselines1 = detector.getBaselines();
             const baselines2 = detector.getBaselines();
-            
+
             // Should be different map instances
             expect(baselines1).not.toBe(baselines2);
             // But with same content
@@ -242,9 +242,9 @@ describe('VisualDetector', () => {
         it('Test 21: should clear all baselines', () => {
             detector.setBaseline('page1', '/p1.png');
             detector.setBaseline('page2', '/p2.png');
-            
+
             detector.clearBaselines();
-            
+
             expect(detector.getBaselines().size).toBe(0);
         });
 
