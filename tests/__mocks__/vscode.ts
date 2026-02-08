@@ -83,6 +83,13 @@ export const env = {
   remoteName: undefined,
 };
 
+// Mock commands namespace
+export const commands = {
+  registerCommand: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+  executeCommand: jest.fn().mockResolvedValue(undefined),
+  getCommands: jest.fn().mockResolvedValue([]),
+};
+
 // Mock TreeItemCollapsibleState enum
 export enum TreeItemCollapsibleState {
   None = 0,
