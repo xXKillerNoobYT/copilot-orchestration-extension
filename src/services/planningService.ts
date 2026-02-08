@@ -254,6 +254,9 @@ class PlanningService {
                 try {
                     const content = fs.readFileSync(path.join(this.plansFolder, file), 'utf-8');
                     const plan = JSON.parse(content) as CompletePlan;
+                    // Convert date strings back to Date objects (JSON.parse doesn't do this)
+                    plan.metadata.createdAt = new Date(plan.metadata.createdAt);
+                    plan.metadata.updatedAt = new Date(plan.metadata.updatedAt);
                     plans.push(plan.metadata);
                 } catch (error) {
                     logWarn(`[PlanningService] Failed to parse plan file: ${file}`);
