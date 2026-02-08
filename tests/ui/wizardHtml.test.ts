@@ -869,4 +869,251 @@ describe('wizardHtml', () => {
             expect(Pages.renderPage2Features).toHaveBeenCalledWith(plan);
         });
     });
+
+    // ============================================================================
+    // Phase 3 Handler Tests
+    // ============================================================================
+
+    describe('generateWizardHTML - Phase 3 Feature Block Handlers', () => {
+        it('Test 76: should include generateUUID function', () => {
+            const state = createWizardState('overview');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function generateUUID()');
+        });
+
+        it('Test 77: should include addFeature function', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function addFeature()');
+            expect(html).toContain("id: 'feature-' + generateUUID()");
+        });
+
+        it('Test 78: should include removeFeature function with confirmation', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function removeFeature(id)');
+            expect(html).toContain('confirm');
+        });
+
+        it('Test 79: should include updateFeature function', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateFeature(id, field, value)');
+        });
+
+        it('Test 80: should include addCriteria function for features', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function addCriteria(featureId)');
+        });
+
+        it('Test 81: should include updateCriteria function for features', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateCriteria(featureId, index, value)');
+        });
+
+        it('Test 82: should include removeCriteria function for features', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function removeCriteria(featureId, index)');
+        });
+
+        it('Test 83: should enforce max 50 features limit', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('featureBlocks.length >= 50');
+            expect(html).toContain('Maximum 50 feature blocks allowed');
+        });
+    });
+
+    describe('generateWizardHTML - Phase 3 Block Linking Handlers', () => {
+        it('Test 84: should include updateDependency function', () => {
+            const state = createWizardState('linking');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateDependency(sourceId, targetId, type)');
+        });
+
+        it('Test 85: should include updateConditionalTrigger function', () => {
+            const state = createWizardState('linking');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateConditionalTrigger(featureId, triggerType)');
+        });
+
+        it('Test 86: should include updateConditionalAction function', () => {
+            const state = createWizardState('linking');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateConditionalAction(featureId, actionType)');
+        });
+
+        it('Test 87: should include addConditional function', () => {
+            const state = createWizardState('linking');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function addConditional()');
+        });
+    });
+
+    describe('generateWizardHTML - Phase 3 User Story Handlers', () => {
+        it('Test 88: should include addUserStory function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function addUserStory()');
+            expect(html).toContain("id: 'story-' + generateUUID()");
+        });
+
+        it('Test 89: should include removeUserStory function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function removeUserStory(id)');
+        });
+
+        it('Test 90: should include updateUserStory function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateUserStory(id, field, value)');
+        });
+
+        it('Test 91: should include updateStoryFeatureLink function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateStoryFeatureLink(storyId, featureId, checked)');
+        });
+
+        it('Test 92: should enforce max 100 user stories limit', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('userStories.length >= 100');
+        });
+    });
+
+    describe('generateWizardHTML - Phase 3 Developer Story Handlers', () => {
+        it('Test 93: should include addDevStory function', () => {
+            const state = createWizardState('devStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function addDevStory()');
+            expect(html).toContain("id: 'dev-' + generateUUID()");
+        });
+
+        it('Test 94: should include removeDevStory function', () => {
+            const state = createWizardState('devStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function removeDevStory(id)');
+        });
+
+        it('Test 95: should include updateDevStory function', () => {
+            const state = createWizardState('devStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateDevStory(id, field, value)');
+        });
+
+        it('Test 96: should handle technical requirements as comma-separated list', () => {
+            const state = createWizardState('devStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain("value.split(',')");
+        });
+    });
+
+    describe('generateWizardHTML - Phase 3 Success Criteria Handlers', () => {
+        it('Test 97: should include addSuccessCriteria function', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function addSuccessCriteria()');
+            expect(html).toContain("id: 'criteria-' + generateUUID()");
+        });
+
+        it('Test 98: should include updateSuccessCriteria function', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateSuccessCriteria(id, field, value)');
+        });
+
+        it('Test 99: should include removeSuccessCriteria function', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function removeSuccessCriteria(id)');
+        });
+
+        it('Test 100: should include updateSmartAttribute function', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function updateSmartAttribute(id, attribute, checked)');
+        });
+
+        it('Test 101: should enforce max 50 success criteria limit', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('successCriteria.length >= 50');
+        });
+    });
+
+    describe('generateWizardHTML - Phase 3 Export Handlers', () => {
+        it('Test 102: should include exportPlan function', () => {
+            const state = createWizardState('review');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function exportPlan(format)');
+            expect(html).toContain("command: 'exportPlan'");
+        });
+
+        it('Test 103: should handle exportComplete message', () => {
+            const state = createWizardState('review');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain("case 'exportComplete':");
+            expect(html).toContain('Plan exported as');
+        });
+    });
+
+    describe('generateWizardHTML - Phase 3 Page Validation Functions', () => {
+        it('Test 104: should include validatePage1 function', () => {
+            const state = createWizardState('overview');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function validatePage1()');
+            expect(html).toContain('Project name is required');
+        });
+
+        it('Test 105: should include validatePage2 function', () => {
+            const state = createWizardState('features');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function validatePage2()');
+            expect(html).toContain('At least one feature block is required');
+        });
+
+        it('Test 106: should include validatePage3 function', () => {
+            const state = createWizardState('linking');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function validatePage3()');
+        });
+
+        it('Test 107: should include validatePage4 function', () => {
+            const state = createWizardState('userStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function validatePage4()');
+            expect(html).toContain('needs user type, action, and benefit');
+        });
+
+        it('Test 108: should include validatePage5 function', () => {
+            const state = createWizardState('devStories');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function validatePage5()');
+            expect(html).toContain('needs an action');
+        });
+
+        it('Test 109: should include validatePage6 function', () => {
+            const state = createWizardState('criteria');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('function validatePage6()');
+            expect(html).toContain('at least 3 SMART attributes');
+        });
+
+        it('Test 110: should route validation by page index', () => {
+            const state = createWizardState('overview');
+            const html = generateWizardHTML(state, testNonce);
+            expect(html).toContain('switch (pageIndex)');
+            expect(html).toContain('case 0: return validatePage1()');
+            expect(html).toContain('case 1: return validatePage2()');
+            expect(html).toContain('case 2: return validatePage3()');
+            expect(html).toContain('case 3: return validatePage4()');
+            expect(html).toContain('case 4: return validatePage5()');
+            expect(html).toContain('case 5: return validatePage6()');
+        });
+    });
 });

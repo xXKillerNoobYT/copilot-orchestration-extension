@@ -739,7 +739,7 @@ describe('wizardPages', () => {
                 successCriteria: [createSuccessCriterion({ id: 'sc1' })],
             };
             const html = renderPage6SuccessCriteria(plan);
-            expect(html).toContain("onclick=\"removeCriteria('sc1')\"");
+            expect(html).toContain("onclick=\"removeSuccessCriteria('sc1')\"");
             expect(html).toContain('Remove Criterion');
         });
 

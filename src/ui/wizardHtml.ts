@@ -637,8 +637,17 @@ export function generateWizardHTML(
       // ========================================================================
 
       async function validateCurrentPage() {
-        // Validation logic will be in separate handlers per page
-        return true; // Placeholder
+        const pageIndex = wizardState.currentPageIndex || 0;
+        switch (pageIndex) {
+          case 0: return validatePage1();
+          case 1: return validatePage2();
+          case 2: return validatePage3();
+          case 3: return validatePage4();
+          case 4: return validatePage5();
+          case 5: return validatePage6();
+          case 6: return true; // Review page always valid
+          default: return true;
+        }
       }
 
       async function saveDraft() {
@@ -695,6 +704,407 @@ export function generateWizardHTML(
       }
 
       // ========================================================================
+      // Page 2: Feature Blocks Handlers
+      // ========================================================================
+
+      function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
+
+      function addFeature() {
+        if (!wizardState.plan.featureBlocks) {
+          wizardState.plan.featureBlocks = [];
+        }
+        if (wizardState.plan.featureBlocks.length >= 50) {
+          showError('Maximum 50 feature blocks allowed');
+          return;
+        }
+        wizardState.plan.featureBlocks.push({
+          id: 'feature-' + generateUUID(),
+          name: '',
+          description: '',
+          purpose: '',
+          priority: 'medium',
+          acceptanceCriteria: [],
+          estimatedHours: 0,
+          status: 'planned'
+        });
+        refreshPage();
+      }
+
+      function removeFeature(id) {
+        if (!confirm('Are you sure you want to remove this feature?')) return;
+        if (!wizardState.plan.featureBlocks) return;
+        wizardState.plan.featureBlocks = wizardState.plan.featureBlocks.filter(f => f.id !== id);
+        refreshPage();
+      }
+
+      function updateFeature(id, field, value) {
+        if (!wizardState.plan.featureBlocks) return;
+        const feature = wizardState.plan.featureBlocks.find(f => f.id === id);
+        if (feature) {
+          feature[field] = value;
+        }
+      }
+
+      function addCriteria(featureId) {
+        if (!wizardState.plan.featureBlocks) return;
+        const feature = wizardState.plan.featureBlocks.find(f => f.id === featureId);
+        if (feature) {
+          if (!feature.acceptanceCriteria) feature.acceptanceCriteria = [];
+          feature.acceptanceCriteria.push('');
+          refreshPage();
+        }
+      }
+
+      function updateCriteria(featureId, index, value) {
+        if (!wizardState.plan.featureBlocks) return;
+        const feature = wizardState.plan.featureBlocks.find(f => f.id === featureId);
+        if (feature && feature.acceptanceCriteria) {
+          feature.acceptanceCriteria[index] = value;
+        }
+      }
+
+      function removeCriteria(featureId, index) {
+        if (!wizardState.plan.featureBlocks) return;
+        const feature = wizardState.plan.featureBlocks.find(f => f.id === featureId);
+        if (feature && feature.acceptanceCriteria) {
+          feature.acceptanceCriteria.splice(index, 1);
+          refreshPage();
+        }
+      }
+
+      // ========================================================================
+      // Page 3: Block Linking & Dependencies Handlers
+      // ========================================================================
+
+      function updateDependency(sourceId, targetId, type) {
+        if (!wizardState.plan.blockLinks) {
+          wizardState.plan.blockLinks = [];
+        }
+        // Remove existing link between these blocks
+        wizardState.plan.blockLinks = wizardState.plan.blockLinks.filter(
+          l => !(l.sourceId === sourceId && l.targetId === targetId)
+        );
+        // Add new link if type is not empty
+        if (type) {
+          wizardState.plan.blockLinks.push({
+            id: 'link-' + generateUUID(),
+            sourceId,
+            targetId,
+            type
+          });
+        }
+      }
+
+      function updateConditionalTrigger(featureId, triggerType) {
+        if (!wizardState.plan.conditionalLogic) {
+          wizardState.plan.conditionalLogic = [];
+        }
+        let conditional = wizardState.plan.conditionalLogic.find(c => c.featureId === featureId);
+        if (!conditional) {
+          conditional = { featureId, trigger: triggerType, action: 'starts' };
+          wizardState.plan.conditionalLogic.push(conditional);
+        } else {
+          conditional.trigger = triggerType;
+        }
+      }
+
+      function updateConditionalAction(featureId, actionType) {
+        if (!wizardState.plan.conditionalLogic) {
+          wizardState.plan.conditionalLogic = [];
+        }
+        let conditional = wizardState.plan.conditionalLogic.find(c => c.featureId === featureId);
+        if (!conditional) {
+          conditional = { featureId, trigger: 'complete', action: actionType };
+          wizardState.plan.conditionalLogic.push(conditional);
+        } else {
+          conditional.action = actionType;
+        }
+      }
+
+      function addConditional() {
+        showError('Select conditions using the feature dropdowns above');
+      }
+
+      // ========================================================================
+      // Page 4: User Stories Handlers
+      // ========================================================================
+
+      function addUserStory() {
+        if (!wizardState.plan.userStories) {
+          wizardState.plan.userStories = [];
+        }
+        if (wizardState.plan.userStories.length >= 100) {
+          showError('Maximum 100 user stories allowed');
+          return;
+        }
+        wizardState.plan.userStories.push({
+          id: 'story-' + generateUUID(),
+          userType: '',
+          action: '',
+          benefit: '',
+          relatedBlockIds: []
+        });
+        refreshPage();
+      }
+
+      function removeUserStory(id) {
+        if (!wizardState.plan.userStories) return;
+        wizardState.plan.userStories = wizardState.plan.userStories.filter(s => s.id !== id);
+        refreshPage();
+      }
+
+      function updateUserStory(id, field, value) {
+        if (!wizardState.plan.userStories) return;
+        const story = wizardState.plan.userStories.find(s => s.id === id);
+        if (story) {
+          story[field] = value;
+        }
+      }
+
+      function updateStoryFeatureLink(storyId, featureId, checked) {
+        if (!wizardState.plan.userStories) return;
+        const story = wizardState.plan.userStories.find(s => s.id === storyId);
+        if (story) {
+          if (!story.relatedBlockIds) story.relatedBlockIds = [];
+          if (checked && !story.relatedBlockIds.includes(featureId)) {
+            story.relatedBlockIds.push(featureId);
+          } else if (!checked) {
+            story.relatedBlockIds = story.relatedBlockIds.filter(id => id !== featureId);
+          }
+        }
+      }
+
+      // ========================================================================
+      // Page 5: Developer Stories Handlers
+      // ========================================================================
+
+      function addDevStory() {
+        if (!wizardState.plan.developerStories) {
+          wizardState.plan.developerStories = [];
+        }
+        if (wizardState.plan.developerStories.length >= 100) {
+          showError('Maximum 100 developer stories allowed');
+          return;
+        }
+        wizardState.plan.developerStories.push({
+          id: 'dev-' + generateUUID(),
+          action: '',
+          benefit: '',
+          estimatedHours: 0,
+          technicalRequirements: [],
+          apiNotes: '',
+          databaseNotes: ''
+        });
+        refreshPage();
+      }
+
+      function removeDevStory(id) {
+        if (!wizardState.plan.developerStories) return;
+        wizardState.plan.developerStories = wizardState.plan.developerStories.filter(s => s.id !== id);
+        refreshPage();
+      }
+
+      function updateDevStory(id, field, value) {
+        if (!wizardState.plan.developerStories) return;
+        const story = wizardState.plan.developerStories.find(s => s.id === id);
+        if (story) {
+          if (field === 'technicalRequirements' && typeof value === 'string') {
+            story[field] = value.split(',').map(s => s.trim()).filter(s => s);
+          } else {
+            story[field] = value;
+          }
+        }
+      }
+
+      // ========================================================================
+      // Page 6: Success Criteria Handlers
+      // ========================================================================
+
+      function addSuccessCriteria() {
+        if (!wizardState.plan.successCriteria) {
+          wizardState.plan.successCriteria = [];
+        }
+        if (wizardState.plan.successCriteria.length >= 50) {
+          showError('Maximum 50 success criteria allowed');
+          return;
+        }
+        wizardState.plan.successCriteria.push({
+          id: 'criteria-' + generateUUID(),
+          description: '',
+          smartAttributes: {
+            specific: false,
+            measurable: false,
+            achievable: false,
+            relevant: false,
+            timeBound: false
+          }
+        });
+        refreshPage();
+      }
+
+      function updateSuccessCriteria(id, field, value) {
+        if (!wizardState.plan.successCriteria) return;
+        const criterion = wizardState.plan.successCriteria.find(c => c.id === id);
+        if (criterion) {
+          criterion[field] = value;
+        }
+      }
+
+      function removeSuccessCriteria(id) {
+        if (!wizardState.plan.successCriteria) return;
+        wizardState.plan.successCriteria = wizardState.plan.successCriteria.filter(c => c.id !== id);
+        refreshPage();
+      }
+
+      function updateSmartAttribute(id, attribute, checked) {
+        if (!wizardState.plan.successCriteria) return;
+        const criterion = wizardState.plan.successCriteria.find(c => c.id === id);
+        if (criterion && criterion.smartAttributes) {
+          criterion.smartAttributes[attribute] = checked;
+        }
+      }
+
+      // ========================================================================
+      // Page 7: Export Handlers
+      // ========================================================================
+
+      function exportPlan(format) {
+        vscode.postMessage({
+          command: 'exportPlan',
+          format: format,
+          planData: wizardState.plan
+        });
+      }
+
+      // ========================================================================
+      // Page Validation Functions
+      // ========================================================================
+
+      function validatePage1() {
+        let errors = [];
+        const overview = wizardState.plan.overview || {};
+        
+        if (!overview.name || overview.name.trim().length === 0) {
+          errors.push('Project name is required');
+        } else if (overview.name.length > 100) {
+          errors.push('Project name must be 100 characters or less');
+        }
+        
+        if (overview.description && overview.description.length > 500) {
+          errors.push('Description must be 500 characters or less');
+        }
+        
+        if (overview.goals) {
+          overview.goals.forEach((g, i) => {
+            if (g.length > 200) {
+              errors.push('Goal ' + (i + 1) + ' must be 200 characters or less');
+            }
+          });
+        }
+        
+        if (errors.length > 0) {
+          showError(errors.join('. '));
+          return false;
+        }
+        showSuccess('Page 1 validated');
+        return true;
+      }
+
+      function validatePage2() {
+        let errors = [];
+        const features = wizardState.plan.featureBlocks || [];
+        
+        if (features.length === 0) {
+          errors.push('At least one feature block is required');
+        }
+        
+        features.forEach((f, i) => {
+          if (!f.name || f.name.trim().length === 0) {
+            errors.push('Feature ' + (i + 1) + ' needs a name');
+          }
+        });
+        
+        if (errors.length > 0) {
+          showError(errors.join('. '));
+          return false;
+        }
+        showSuccess('Page 2 validated');
+        return true;
+      }
+
+      function validatePage3() {
+        // Dependencies are optional
+        showSuccess('Page 3 validated');
+        return true;
+      }
+
+      function validatePage4() {
+        let errors = [];
+        const stories = wizardState.plan.userStories || [];
+        
+        stories.forEach((s, i) => {
+          if (!s.userType || !s.action || !s.benefit) {
+            errors.push('User story ' + (i + 1) + ' needs user type, action, and benefit');
+          }
+        });
+        
+        if (errors.length > 0) {
+          showError(errors.join('. '));
+          return false;
+        }
+        showSuccess('Page 4 validated');
+        return true;
+      }
+
+      function validatePage5() {
+        let errors = [];
+        const stories = wizardState.plan.developerStories || [];
+        
+        stories.forEach((s, i) => {
+          if (!s.action) {
+            errors.push('Developer story ' + (i + 1) + ' needs an action');
+          }
+        });
+        
+        if (errors.length > 0) {
+          showError(errors.join('. '));
+          return false;
+        }
+        showSuccess('Page 5 validated');
+        return true;
+      }
+
+      function validatePage6() {
+        let errors = [];
+        const criteria = wizardState.plan.successCriteria || [];
+        
+        criteria.forEach((c, i) => {
+          if (!c.description || c.description.trim().length === 0) {
+            errors.push('Criterion ' + (i + 1) + ' needs a description');
+          }
+          const smart = c.smartAttributes || {};
+          const smartCount = [smart.specific, smart.measurable, smart.achievable, smart.relevant, smart.timeBound]
+            .filter(Boolean).length;
+          if (smartCount < 3) {
+            errors.push('Criterion ' + (i + 1) + ' should have at least 3 SMART attributes');
+          }
+        });
+        
+        if (errors.length > 0) {
+          showError(errors.join('. '));
+          return false;
+        }
+        showSuccess('Page 6 validated');
+        return true;
+      }
+
+      // ========================================================================
       // Message Handlers
       // ========================================================================
 
@@ -706,6 +1116,9 @@ export function generateWizardHTML(
             break;
           case 'planCompleted':
             showSuccess('Plan created successfully!');
+            break;
+          case 'exportComplete':
+            showSuccess('Plan exported as ' + message.format);
             break;
           case 'error':
             showError(message.message);

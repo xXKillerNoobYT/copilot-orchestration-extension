@@ -579,7 +579,7 @@ function renderSuccessCriteriaList(criteria: SuccessCriterion[]): string {
           <div class="criteria-form">
             <textarea
               placeholder="e.g., 95% of users can complete signup in under 2 minutes by end of Q2"
-              onchange="updateCriteria('${c.id}', 'description', this.value)"
+              onchange="updateSuccessCriteria('${c.id}', 'description', this.value)"
             >${escapeHtml(c.description)}</textarea>
 
             <div class="smart-checklist">
@@ -625,7 +625,7 @@ function renderSuccessCriteriaList(criteria: SuccessCriterion[]): string {
               </label>
             </div>
 
-            <button type="button" class="btn-danger btn-small" onclick="removeCriteria('${c.id}')">
+            <button type="button" class="btn-danger btn-small" onclick="removeSuccessCriteria('${c.id}')">
               Remove Criterion
             </button>
           </div>
